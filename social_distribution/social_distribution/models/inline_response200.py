@@ -7,7 +7,7 @@ from typing import List, Dict  # noqa: F401
 
 from .base_model_ import Model
 from .array_of_posts import ArrayOfPosts  # noqa: F401,E501
-from social_distribution.social_distribution import util
+from .util import *
 
 
 class InlineResponse200(Model):
