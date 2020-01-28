@@ -16,6 +16,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from .views import *
+
 urlpatterns = [
+    path('', main_page, name="Main_Page"),
     path('admin/', admin.site.urls),
+    path('posts/', get_public_posts, name="Get-Public_Posts"),
+    path('posts/{post_id}/', get_single_post, name="Get_Single_Post"),
+    path('author/posts/', auth_posts, name="Auth_Posts"),
+    path('author/{author_id}/posts/', get_user_public_posts, name="Get_User_Public_Posts"),
+    path('posts/{post_id}/comments/', post_comments, name="Post_Comments"),
+    path('author/{author_id}/friends/', friends, name="Friends"),
+    path('author/{author1_id}/friends/{author2_id}/', check_friends, name="Check_Friends"),
+    path('friendrequest/', friend_request, name="Friend_Request"),
+    path('author/{author_id}/', get_author_profile, name="Get_Author_Profile"),
 ]

@@ -3,7 +3,7 @@ import pprint
 import six
 import typing
 
-from social_distribution.social_distribution import util
+from .util import *
 
 T = typing.TypeVar('T')
 

@@ -8,7 +8,7 @@ from typing import List, Dict  # noqa: F401
 from .base_model_ import Model
 from .friendrequest_author import FriendrequestAuthor  # noqa: F401,E501
 from .friendrequest_friend import FriendrequestFriend  # noqa: F401,E501
-from social_distribution.social_distribution import util
+from .util import *
 
 
 class Body3(Model):
