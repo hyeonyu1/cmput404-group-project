@@ -16,7 +16,7 @@ class Comment(models.Model):
     )
     contentType = models.CharField(max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
 
-    content = models.TextField
+    content = models.TextField()
 
     # Always defaults to right now on object creation
     # @todo Are comments editable? Should we allow this and if so would this field update to match?
