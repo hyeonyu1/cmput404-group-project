@@ -1,7 +1,5 @@
 from django.shortcuts import render
-
 from django.http import HttpResponse
 
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the users index.")
+def login_user(request):
+    return HttpResponse("log in user needs to be implemented")
