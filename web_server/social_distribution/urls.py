@@ -15,11 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-
-from .views import *
-
+from . import views
+from users import views as users_views
 urlpatterns = [
-    path('', main_page, name="Main_Page"),
+    path('', users_views.profile),
     path('admin/', admin.site.urls),
 
     # App for handling all user information and user-user relationships is user.
@@ -27,8 +26,10 @@ urlpatterns = [
     path('author/', include('authors.urls')),
     path('posts/', include('posts.urls')),
     path('friendrequest/', include('friendship.urls')),
-    path('auth/', include('users.urls'))
-    
+    path('user/', include('users.urls')),
+
+
+
 
 
 
