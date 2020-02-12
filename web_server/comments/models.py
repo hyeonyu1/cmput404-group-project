@@ -1,9 +1,11 @@
 from django.db import models
-from authors.models import Author
+from users.models import Author
 
 from uuid import uuid4
 
 # Create your models here.
+
+
 class Comment(models.Model):
     # Comment ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
@@ -14,7 +16,8 @@ class Comment(models.Model):
         (TYPE_PLAIN, "plain text"),
         (TYPE_MARKDOWN, "markdown")
     )
-    contentType = models.CharField(max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
+    contentType = models.CharField(
+        max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
 
     content = models.TextField()
 

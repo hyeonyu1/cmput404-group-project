@@ -29,8 +29,26 @@ def register(request):
             user = form.save()
             # wait for admin permission to activate account
             user.is_active = False
+            host = request.get_host()
+            print(user.id)
+            if request.is_secure():
+
+                host = "https://" + host
+            else:
+                host = "http://" + host
+
+            url = host + "/author/" + str(user.id)
+            print(url)
+            # set user url
+            user.url = url
+            # set user id
+            # format: http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013
+            user.uid = url
+            # set user host
+            user.host = host
+
+            # update database entry of current user
             user.save()
-            username = form.cleaned_data.get('username')
             return redirect('login')
 
     else:

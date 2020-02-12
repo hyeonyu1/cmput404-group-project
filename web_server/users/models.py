@@ -1,12 +1,19 @@
 from django.db import models
 
-# Removing this model, it is found in the authors app now.
-# class User(models.Model):
-#     email = models.CharField(max_length=256)  # used as username?
-#     bio = models.CharField(max_length=256)
-#     host = models.CharField(max_length=256)
-#     first_name = models.CharField(max_length=256)
-#     last_name = models.CharField(max_length=256)
-#     display_name = models.CharField(max_length=256)
-#     url = models.CharField(max_length=256)
-#     github = models.CharField(max_length=256)
+from uuid import uuid4
+from django.contrib.auth.models import AbstractUser
+
+# Create your models here.
+
+
+class Author(AbstractUser):
+    # Author ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
+    id = models.UUIDField(primary_key=True, default=uuid4,
+                          editable=False)
+    uid = models.URLField(primary_key=False, max_length=500)
+
+    bio = models.TextField()
+    host = models.URLField()
+    display_name = models.CharField(max_length=256)
+    url = models.URLField(max_length=500)
+    github = models.URLField()
