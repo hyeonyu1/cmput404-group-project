@@ -1,8 +1,24 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+
+
 # retrieve all posts marked as public on the server
-# http://service/posts
+#
 def retrieve_all_public_posts_on_local_server(request):
+    """
+    For endpoint http://service/posts
+    Retrieves all public posts located on the server
+    :param request: should specify Accepted content-type, default is HTML
+    :return:
+    """
+    # Determine desired output
+    requested_content_type = request.headers['accept']
+    if requested_content_type == 'application/json':
+        pass
+    elif requested_content_type == 'text/html':
+        pass
+    else:
+        pass
     
     return HttpResponse("<h1>http://service/posts</h1>")
 
