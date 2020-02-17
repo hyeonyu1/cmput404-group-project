@@ -13,3 +13,6 @@ class Author(models.Model):
     display_name = models.CharField(max_length=256)
     url = models.URLField()
     github = models.URLField()
+
+    def __str__(self):
+        return self.display_name

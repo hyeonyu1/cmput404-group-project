@@ -45,7 +45,7 @@ class Post(models.Model):
     author = models.ForeignKey(Author, on_delete=models.PROTECT)
 
     # Storing a list of comma delineated categories
-    categories = models.ManyToManyField(Category)
+    categories = models.ManyToManyField(Category, blank=True)
 
     # Count of comments
     # @todo is this field strictly necessary? It should be computed not stored
@@ -77,7 +77,7 @@ class Post(models.Model):
     visibility = models.CharField(max_length=16, choices=VISIBILITY_CHOICES, default=FRIENDS)
 
     # List of user URI's who can read this message
-    visibleTo = models.ManyToManyField(Author, related_name="posts_granted_access_to")
+    visibleTo = models.ManyToManyField(Author, related_name="posts_granted_access_to", blank=True)
 
     # Unlisted posts are hidden from users. By default posts should show to users.
     unlisted = models.BooleanField(default=False)
@@ -86,3 +86,4 @@ class Post(models.Model):
         post_snippet_length = 15 # number of chars to show in content snippet before cutting off with elipsis
         result = f'{self.visibility} post by {self.author}: '
         result += f'"{self.content[:post_snippet_length]}{"..." if len(self.content) >= post_snippet_length else ""}"'
+        return result
