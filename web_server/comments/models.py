@@ -1,5 +1,6 @@
 from django.db import models
 from authors.models import Author
+from posts.models import Post
 
 from uuid import uuid4
 
@@ -23,3 +24,5 @@ class Comment(models.Model):
     published = models.DateTimeField(auto_now_add=True)
 
     author = models.ForeignKey(Author, on_delete=models.PROTECT)
+
+    parentPost = models.ForeignKey(Post, on_delete=models.CASCADE)
