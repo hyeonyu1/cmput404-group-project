@@ -48,8 +48,8 @@ class Post(models.Model):
     categories = models.ManyToManyField(Category, blank=True)
 
     # Count of comments
-    # @todo is this field strictly necessary? It should be computed not stored
-    count = models.PositiveIntegerField()
+    # This field can be computed when needed by querying the comments table. Do not track it here.
+    # count = models.PositiveIntegerField()
 
     # Page Size
     # @todo What is a 'page'? A page of comments?
