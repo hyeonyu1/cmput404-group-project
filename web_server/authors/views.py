@@ -1,5 +1,10 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from posts.models import Post
+from authors.models import Author
+from comments.models import Comment
+
+import json
 # retrieve an author's profile
 #http://service/author/author_id
 def retrieve_author_profile(request, author_id):
@@ -7,8 +12,59 @@ def retrieve_author_profile(request, author_id):
 
 def post_creation_and_retrival_to_curr_auth_user(request):
     if request.method == 'POST':
+        # POST to http://service/author/posts
         # Create a post to the currently authenticated user
-        # POST to http://service/author/posts 
+
+        # First get the information out of the request body
+        body = request.body.decode('utf-8')
+
+        body = json.loads(body)
+        post = body['post']
+        author = post['author']
+        comments = post['comments']
+        categories = post['categories']
+        visible_to = post['visibleTo']
+
+        new_post = Post()
+
+        # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
+        new_post.title = post['title']             #: "A post title about a post about web dev",
+        new_post.source = post['source']           #: "http://lastplaceigotthisfrom.com/posts/yyyyy",
+        new_post.origin = post['origin']           #: "http://whereitcamefrom.com/posts/zzzzz",
+        new_post.description = post['description'] #: "This post discusses stuff -- brief",
+        new_post.contentType = post['contentType'] #: "text/plain",
+        new_post.content = post['content']         #: "stuffs",
+
+        # Create author object
+        # @todo This adds the post to the first author in the db, must get the author information from
+        # the authenticated user
+        author = Author.objects.all().first()
+        new_post.author = author                #: DICT,
+
+        # @todo allow adding categories to new post
+        # new_post.categories = post['categories']   #: LIST,
+
+        new_post.count = post['count']             #: 1023,
+        new_post.size = post['size']               #: 50,
+        new_post.next = post['next']               #: "http://service/posts/{post_id}/comments",
+
+        # @todo allow adding comments to new post
+        # new_post.comments = post['comments']       #: LIST OF COMMENT,
+
+        new_post.published = post['published']     #: "2015-03-09T13:07:04+00:00",
+        new_post.visibility = post['visibility']   #: "PUBLIC",
+
+        # @todo allow setting visibility of new post
+        # new_post.visibleTo = post['visibleTo']     #: LIST,
+
+        new_post.unlisted = post['unlisted']       #: true
+
+        new_post.save()
+
+
+        # for key in body.keys():
+        #     print(f'{key}: {body[key]}')
+
         return HttpResponse("<h1>http://service/author/posts POST</h1>")
     elif request.method == 'GET':
         # retrive posts that are visible to the currently authenticated user
