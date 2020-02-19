@@ -3,7 +3,16 @@ from authors.models import Author
 
 from uuid import uuid4
 
-# Create your models here.
+
+class Category(models.Model):
+    """
+    Categories are strings that users can mark their post as belonging to. Many to many with posts
+    """
+    name = models.CharField(max_length=256, null=False, unique=True)
+
+    def __str__(self):
+        return f'{self.name}'
+
 class Post(models.Model):
     # Post ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
@@ -36,19 +45,18 @@ class Post(models.Model):
     author = models.ForeignKey(Author, on_delete=models.PROTECT)
 
     # Storing a list of comma delineated categories
-    # @todo Should this be replaced with a many-to-many combo table and a separate 'categories' model?
-    # categories = models.CharField(max_length=256)
+    categories = models.ManyToManyField(Category, blank=True)
 
     # Count of comments
-    count = models.PositiveIntegerField()
+    # This field can be computed when needed by querying the comments table. Do not track it here.
+    # count = models.PositiveIntegerField()
 
     # Page Size
     # @todo What is a 'page'? A page of comments?
     size = models.PositiveIntegerField()
 
     # Comments
-    # @todo obviously this should not be implemented in this model, it should be implemented as
-    # a foreign key in the comments model
+    # implemented as foreign key in comments model
 
     # Always defaults to right now on object creation
     # @todo Are posts editable? Should we allow this and if so would this field update to match?
@@ -61,8 +69,7 @@ class Post(models.Model):
     SERVERONLY = 'SERVERONLY'
     VISIBILITY_CHOICES = (
         (PUBLIC, "Public"),
-        # @todo what does FOAF mean? Update this to something human readable
-        (FOAF, "FOAF"),
+        (FOAF, "Friends of Friends"),
         (FRIENDS, "Friends"),
         (PRIVATE, "Private"),
         (SERVERONLY, "Server Admins Only")
@@ -70,9 +77,13 @@ class Post(models.Model):
     visibility = models.CharField(max_length=16, choices=VISIBILITY_CHOICES, default=FRIENDS)
 
     # List of user URI's who can read this message
-    # @todo this clearly should be some sort of many-to-many relationship table
-    #
+    visibleTo = models.ManyToManyField(Author, related_name="posts_granted_access_to", blank=True)
 
     # Unlisted posts are hidden from users. By default posts should show to users.
     unlisted = models.BooleanField(default=False)
 
+    def __str__(self):
+        post_snippet_length = 15 # number of chars to show in content snippet before cutting off with elipsis
+        result = f'{self.visibility} post by {self.author}: '
+        result += f'"{self.content[:post_snippet_length]}{"..." if len(self.content) >= post_snippet_length else ""}"'
+        return result

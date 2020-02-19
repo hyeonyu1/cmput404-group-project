@@ -1,5 +1,6 @@
 from django.db import models
 from authors.models import Author
+from posts.models import Post
 
 from uuid import uuid4
 
@@ -23,3 +24,9 @@ class Comment(models.Model):
     published = models.DateTimeField(auto_now_add=True)
 
     author = models.ForeignKey(Author, on_delete=models.PROTECT)
+
+    parentPost = models.ForeignKey(Post, on_delete=models.CASCADE)
+
+    def __str__(self):
+        snippet_length = 15 # Number of characters to include as snippet before cutting off with elipsis
+        return f'{self.author} commented "{self.content[:snippet_length]}{"..." if len(self.content) >= snippet_length else ""}"'
