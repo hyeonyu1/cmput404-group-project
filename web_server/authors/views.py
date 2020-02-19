@@ -3,8 +3,6 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from users.models import Author
 from friendship.models import Friend
-from django.shortcuts import render
-from django.http import HttpResponse
 from posts.models import Post
 from comments.models import Comment
 import json
