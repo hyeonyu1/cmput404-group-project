@@ -8,8 +8,8 @@ from users.models import Author
 
 class Friend(models.Model):
 
-    user_id = models.URLField(max_length=500)
+    author_id = models.URLField(max_length=500)
     friend_id = models.URLField(max_length=500)
 
     class Meta:
-        unique_together = (("user_id", "friend_id"),)
+        unique_together = (("author_id", "friend_id"),)
