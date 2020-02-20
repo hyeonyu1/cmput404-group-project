@@ -13,3 +13,11 @@ class Friend(models.Model):
 
     class Meta:
         unique_together = (("author_id", "friend_id"),)
+
+
+class FriendRequest(models.Model):
+    from_id = models.URLField(max_length=500)
+    to_id = models.URLField(max_length=500)
+
+    class Meta:
+        unique_together = (("from_id", "to_id"),)

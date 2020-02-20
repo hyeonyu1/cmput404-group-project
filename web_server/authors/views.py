@@ -5,11 +5,74 @@ from users.models import Author
 from friendship.models import Friend
 from posts.models import Post
 from comments.models import Comment
+from django.db.models import Q
+
 import json
+# Ida Hou
+# return a list of author id that are currently stored in database and
+# are not friend with current author
 
 
-# Author: Ida Hou
+def view_list_of_available_authors_to_befriend(request, author_id):
+    if request.method != 'GET':
+        return HttpResponse("Method not Allowed", status=405)
+    if not Author.objects.filter(id=author_id).exists():
+        return HttpResponse("No Author Record", status=404)
+    authors_on_record = Author.objects.filter(~Q(id=author_id)).filter(
+        is_active=1).filter(is_superuser=0)
+    # compose full url of author id
+    host = request.get_host()
+    if request.is_secure():
+        host = "https://" + host
+    else:
+        host = "http://" + host
+
+    author_id = host + "/author/" + str(author_id)
+    response_data = {}
+    response_data["available_authors_to_befriend"] = []
+    for each in authors_on_record:
+        response_data["available_authors_to_befriend"].append(each.uid)
+    if not Friend.objects.filter(author_id=author_id).exists():
+
+        return JsonResponse(response_data)
+
+    # need to make sure that existing_friends be a subset of authors_on_record
+    # which brings up a question that where should we store foreign author? In the Author table?
+    # or should we make another "Foreign_Author" table ?
+    # TODO
+    existing_friends = Friend.objects.filter(author_id=author_id)
+
+    return JsonResponse(response_data)
+
+
+# Ida Hou
+# service/author/unfriend endpoint handler
+# post request body
+# {
+#  author_id :http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
+#  friend_id : http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
+#
+# }
+def unfriend(request):
+    if request.method == 'POST':
+        body = request.body.decode('utf-8')
+        body = json.loads(body)
+        author_id = body.get("author_id", None)
+        friend_id = body.get("friend_id", None)
+        if not author_id or not friend_id:
+            # Unprocessable Entity
+            return HttpResponse("post request body missing fields", status=422)
+        if Friend.objects.filter(author_id=author_id).filter(friend_id=friend_id).exists():
+            Friend.objects.filter(author_id=author_id).filter(
+                friend_id=friend_id).delete()
+        return HttpResponse("Unfriended !", status=200)
+
+    return HttpResponse("Method Not Allowed", status=405)
+
+# Ida Hou
 # service/author/{author_id} endpoint handler
+
+
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
 
@@ -119,7 +182,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
     return HttpResponse("<h1>http://service/author/{}/posts GET</h1>".format(author_id))
 
-# Author: Ida Hou
+# Ida Hou
 
 
 def friend_checking_and_retrieval_of_author_id(request, author_id):
@@ -137,7 +200,9 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
         # POST to http://service/author/<authorid>/friends
         body_unicode = str(request.body, 'utf-8')
         body = json.loads(body_unicode)
-        potential_friends = body["authors"]
+        potential_friends = body.get("authors", None)
+        if not potential_friends:
+            return HttpResponse("Post body missing fields", status=404)
 
         response_data = {}
         response_data["query"] = "friends"
@@ -168,7 +233,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
     else:
         HttpResponse("You can only GET or POST to the URL", status=405)
 
-# Author: Ida Hou
+# Ida Hou
 # Ask if 2 authors are friends
 # GET http://service/author/<authorid>/friends/<authorid2>
 
