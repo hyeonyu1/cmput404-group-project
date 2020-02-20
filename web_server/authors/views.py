@@ -9,10 +9,13 @@ def post_creation_and_retrival_to_curr_auth_user(request):
     if request.method == 'POST':
         # Create a post to the currently authenticated user
         # POST to http://service/author/posts 
-        return HttpResponse("<h1>http://service/author/posts POST</h1>")
+        #return HttpResponse("<h1>http://service/author/posts POST</h1>")
+        return render(request, 'posting.html')
+    
     elif request.method == 'GET':
         # retrive posts that are visible to the currently authenticated user
         # GET from http://service/author/posts 
+        
         return HttpResponse("<h1>http://service/author/posts GET</h1>")
     
     return None

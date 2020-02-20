@@ -27,8 +27,8 @@ urlpatterns = [
     path('author/', include('authors.urls')),
     path('posts/', include('posts.urls')),
     path('friendrequest/', include('friendship.urls')),
-    path('auth/', include('users.urls'))
-    
+    path('auth/', include('users.urls')),
+    path('author/posts/', auth_posts, name="Auth_Posts")
 
 
 

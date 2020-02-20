@@ -2,39 +2,31 @@
 <!DOCTYPE html>
 <html lang=en>
 	<head>
-		<title>APP NAME PLACEHOLDER</title>
+		<title>Mandala</title>
 		<meta charset='UTF-8'/>
 		<link rel="stylesheet" type="text/css" 
-		href="{% static 'css/posting.css' %}"/>
+		href="{% static 'css/mainPage.css' %}"/>
 	</head>
 
 	<body>
 		<section class="topBar">
-			<span class="title">APP NAME PLACEHOLDER</span>
+			<a href="/" title="Go to Mandala Home Page" class="title" style="text-decoration: none">Mandala</a>
 			<span class="profile">USER NAME</span>
 		</section>
 		<hr>
 
-       	<!-- Trigger/Open The Modal -->
-       	<button class="create" id="createPost">Create Post</button>
+       	<!-- Trigger/Open The Posting Page -->
+       	<form action="author/posts/" method="POST">
+       		{% csrf_token %}
+		    <button type="submit" value="Create Post">Create Post</button>
+		</form>
 
-		<!-- The Modal -->
-		<div id="createModal" class="modal">
-			<!-- Modal content -->
-			<div class="modal-content">
-			    <span class="close">&times;</span>
-			    <input type="text" id="post" name="post" required
-       			minlength="4" maxlength="256" size="80" placeholder="What's on your mind?" height="45pt"/>
-       			<button id="post">Post</button>
-			</div>
-		</div>
 
 		<section class="postSection">
 			<div>
 				<p>This is a post</p>
 			</div>
 		</section>
-		<script type="text/javascript" src="{% static 'javascript/post-view.js' %}"></script>
 	</body>
 
 </html>
