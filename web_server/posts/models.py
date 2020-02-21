@@ -1,5 +1,5 @@
 from django.db import models
-from authors.models import Author
+from users.models import Author
 
 from uuid import uuid4
 
@@ -12,6 +12,7 @@ class Category(models.Model):
 
     def __str__(self):
         return f'{self.name}'
+
 
 class Post(models.Model):
     # Post ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
@@ -37,7 +38,8 @@ class Post(models.Model):
         )),
         (TYPE_BASE64, "base64 encoded")
     )
-    contentType = models.CharField(max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
+    contentType = models.CharField(
+        max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
 
     content = models.TextField()
     # @todo Should deleting an author delete their posts? I feel like a good user experience is to say the
@@ -74,16 +76,19 @@ class Post(models.Model):
         (PRIVATE, "Private"),
         (SERVERONLY, "Server Admins Only")
     )
-    visibility = models.CharField(max_length=16, choices=VISIBILITY_CHOICES, default=FRIENDS)
+    visibility = models.CharField(
+        max_length=16, choices=VISIBILITY_CHOICES, default=FRIENDS)
 
     # List of user URI's who can read this message
-    visibleTo = models.ManyToManyField(Author, related_name="posts_granted_access_to", blank=True)
+    visibleTo = models.ManyToManyField(
+        Author, related_name="posts_granted_access_to", blank=True)
 
     # Unlisted posts are hidden from users. By default posts should show to users.
     unlisted = models.BooleanField(default=False)
 
     def __str__(self):
-        post_snippet_length = 15 # number of chars to show in content snippet before cutting off with elipsis
+        # number of chars to show in content snippet before cutting off with elipsis
+        post_snippet_length = 15
         result = f'{self.visibility} post by {self.author}: '
         result += f'"{self.content[:post_snippet_length]}{"..." if len(self.content) >= post_snippet_length else ""}"'
         return result

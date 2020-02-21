@@ -1,10 +1,13 @@
 from django.db import models
-from authors.models import Author
+from users.models import Author
 from posts.models import Post
+
 
 from uuid import uuid4
 
 # Create your models here.
+
+
 class Comment(models.Model):
     # Comment ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
@@ -15,7 +18,8 @@ class Comment(models.Model):
         (TYPE_PLAIN, "plain text"),
         (TYPE_MARKDOWN, "markdown")
     )
-    contentType = models.CharField(max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
+    contentType = models.CharField(
+        max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
 
     content = models.TextField()
 
@@ -28,5 +32,6 @@ class Comment(models.Model):
     parentPost = models.ForeignKey(Post, on_delete=models.CASCADE)
 
     def __str__(self):
-        snippet_length = 15 # Number of characters to include as snippet before cutting off with elipsis
+        # Number of characters to include as snippet before cutting off with elipsis
+        snippet_length = 15
         return f'{self.author} commented "{self.content[:snippet_length]}{"..." if len(self.content) >= snippet_length else ""}"'
