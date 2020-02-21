@@ -11,7 +11,7 @@ class Category(models.Model):
     name = models.CharField(max_length=256, null=False, unique=True)
 
     def __str__(self):
-        return "{}".format(self.name)
+        return f'{self.name}'
 
 
 class Post(models.Model):
@@ -89,8 +89,6 @@ class Post(models.Model):
     def __str__(self):
         # number of chars to show in content snippet before cutting off with elipsis
         post_snippet_length = 15
-        result = "{} post by {}: ".format(self.visibility, self.author)
-        result += "{}".format(self.content[:post_snippet_length])
-        if len(self.content) >= post_snippet_length:
-            result += "..."
+        result = f'{self.visibility} post by {self.author}: '
+        result += f'"{self.content[:post_snippet_length]}{"..." if len(self.content) >= post_snippet_length else ""}"'
         return result

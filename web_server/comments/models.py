@@ -34,8 +34,4 @@ class Comment(models.Model):
     def __str__(self):
         # Number of characters to include as snippet before cutting off with elipsis
         snippet_length = 15
-        result = "{} commented {}".format(
-            self.author, self.content[:snippet_length])
-        if len(self.content) >= snippet_length:
-            result += "..."
-        return result
+        return f'{self.author} commented "{self.content[:snippet_length]}{"..." if len(self.content) >= snippet_length else ""}"'
