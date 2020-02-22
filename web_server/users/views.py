@@ -38,7 +38,7 @@ def register(request):
                 host = "http://" + host
 
             url = host + "/author/" + str(user.id)
-            print(url)
+
             # set user url
             user.url = url
             # set user id

@@ -37,8 +37,8 @@ class Author(AbstractUser):
                           editable=False)
     uid = models.URLField(primary_key=False, max_length=500)
 
-    bio = models.TextField()
+    bio = models.TextField(blank=True)
     host = models.URLField()
-    display_name = models.CharField(max_length=256)
+    display_name = models.CharField(max_length=256, blank=True)
     url = models.URLField(max_length=500)
-    github = models.URLField()
+    github = models.URLField(blank=True)
