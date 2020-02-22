@@ -1,13 +1,13 @@
-var visibility = document.getElementById("Visibility");
+var visibility = document.getElementById("visi");
 
 var visibleTo = document.getElementById("checkPrivate");
 
 
 function visibility_changed(){
 	if (visibility.value == 'private') {
-	    document.getElementById("visibleTo").disabled = false;
+	    document.getElementById("visibleTo").style.visibility = "visible";
 	}
 	else {
-		document.getElementById("visibleTo").disabled = true;
+		document.getElementById("visibleTo").style.visibility = "hidden";
 	}
 }

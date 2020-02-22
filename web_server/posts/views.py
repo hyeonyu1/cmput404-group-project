@@ -15,7 +15,8 @@ def retrieve_single_post_with_id(request, post_id):
         return HttpResponse("<h1>http://service/posts/{} POST</h1>".format(post_id))
     # Get a single post
     elif request.method == 'GET':
-        return HttpResponse("<h1>http://service/posts/{} GET</h1>".format(post_id))
+        #return HttpResponse("<h1>http://service/posts/{} GET</h1>".format(post_id))
+        return render(request, 'viewPost.html')
     return None
 
 def comments_retrieval_and_creation_to_post_id(request, post_id):

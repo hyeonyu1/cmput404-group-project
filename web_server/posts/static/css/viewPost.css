@@ -1,9 +1,5 @@
 @charset "UTF-8";
 
-body {
-  font-size: 14pt;
-}
-
 .topBar{
 	display: flex;
 }
@@ -20,6 +16,7 @@ body {
   line-height: 1;
   align-content: left;
   margin-top: 10pt;
+  margin-left: 10pt;
 }
 
 .profile{
@@ -32,24 +29,4 @@ body {
   float: right;
   margin-right: 3pt;
   margin-top: 22pt;
-}
-
-label {
-  font-size: 150%;
-}
-
-#description {
-  height:50pt;
-  width: 40%;
-  text-align: left;
-  justify-content: top;
-}
-
-select{
-  width: 20%;
-  font-size: 14pt;
-}
-
-button {
-   font-size: 14pt;
 }
