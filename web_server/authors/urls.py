@@ -9,7 +9,9 @@ urlpatterns = [
     path('<str:author1_id>/friends/<str:author2_id>/',
          views.check_if_two_authors_are_friends),
     path('<str:author_id>/', views.retrieve_author_profile),
+    path('<str:author_id>/update', views.update_author_profile),
     path('unfriend', views.unfriend),
     path('<str:author_id>/addfriend',
          views.view_list_of_available_authors_to_befriend)
+
 ]

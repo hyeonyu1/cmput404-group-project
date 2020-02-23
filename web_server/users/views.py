@@ -30,7 +30,7 @@ def register(request):
             # wait for admin permission to activate account
             user.is_active = False
             host = request.get_host()
-            print(user.id)
+
             if request.is_secure():
 
                 host = "https://" + host
@@ -38,7 +38,7 @@ def register(request):
                 host = "http://" + host
 
             url = host + "/author/" + str(user.id)
-            print(url)
+
             # set user url
             user.url = url
             # set user id

@@ -12,19 +12,24 @@ class UserRegisterForm(UserCreationForm):
     last_name = forms.CharField(
         label="lastname", max_length=150, required=True)
     display_name = forms.CharField(
-        label="displayname", max_length=256, required=True
+        label="displayname", max_length=256, required=False, help_text="optional"
     )
-    email = forms.EmailField()
+    email = forms.EmailField(required=True)
+
+    bio = forms.CharField(label="bio", required=False, help_text="optional")
+
+    github = forms.URLField(
+        label="github", required=False, help_text="optional")
 
     class Meta:
         model = Author
-        fields = ['username', 'first_name', 'last_name',
-                  'display_name', 'email', 'password1', 'password2']
+        fields = ['username', 'email', 'password1', 'password2', 'first_name', 'last_name',
+                  'display_name', 'bio', 'github']
 
 
 class UserChangeForm(UserChangeForm):
 
     class Meta:
         model = Author
-        fields = ['username', 'first_name', 'last_name',
-                  'display_name', 'email']
+        fields = ['username', 'password', 'url', 'uid', 'first_name', 'last_name',
+                  'display_name', 'email', 'github', 'bio', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions']

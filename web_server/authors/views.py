@@ -7,6 +7,7 @@ from posts.models import Post
 from comments.models import Comment
 from django.db.models import Q
 
+
 import json
 # Ida Hou
 # return a list of author id that are currently stored in database and
@@ -68,11 +69,68 @@ def unfriend(request):
         return HttpResponse("Unfriended !", status=200)
 
     return HttpResponse("Method Not Allowed", status=405)
+# handler for endpoint: http://service/author/<str:author_id>/update
+# post body data requirement
+# require a json objects with following fields:
+# first_name, last_name, email, bio, github, display_name, delete
+# allow authors delete themselves (delete  = True if to be deleted)
+# if no changes to above field, original values should be passed
+# username, uid, id, url, host of author can't be changed
+
+
+def update_author_profile(request, author_id):
+    if request.method != 'POST':
+        return HttpResponse("Method Not Allowed", status=405)
+    if not Author.objects.filter(id=author_id).exists():
+        return HttpResponse("Author Does not Exist", status=404)
+    # unpack post body data
+    body = request.body.decode('utf-8')
+    body = json.loads(body)
+    delete = body.get('delete', None)
+    if delete is None:
+        return HttpResponse("Post body missing fields: delete", status=404)
+
+    first_name = body.get('first_name', None)
+    if first_name is None:
+        return HttpResponse("Post body missing fields: first_name", status=404)
+
+    last_name = body.get('last_name', None)
+    if last_name is None:
+        return HttpResponse("Post body missing fields: last_name", status=404)
+
+    email = body.get('email', None)
+    if email is None:
+        return HttpResponse("Post body missing fields: email", status=404)
+
+    bio = body.get('bio', None)
+    if bio is None:
+        return HttpResponse("Post body missing fields: bio", status=404)
+
+    github = body.get('github', None)
+    if github is None:
+        return HttpResponse("Post body missing fields: github", status=404)
+
+    display_name = body.get('display_name', None)
+    if display_name is None:
+        return HttpResponse("Post body missing fields: display_name", status=404)
+
+    if delete:
+        author_to_be_deleted = Author.objects.get(
+            pk=author_id)
+        author_to_be_deleted.delete()
+    else:
+        obj, created = Author.objects.update_or_create(
+            id=author_id,
+            defaults={'first_name': first_name, 'last_name': last_name,
+                      'email': email, 'bio': bio, 'github': github,
+                      'display_name': display_name},
+        )
+
+    return HttpResponse("Author successfully updated", status=200)
+
 
 # Ida Hou
 # service/author/{author_id} endpoint handler
-
-
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
 
