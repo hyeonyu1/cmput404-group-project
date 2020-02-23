@@ -68,6 +68,7 @@ def retrieve_all_public_posts_on_local_server(request):
     default_page_size = "10"
     max_page_size = 50
     def json_handler(req):
+        # @todo: how to extract this pagination behavior so that other endpoints can use it automatically?
         page = int(req.GET.get('page', "1"))
         size = min(int(req.GET.get('size', default_page_size)), max_page_size)
         posts = Post.objects.filter(visibility="PUBLIC")
@@ -115,6 +116,7 @@ def retrieve_all_public_posts_on_local_server(request):
         return JsonResponse(output)
 
     def html_handler(req):
+        # @todo add pagination behaviour once it can be extracted from other handler
         posts = Post.objects.filter(visibility="PUBLIC")
         html = ""
         for post in posts:
@@ -128,16 +130,6 @@ def retrieve_all_public_posts_on_local_server(request):
             "text/html": html_handler
         }
     })
-    # Determine desired output
-    # requested_content_type = request.headers['accept']
-    # if requested_content_type == 'application/json':
-    #     pass
-    # elif requested_content_type == 'text/html':
-    #     pass
-    # else:
-    #     pass
-    #
-    # return HttpResponse("<h1>http://service/posts</h1>")
 
 # access to a single post with id = {POST_ID}
 # http://service/posts/{POST_ID} 
