@@ -86,6 +86,9 @@ class Post(models.Model):
     # Unlisted posts are hidden from users. By default posts should show to users.
     unlisted = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ["published"]
+
     def __str__(self):
         # number of chars to show in content snippet before cutting off with elipsis
         post_snippet_length = 15
