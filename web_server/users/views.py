@@ -30,7 +30,7 @@ def register(request):
             # wait for admin permission to activate account
             user.is_active = False
             host = request.get_host()
-            print(user.id)
+
             if request.is_secure():
 
                 host = "https://" + host
