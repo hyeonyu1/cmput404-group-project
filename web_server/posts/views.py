@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 
 from .models import Post
+from comments.models import Comment
 
 from json import loads
 from django.core import serializers
@@ -20,11 +21,28 @@ def retrieve_all_public_posts_on_local_server(request):
     def json_handler(posts, pager, pagination_uris):
         # Use Django's serializers to encode the posts as a python object
         json_posts = loads(serializers.serialize('json', posts))
-        # But then filter because the format from the serializer contains meta data
-        json_posts = [post['fields'] for post in json_posts]
 
-        # @todo this serialization needs to expand the author field (rn it is only the UUID)
-        # @todo this serialization needs to include a query to grab comments
+        # Explicitly add authors to the serialization
+        # @todo should we reduce the number of fields that get served here?
+        json_authors = loads(serializers.serialize('json', [post.author for post in posts]))
+        for i in range(0, len(json_posts)):
+            json_posts[i]['fields']['author'] = json_authors[i]['fields']  # avoid inserting the meta data
+
+            # As per the specification, get the 5 most recent comments
+            comments = Comment.objects.filter(parentPost=posts[i])[:5]
+            comments_json = loads(serializers.serialize('json', comments))
+            # @todo again should we reduce the number of fields that get served here?
+            comments_author_json = loads(serializers.serialize('json', [comment.author for comment in comments]))
+            # Explicitly add authors to the comments
+            for j in range(0, len(comments_json)):
+                comments_json[j]['fields']['author'] = comments_author_json[i]['fields']  # avoid inserting meta data
+            # Strip meta data from each comment
+            comments_json = [comment['fields'] for comment in comments_json]
+            json_posts[i]['fields']['comments'] = comments_json
+
+
+        # And filter out the meta data from the top level object
+        json_posts = [post['fields'] for post in json_posts]
 
         output = {
             "query": "posts",
