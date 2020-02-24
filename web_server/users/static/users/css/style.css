@@ -36,26 +36,26 @@
 	text-align: center;
 }
 
-.profile-part-I {
+.profile-image {
 	display:inline-block;
 	width: 50%;
 	transform: translateX(10%);
 }
 
-.profile-part-II {
+.profile-info {
 	display:inline-block;
 
 	width: 50%;
 	position: absolute;
 }
 
-.profile-part-III{
+.profile-info-head{
 	margin-top: 10%;
 	width: 80%;
 	position: relative;
 }
 
-.profile-part-IV{
+.profile-info-body{
 	margin-top: 10%;
 	width: 60%;
 

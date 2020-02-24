@@ -1,10 +1,10 @@
-const palette = [
-  "#9BDAF3","#D8CCF4","#FAC2BB","#F8CD94","#9EDDDD","#FBE491","#FFC4E4","#C7E59A","#D0D3D6",
-  "#34B3E4","#A589D9","#F16D64","#F59640","#35BEC1","#F3C746","#F371AF","#95C753","#A0A3A6",
-  "#008CC9","#7C5BBB","#DD2E1F","#EC640C","#009EA5","#E6A700","#E2247F","#60AA14","#737679",
-  "#005E93","#573B93","#A40F1C","#AF4104","#00727D","#AA7D00","#B10C5C","#3B7511","#000000"
-];
+/*
+	Simple Mandala drawing app
+	Author: Kevin Levron
+	Link: https://codepen.io/soju22/pen/gEYJoO Accessed on 24/02/2020
+*/
 
+/* This part is only used for mandala drawing */
 Vue.component('switch-btn', {
   props: ['id', 'label', 'value'],
   template: '#switchBtn',

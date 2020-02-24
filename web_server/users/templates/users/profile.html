@@ -5,19 +5,19 @@
 
 <body>
     <div>
-        <div class="container profile-part-I">
+        <div class="container profile-image">
             <div>
                 <img src="{% static 'users/images/profile.png' %}" height="100%" width="100%">
             </div>
 
         </div>
-        <div class="container profile-part-II">
+        <div class="container profile-info">
             <div class="container">
-                <div class="container profile-part-III">
+                <div class="container profile-info-head">
                     <h1 style="text-align: center"> {{user.first_name}}, Welcome to Mandala  </h1>
                 </div>
 
-                <div class="container profile-part-IV">
+                <div class="container profile-info-body">
                     <form action="{% url 'profile' %}" method="post">
                         <div class="form-group">
                             <label for="new_fname">Firstname: </label>
