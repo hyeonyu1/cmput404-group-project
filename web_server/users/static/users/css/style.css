@@ -1,0 +1,73 @@
+.background-img {
+	background: url('/static/users/images/background.jpg');
+	background-size:100% 100%;
+}
+
+.item-center {
+	margin-top: 10px;
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	-webkit-transform: translateX(-50%) translateY(-50%);
+}
+
+.login-l {
+	float: left;
+	width: 70%;
+}
+
+.login-r {
+	margin-left: 72%;
+	width: 20%;
+	position: fixed;
+	top: 50%;
+	-webkit-transform: translateY(-50%);
+}
+
+.register {
+	margin-top: 20px;
+	width: 35%;
+	margin-bottom: 40px;
+}
+
+.register-title {
+	margin-top: 10px;
+	margin-bottom: 40px;
+	text-align: center;
+}
+
+.profile-part-I {
+	display:inline-block;
+	width: 50%;
+	transform: translateX(10%);
+}
+
+.profile-part-II {
+	display:inline-block;
+
+	width: 50%;
+	position: absolute;
+}
+
+.profile-part-III{
+	margin-top: 10%;
+	width: 80%;
+	position: relative;
+}
+
+.profile-part-IV{
+	margin-top: 10%;
+	width: 60%;
+
+}
+
+.parentElement{
+	position:relative;
+}
+
+.childElement{
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+
+}

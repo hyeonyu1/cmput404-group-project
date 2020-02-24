@@ -1,35 +1,50 @@
 {% extends "index.html" %}
-
-
-
 {% block content %}
-<div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo03"
-            aria-controls="navbarTogglerDemo03" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <a class="navbar-brand" href="#">Navbar</a>
+{% load static %}
+<link rel="stylesheet" href="{% static '/users/css/style.css' %}">
 
-        <div class="collapse navbar-collapse" id="navbarTogglerDemo03">
-            <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Link</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{%url 'logout'%}">Log Out</a>
-                </li>
-            </ul>
-            <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-info my-2 my-sm-0" type="submit">Search</button>
-            </form>
+<body>
+    <div>
+        <div class="container profile-part-I">
+            <div>
+                <img src="{% static 'users/images/profile.png' %}" height="100%" width="100%">
+            </div>
+
         </div>
-    </nav>
-    <h1>Hello! {{user.username}}</h1>
-</div>
+        <div class="container profile-part-II">
+            <div class="container">
+                <div class="container profile-part-III">
+                    <h1 style="text-align: center"> {{user.first_name}}, Welcome to Mandala  </h1>
+                </div>
+
+                <div class="container profile-part-IV">
+                    <form action="{% url 'profile' %}" method="post">
+                        <div class="form-group">
+                            <label for="new_fname">Firstname: </label>
+                            <input class="form-control" id="new_fname" type="text" name="new_fname" value="{{ user.first_name }}">
+                            <label for="new_lname">Lastname: </label>
+                            <input class="form-control" id="new_lname" type="text" name="new_lname" value="{{ user.last_name }}">
+                            <label for="new_dname">Displayname: </label>
+                            <input class="form-control" id="new_dname" type="text" name="new_dname" value="{{ user.display_name }}">
+                            <label for="new_email">Email: </label>
+                            <input class="form-control" id="new_email" type="text" name="new_email" value="{{ user.email }}">
+                            <label for="new_bio">Bio: </label>
+                            <input class="form-control" id="new_bio" type="text" name="new_bio" value="{{ user.bio }}">
+                            <label for="new_github">Github: </label>
+                            <input class="form-control" id="new_github" type="text" name="new_github" value="{{ user.github}}">
+
+                        </div>
+
+                        <input class="btn btn-primary " type="submit" value="Edit">
+                    </form>
+
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</body>
+
 
 {% endblock content %}

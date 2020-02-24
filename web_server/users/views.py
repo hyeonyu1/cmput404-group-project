@@ -19,6 +19,14 @@ class CustomLogin(auth_views.LoginView):
 
 @login_required
 def profile(request):
+    if(request.method == 'POST'):
+        first = request.POST['new_fname']
+        last = request.POST['new_lname']
+        user = User()
+        user.first_name = first
+        user.last_name = last
+        user.save()
+        return HttpResponse("OK!")        
     return render(request, 'users/profile.html')
 
 
@@ -54,3 +62,6 @@ def register(request):
     else:
         form = UserRegisterForm()
     return render(request, 'users/register.html', {'form': form})
+
+def mandala(request):
+    return render(request, 'users/mandala.html')
