@@ -4,7 +4,9 @@ from django.core.paginator import Paginator
 from .models import Post
 
 from urllib.parse import urlparse, urlunparse
-from json import dumps
+from json import loads
+from django.core import serializers
+
 
 class Endpoint:
     """
@@ -36,8 +38,7 @@ class Endpoint:
             max_page_size
         )
         self.page = int(request.GET.get('page', 1))
-        self.total_available_pages = None
-        self.total_results = None
+        self.pager = Paginator(self.query, self.page_size)
 
     def resolve(self):
         """
@@ -45,16 +46,54 @@ class Endpoint:
         Implicitly resolves the query to provide the data to the chosen handler.
         :return: HttpResponse from the handler
         """
+        # Filter the list of handlers based on http verb method
+        method_handlers = [handler for handler in self.handlers if handler.method == self.request.method]
+        if len(method_handlers) == 0:
+            supported_methods = set([handler.method for handler in self.handlers])
+            response = HttpResponse(f"Attempt to request endpoint using '{self.request.method}' method, "
+                                    f"but only one of methods in '{supported_methods}' allowed.",
+                                    status=405)
+            response["Allow"] = ", ".join(supported_methods)
+            return response
 
-    def _get_data_page(self):
-        """
-        Resolves the query and returns the data from the query
-        :return: list of query results
-        """
-        pager = Paginator(self.query, self.page_size)
-        self.total_available_pages = pager.num_pages
-        self.total_results = pager.count
-        return pager.get_page(self.page)
+        # Find out which response content types we can support on this method
+        supported_content_types = [handler.produces for handler in method_handlers]
+
+        # Find out which content type should be served to the user agent
+        accepted_content_types = self.request.headers['Accept'].split(',')
+        accepted_type = None
+        for content_type in accepted_content_types:
+            # Find and serve the first acceptable type to the user
+            if len(supported_content_types) == 0:
+                # We dont support any types
+                break
+            # @todo do we need to do actual pattern matching for things like 'application/*'
+            if content_type == '*/*':
+                # The user will accept anything, serve the first available type on this method
+                accepted_type = supported_content_types[0]
+                break
+            if content_type in supported_content_types:
+                accepted_type = content_type
+                break
+
+        if accepted_type is None:
+            return HttpResponse(f"Server unable to produce content of type {accepted_type}. "
+                                f"Available content types one of {supported_content_types}.",
+                                status=406)
+
+        # Filter method handlers based on the chosen content type, and choose the first one
+        handler = [handler for handler in method_handlers if handler.produces == accepted_type][0]
+
+        # Attempt to fulfill the request using the handler
+        try:
+            response = handler.handle(self.pager.get_page(self.page), self.pager, self._get_pagination_uris())
+            if issubclass(type(response), HttpResponse):
+                return response
+            else:
+                raise Exception("Response handler unable to produce HttpResponse like object")
+        except Exception as e:
+            return HttpResponse(f"The server failed to handle your request. Cause Hint: {e}", status=500)
+
 
     def _get_pagination_uris(self):
         """
@@ -77,7 +116,7 @@ class Endpoint:
         next_uri = None
         next_query_dict = QueryDict(query).copy()
         # We only set the next page if we are not on the last page
-        if self.page < self.total_available_pages:
+        if self.page < self.pager.num_pages:
             next_query_dict['page'] = int(next_query_dict['page']) + 1 if "page" in next_query_dict else 2
             next_query = next_query_dict.urlencode()
             next_uri = urlunparse((scheme, netloc, path, params, next_query, fragment))
@@ -91,10 +130,7 @@ class Endpoint:
             prev_uri = urlunparse((scheme, netloc, path, params, prev_query, fragment))
         # END STACKOVERFLOW DERIVATIVE CONTENT
 
-        return (prev_uri, next_uri)
-
-
-
+        return prev_uri, next_uri
 
 
 class Handler:
@@ -109,15 +145,9 @@ class Handler:
         :param handling_func: function used to handle the request.
             Should take the following arguments:
                 results: the list of results from the query, may have been filtered by the Endpoint
-                page: which page these results come from
-                page_size: the number of results that was requested,
-                    len(results) may not be the same if not enough results were available to be served.
-                total_available: total number of results available across all pages
-                total_pages_available: total number of pages of results
-                next_page: absolute URI to the next page of results, maintains other query string parameters.
-                    If this is the last page then this field will be None
-                prev_page: absolute URI to the previous page of results, maintains other query string parameters.
-                    If this is the first page then this field will be None
+                pager: A Paginator that has been loaded with the query to get information about pagination
+                pagination_uris: A tuple of absolute_uris of form (previous_page, next_page).
+                    If there is no previous or next page the uri should be None
             And return:
                 A valid HttpResponse object consistent with it's produces string
         """
@@ -125,10 +155,10 @@ class Handler:
         self.produces = produces
         self.handler = handling_func
 
-    def handle(self, results, page=None, page_size=None, total_available=None, total_pages_available=None, next_page=None, prev_page=None):
+    def handle(self, results, pager, pagination_uris):
         # Attempt to fulfill the request using the handler
         try:
-            response = self.handler(results, page, page_size, total_available, total_pages_available, next_page, prev_page)
+            response = self.handler(results, pager, pagination_uris)
             if issubclass(type(response), HttpResponse):
                 return response
             else:
@@ -196,83 +226,50 @@ def retrieve_all_public_posts_on_local_server(request):
     :param request: should specify Accepted content-type, default is HTML
     :returns: application/json | text/html
     """
+    def json_handler(posts, pager, pagination_uris):
+        # Use Django's serializers to encode the posts as a python object
+        json_posts = loads(serializers.serialize('json', posts))
+        # But then filter because the format from the serializer contains meta data
+        json_posts = [post['fields'] for post in json_posts]
 
-
-    default_page_size = "10"
-    max_page_size = 50
-    def json_handler(req):
-        # @todo: how to extract this pagination behavior so that other endpoints can use it automatically?
-        page = int(req.GET.get('page', "1"))
-        size = min(int(req.GET.get('size', default_page_size)), max_page_size)
-        posts = Post.objects.filter(visibility="PUBLIC")
-        pager = Paginator(posts, size)
+        # @todo this serialization needs to expand the author field (rn it is only the UUID)
+        # @todo this serialization needs to include a query to grab comments
 
         output = {
+            "query": "posts",
             "count": pager.count,
-            "size": size,
-            # @todo how to implement better serialization of posts in a general way?
-            "posts": [
-                {
-                    "author": post.author.display_name,
-                    "content": post.content
-                } for post in pager.get_page(page)
-            ]
+            "size": len(posts),
+            "posts": json_posts
         }
-
-        pagination_uri = req.build_absolute_uri()
-        # Page and size might not have been passed in to this request, so we need to build a pagination url
-        # that includes these variables. However we cannot simply modify the request object, so we must
-        # deconstruct, modify, and reconstruct the uri.
-
-        # START STACKOVERFLOW DERIVATIVE CONTENT
-        # This solution has been provided via StackOverflow, and the following code snippet is CC-BY-SA
-        # Original Question: https://stackoverflow.com/questions/5755150/altering-one-query-parameter-in-a-url-django
-        # Question By: EvdB https://stackoverflow.com/users/5349/evdb
-        # Answer By: Tom Christie https://stackoverflow.com/users/596689/tom-christie
-        (scheme, netloc, path, params, query, fragment) = urlparse(pagination_uri)
-
-        next_query_dict = QueryDict(query).copy()
-        # We only set the next page if we are not on the last page
-        if page < pager.num_pages:
-            next_query_dict['page'] = int(next_query_dict['page']) + 1 if page in next_query_dict else 2
-            next_query = next_query_dict.urlencode()
-            output['next'] = urlunparse((scheme, netloc, path, params, next_query, fragment))
-
-        prev_query_dict = QueryDict(query).copy()
-        # We only set the previous page if we are not on the first page
-        if page > 1:
-            prev_query_dict['page'] = int(prev_query_dict['page']) - 1  # if page in prev_query_dict else 1
-            prev_query = prev_query_dict.urlencode()
-            output['prev'] = urlunparse((scheme, netloc, path, params, prev_query, fragment))
-        # END STACKOVERFLOW DERIVATIVE CONTENT
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
 
         return JsonResponse(output)
 
-    def html_handler(req):
-        # @todo add pagination behaviour once it can be extracted from other handler
-        posts = Post.objects.filter(visibility="PUBLIC")
+    def html_handler(posts, pager, pagination_uris):
         html = ""
         for post in posts:
             html += f"<p>{post.__str__()}</p>"
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            html += f"<a href='{prev_uri}'>PREV PAGE</a>"
+        if next_uri:
+            html += f"<a href='{next_uri}'>NEXT PAGE</a>"
 
         return HttpResponse(html)
-
-    def json_handler(posts)
 
 
     endpoint = Endpoint(request,
                         Post.objects.filter(visibility="PUBLIC"),
                         [
-                            Handler("GET", "application/json", json_handler),
-                            Handler("GET", "text/html", html_handler)
+                            Handler("GET", "text/html", html_handler),
+                            Handler("GET", "application/json", json_handler)
                         ])
 
-    return __handle_api_request(request, {
-        "GET": {
-            "application/json": json_handler,
-            "text/html": html_handler
-        }
-    })
+    return endpoint.resolve()
 
 # access to a single post with id = {POST_ID}
 # http://service/posts/{POST_ID} 
