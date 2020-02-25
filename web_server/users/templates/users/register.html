@@ -1,14 +1,14 @@
 {% extends 'index.html' %}
 {% load static %}
 {% load crispy_forms_tags %}
-{% block content %}
+{% block index_content %}
 <link rel="stylesheet" href="{% static '/users/css/style.css' %}">
 <div class="container register">
 
 	<form method="POST">
 		{% csrf_token %}
 		<fieldset class="form-group">
-			<h2 class="register-title">Join   Mandala</h2>
+			<h2 class="register-title">Join Mandala</h2>
 			{{form | crispy}}
 		</fieldset>
 		<div class="form-group">
@@ -26,4 +26,4 @@
 
 </div>
 
-{% endblock content %}
+{% endblock %}

@@ -1,7 +1,5 @@
-<script>
-    window.location = "{% url 'login' %}";
-</script>
-<!--
+{% extends "index.html" %}
+{% block index_content %}
 <div class="container m-3">
     <h2>You have been logged out!</h2>
     <div class="border-top pt-3">
@@ -10,6 +8,4 @@
         </small>
     </div>
 </div>
--->
-
-
+{% endblock %}
