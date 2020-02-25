@@ -23,16 +23,15 @@ def retrieve_all_public_posts_on_local_server(request):
         json_posts = loads(serializers.serialize('json', posts))
 
         # Explicitly add authors to the serialization
-        # @todo should we reduce the number of fields that get served here?
-        json_authors = loads(serializers.serialize('json', [post.author for post in posts]))
+        author_exclude_fields = ('password',"is_superuser", "is_staff", "groups", "user_permissions")
+        json_authors = loads(serializers.serialize('json_e', [post.author for post in posts], exclude_fields=author_exclude_fields))
         for i in range(0, len(json_posts)):
             json_posts[i]['fields']['author'] = json_authors[i]['fields']  # avoid inserting the meta data
 
             # As per the specification, get the 5 most recent comments
             comments = Comment.objects.filter(parentPost=posts[i])[:5]
             comments_json = loads(serializers.serialize('json', comments))
-            # @todo again should we reduce the number of fields that get served here?
-            comments_author_json = loads(serializers.serialize('json', [comment.author for comment in comments]))
+            comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
             # Explicitly add authors to the comments
             for j in range(0, len(comments_json)):
                 comments_json[j]['fields']['author'] = comments_author_json[i]['fields']  # avoid inserting meta data
