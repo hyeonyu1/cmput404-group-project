@@ -1,12 +1,11 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
-from django.contrib.auth.models import User
 from django.contrib.auth import login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm
 from django.contrib.auth import views as auth_views
-
+from django.urls import reverse
 
 class CustomLogin(auth_views.LoginView):
     def form_valid(self, form):
@@ -22,11 +21,19 @@ def profile(request):
     if(request.method == 'POST'):
         first = request.POST['new_fname']
         last = request.POST['new_lname']
-        user = User()
-        user.first_name = first
-        user.last_name = last
-        user.save()
-        return HttpResponse("OK!")        
+        email = request.POST['new_email']
+        dname = request.POST['new_dname']
+        gitlink = request.POST['new_github']
+        bio = request.POST['new_bio']
+        author = request.user
+        author.first_name = first
+        author.last_name = last
+        author.email = email
+        author.github = gitlink
+        author.display_name = dname
+        author.bio = bio
+        author.save()
+        return HttpResponseRedirect(reverse('profile'))
     return render(request, 'users/profile.html')
 
 
