@@ -58,6 +58,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+SERIALIZATION_MODULES = {
+    "json_e": "social_distribution.utils.json_e"
+}
+
 ROOT_URLCONF = 'social_distribution.urls'
 
 TEMPLATES = [
