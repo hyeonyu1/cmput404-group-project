@@ -6,9 +6,11 @@ from friendship.models import Friend
 from posts.models import Post
 from comments.models import Comment
 from django.db.models import Q
+from django.utils.timezone import make_aware
 
 
 import json
+import datetime
 # Ida Hou
 # return a list of author id that are currently stored in database and
 # are not friend with current author
@@ -171,14 +173,19 @@ def post_creation_and_retrival_to_curr_auth_user(request):
     if request.method == 'POST':
         # POST to http://service/author/posts
         # Create a post to the currently authenticated user
-
+        print('REQUEST', request)
+        
         # First get the information out of the request body
         body = request.body.decode('utf-8')
-        body = json.loads(body)
-        post = body['post']
+        size = len(body)
+        #body = json.load(body)
+        body = dict(x.split("=") for x in body.split("&"))
+        print("BODY",body)
+        #post = body['post']
+        post = body
         author = post['author']
-        comments = post['comments']
-        categories = post['categories']
+        #comments = post['comments']
+        #categories = post['categories']
         visible_to = post['visibleTo']
 
         new_post = Post()
@@ -187,12 +194,12 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         #: "A post title about a post about web dev",
         new_post.title = post['title']
         #: "http://lastplaceigotthisfrom.com/posts/yyyyy",
-        new_post.source = post['source']
+        #new_post.source = post['source']
         #: "http://whereitcamefrom.com/posts/zzzzz",
-        new_post.origin = post['origin']
+        #new_post.origin = post['origin']
         # : "This post discusses stuff -- brief",
         new_post.description = post['description']
-        new_post.contentType = post['contentType']  # : "text/plain",
+        #new_post.contentType = post['contentType']  # : "text/plain",
         new_post.content = post['content']         #: "stuffs",
 
         # Create author object
@@ -204,22 +211,26 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # @todo allow adding categories to new post
         # new_post.categories = post['categories']   #: LIST,
 
-        new_post.count = post['count']             #: 1023,
-        new_post.size = post['size']               #: 50,
+
+        #initilly total comments is zero
+        new_post.count = 0            #: 1023,
+    
+        new_post.size = size               #: 50,
+        
         #: "http://service/posts/{post_id}/comments",
-        new_post.next = post['next']
+        #new_post.next = post['next']
 
         # @todo allow adding comments to new post
         # new_post.comments = post['comments']       #: LIST OF COMMENT,
 
         #: "2015-03-09T13:07:04+00:00",
-        new_post.published = post['published']
+        new_post.published = str(make_aware(datetime.datetime.now()))
         new_post.visibility = post['visibility']   #: "PUBLIC",
 
         # @todo allow setting visibility of new post
         # new_post.visibleTo = post['visibleTo']     #: LIST,
 
-        new_post.unlisted = post['unlisted']       #: true
+        #new_post.unlisted = post['unlisted']       #: true
 
         new_post.save()
 

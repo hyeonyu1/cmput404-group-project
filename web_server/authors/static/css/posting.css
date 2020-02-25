@@ -39,6 +39,12 @@ label {
 }
 
 #description {
+  width: 40%;
+  text-align: left;
+  justify-content: top;
+}
+
+#content {
   height:50pt;
   width: 40%;
   text-align: left;

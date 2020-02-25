@@ -16,30 +16,39 @@
 		<hr>
        	
        	<!--@TODO need to make this so post is sent to server-->
-       	<form action="/author/posts/" method="POST">
+       	<form action="/author/posts/" method="POST" id="postForm">
        		{% csrf_token %}
-       		<input type="hidden" id="authorId" value={{author_id}}>
+       		<input type="hidden" name="author" value={{author}}>
        		<label for="title">Title</label> <br>
 			<textarea type="textarea" id="title" name="title"></textarea><br><br>
 			<label for="description">Description</label> <br>
 	       	<textarea type="textarea" id="description" name="description"></textarea><br><br>
-	       	
-	       	<select id="visi" onclick="visibility_changed()">
-			  <option value="public">Public</option>
-			  <option value="friends">Friends</option>
-			  <option value="foaf">Friends of A Friend</option>
-			  <option value="private" >Private</option>
-			  <option value="serverOnly">Server Only</option>
-			</select>
+	    	<label for="content">Content</label> <br>
+	       	<textarea type="textarea" id="content" name="content"></textarea>
+	    </form>
 
-			<br><br>
-			<select id="visibleTo" style="visibility: hidden;">
-				<option>@TODO get all Users here</option>
-			</select>
-			<br><br>
+	    <br><br>
 
-		    <button type="submit">Post</button>
-		</form>
+       	<label for="visi">Choose the Visibility of your post:</label> <br>
+       	<select id="visi" form="postForm" name="visibility" onclick="visibility_changed()">
+		  <option value="public">Public</option>
+		  <option value="friends">Friends</option>
+		  <option value="foaf">Friends of A Friend</option>
+		  <option value="private" >Private</option>
+		  <option value="serverOnly">Server Only</option>
+		</select>
+
+		<br><br>
+		<div id="visibleTo" style="visibility: hidden;">
+		<label for="visibleFor">Who can view your post:</label> <br>
+		<select id="visibleFor" form="postForm" name="visibleTo">
+			<option>@TODO get all Users here</option>
+		</select>
+		</div>
+		<br><br>
+
+	    <button type="submit" form="postForm">Post</button>
+	
   		
 
 		<script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
