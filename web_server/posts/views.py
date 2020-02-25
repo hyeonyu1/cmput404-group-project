@@ -135,11 +135,8 @@ def retrieve_single_post_with_id(request, post_id):
 
         return HttpResponse(html)
 
-    # POST to http://service/posts/{POST_ID} , sending the body
-    if request.method == 'POST':
-        return HttpResponse("<h1>http://service/posts/{} POST</h1>".format(post_id))
     # Get a single post
-    elif request.method == 'GET':
+    if request.method == 'GET':
         endpoint = Endpoint(request,
                             Post.objects.filter(id=post_id),
                             [
