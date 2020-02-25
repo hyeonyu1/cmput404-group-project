@@ -7,7 +7,7 @@ from comments.models import Comment
 from json import loads
 from django.core import serializers
 
-from social_distribution.utils.endpoint_utils import Endpoint, Handler
+from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler
 
 
 def retrieve_all_public_posts_on_local_server(request):
@@ -18,7 +18,7 @@ def retrieve_all_public_posts_on_local_server(request):
     :param request: should specify Accepted content-type
     :returns: application/json | text/html
     """
-    def json_handler(posts, pager, pagination_uris):
+    def json_handler(request, posts, pager, pagination_uris):
         # Use Django's serializers to encode the posts as a python object
         json_posts = loads(serializers.serialize('json', posts))
 
@@ -59,7 +59,7 @@ def retrieve_all_public_posts_on_local_server(request):
 
         return JsonResponse(output)
 
-    def html_handler(posts, pager, pagination_uris):
+    def html_handler(request, posts, pager, pagination_uris):
         html = ""
         for post in posts:
             html += f"<p>{post.__str__()}</p>"
@@ -75,8 +75,8 @@ def retrieve_all_public_posts_on_local_server(request):
     endpoint = Endpoint(request,
                         Post.objects.filter(visibility="PUBLIC"),
                         [
-                            Handler("GET", "text/html", html_handler),
-                            Handler("GET", "application/json", json_handler)
+                            PagingHandler("GET", "text/html", html_handler),
+                            PagingHandler("GET", "application/json", json_handler)
                         ])
 
     return endpoint.resolve()

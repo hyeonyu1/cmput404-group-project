@@ -1,5 +1,5 @@
 from django.core.paginator import Paginator
-from django.http import HttpResponse, QueryDict
+from django.http import HttpResponse, JsonResponse, QueryDict
 from urllib.parse import urlparse, urlunparse
 
 class Endpoint:
@@ -78,16 +78,24 @@ class Endpoint:
         # Filter method handlers based on the chosen content type, and choose the first one
         handler = [handler for handler in method_handlers if handler.produces == accepted_type][0]
 
-        # Attempt to fulfill the request using the handler
+        # Attempt to fulfill the request using the handler, provide information the Handler needs
         try:
-            response = handler.handle(self.pager.get_page(self.page), self.pager, self._get_pagination_uris())
+            response = None
+            if isinstance(handler, PagingHandler):
+                response = handler.handle(self.request, self.pager.get_page(self.page), self.pager,
+                                          self._get_pagination_uris())
+            elif isinstance(handler, Handler):
+                response = handler.handle(self.request)
+            else:
+                raise TypeError("Handler must be class or subclass of Handler class")
+
+            # Validate Response
             if issubclass(type(response), HttpResponse):
                 return response
             else:
-                raise Exception("Response handler unable to produce HttpResponse like object")
+                raise TypeError("Response handler unable to produce HttpResponse like object")
         except Exception as e:
             return HttpResponse(f"The server failed to handle your request. Cause Hint: {e}", status=500)
-
 
     def _get_pagination_uris(self):
         """
@@ -131,7 +139,7 @@ class Handler:
     """
     Handles a request
     """
-    def __init__(self, method, produces, handling_func):
+    def __init__(self, method, produces, handling_func, requires_authentication=True):
         """
         Create the handler
         :param method: Which http verb this handler deals with (e.g. "GET" or "POST")
@@ -148,15 +156,34 @@ class Handler:
         self.method = method
         self.produces = produces
         self.handler = handling_func
+        self.requires_authentication = requires_authentication
 
-    def handle(self, results, pager, pagination_uris):
-        # Attempt to fulfill the request using the handler
-        try:
-            response = self.handler(results, pager, pagination_uris)
-            if issubclass(type(response), HttpResponse):
-                return response
-            else:
-                raise Exception("Response handler unable to produce HttpResponse like object")
-        except Exception as e:
-            return HttpResponse(f"The endpoint was reached, but the handler threw an unrecoverable error. "
-                                f"Cause Hint: {e}", status=500)
+    def handle(self, request):
+        """
+        Fulfil the request using the handler
+        :param request:
+        :return:
+        """
+        if self.requires_authentication and not request.user.is_authenticated:
+            return JsonResponse({
+                "success": False,
+                "message": "You must be logged in to access this Endpoint"
+            }, status=403)
+        return self.handler(request)
+
+
+class PagingHandler(Handler):
+    """
+    This handler will be provided the results of the query provided to the Endpoint, along with information
+    about paging over that query.
+    """
+    def handle(self, request, results, pager, pagination_uris):
+        """
+        Handles the request using it's handler, gets the query results and pager information as well.
+        :param request: the original request
+        :param results:
+        :param pager:
+        :param pagination_uris:
+        :return:
+        """
+        return self.handler(request, results, pager, pagination_uris)

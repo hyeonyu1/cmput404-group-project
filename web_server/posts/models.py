@@ -46,7 +46,7 @@ class Post(models.Model):
     # post still exists, but the user has been deleted, as per reddit
     author = models.ForeignKey(Author, on_delete=models.PROTECT)
 
-    # Storing a list of comma delineated categories
+    # A post may belong to any number of categories
     categories = models.ManyToManyField(Category, blank=True)
 
     # Count of comments

@@ -1,18 +1,18 @@
-
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from users.models import Author
 from friendship.models import Friend
-from posts.models import Post
+from posts.models import Post, Category
 from comments.models import Comment
 from django.db.models import Q
 
 import json
+
+from social_distribution.utils.endpoint_utils import Endpoint, Handler
+
 # Ida Hou
 # return a list of author id that are currently stored in database and
 # are not friend with current author
-
-
 def view_list_of_available_authors_to_befriend(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method not Allowed", status=405)
@@ -110,7 +110,14 @@ def retrieve_author_profile(request, author_id):
 
 
 def post_creation_and_retrival_to_curr_auth_user(request):
-    if request.method == 'POST':
+    """
+    Endpoint handler for service/author/posts
+    POST is for creating a new post using the currently authenticated user
+    GET is for retrieving posts visible to currently authenticated user
+    :param request:
+    :return:
+    """
+    def create_new_post(request):
         # POST to http://service/author/posts
         # Create a post to the currently authenticated user
         # First get the information out of the request body
@@ -125,49 +132,54 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         new_post = Post()
 
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
-        #: "A post title about a post about web dev",
-        new_post.title = post['title']
-        #: "http://lastplaceigotthisfrom.com/posts/yyyyy",
-        new_post.source = post['source']
-        #: "http://whereitcamefrom.com/posts/zzzzz",
-        new_post.origin = post['origin']
-        # : "This post discusses stuff -- brief",
-        new_post.description = post['description']
+        new_post.title       = post['title']        #: "A post title about a post about web dev",
+        new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
+        new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
+        new_post.description = post['description']  # : "This post discusses stuff -- brief",
         new_post.contentType = post['contentType']  # : "text/plain",
-        new_post.content = post['content']         #: "stuffs",
-
-        # Create author object
-        # @todo This adds the post to the first author in the db, must get the author information from
-        # the authenticated user
-        author = Author.objects.all().first()
-        new_post.author = author                #: DICT,
-
-        # @todo allow adding categories to new post
-        # new_post.categories = post['categories']   #: LIST,
-
-        new_post.count = post['count']             #: 1023,
-        new_post.size = post['size']               #: 50,
-        #: "http://service/posts/{post_id}/comments",
-        new_post.next = post['next']
+        new_post.content     = post['content']      #: "stuffs",
+        new_post.author      = request.user         # the authenticated user
+        # Categories added after new post is saved
+        new_post.count       = post['count']        #: 1023,
+        new_post.size        = post['size']         #: 50,
+        new_post.next        = post['next']         #: "http://service/posts/{post_id}/comments",
 
         # @todo allow adding comments to new post
-        # new_post.comments = post['comments']       #: LIST OF COMMENT,
+        # new_post.comments = post['comments']  #: LIST OF COMMENT,
 
-        #: "2015-03-09T13:07:04+00:00",
-        new_post.published = post['published']
-        new_post.visibility = post['visibility']   #: "PUBLIC",
+
+        new_post.published = post['published']  #: "2015-03-09T13:07:04+00:00"
+        new_post.visibility = post['visibility']  #: "PUBLIC",
 
         # @todo allow setting visibility of new post
-        # new_post.visibleTo = post['visibleTo']     #: LIST,
+        # new_post.visibleTo = post['visibleTo']  #: LIST,
 
-        new_post.unlisted = post['unlisted']       #: true
-
+        new_post.unlisted = post['unlisted']  #: true
         new_post.save()
+
+        for category in categories:
+            cat_object = None
+            try:
+                cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
+            except Category.DoesNotExist as e:
+                cat_object = Category.objects.create(name=category)  # Create one if not
+            new_post.categories.add(cat_object)    #: LIST,
 
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return HttpResponse("<h1>http://service/author/posts POST</h1>")
+        return JsonResponse({
+            "query": "addPost",
+            "success": True,
+            "message": "Post Added"
+        })
+
+    return Endpoint(request,None,[
+        Handler("POST", "application/json", create_new_post)
+    ]).resolve()
+
+    if request.method == 'POST':
+        pass
     elif request.method == 'GET':
         # retrive posts that are visible to the currently authenticated user
         # GET from http://service/author/posts
