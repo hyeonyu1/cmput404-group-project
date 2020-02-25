@@ -42,6 +42,8 @@ def retrieve_all_public_posts_on_local_server(request):
 
 
         # And filter out the meta data from the top level object
+        for post in json_posts:
+            post['fields']['id'] = post['pk']
         json_posts = [post['fields'] for post in json_posts]
 
         output = {
