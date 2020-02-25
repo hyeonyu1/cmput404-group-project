@@ -10,7 +10,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # Create a post to the currently authenticated user
         # POST to http://service/author/posts 
         #return HttpResponse("<h1>http://service/author/posts POST</h1>")
-        return render(request, 'posting.html')
+        return render(request, 'posted.html')
     
     elif request.method == 'GET':
         # retrive posts that are visible to the currently authenticated user
@@ -44,4 +44,5 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
     return HttpResponse("GET http://service/author/id1/friends/id2")
 
 
-
+def post_creation_page(request):
+    return render(request, 'posting.html')

@@ -16,7 +16,7 @@
 		<hr>
 
        	<!-- Trigger/Open The Posting Page --> 
-       	<form action="author/posts/" method="POST">
+       	<form action="author/posts/createPost" method="GET">
        		{% csrf_token %}
 		    <button type="submit" value="Create Post">Create Post</button>
 		</form>

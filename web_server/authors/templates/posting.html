@@ -14,29 +14,30 @@
 			<span class="profile">USER NAME</span>
 		</section>
 		<hr>
-
-		<label for="title">Title</label> <br>
-		<textarea type="textarea" id="title" name="title"></textarea><br><br>
-		<label for="description">Description</label> <br>
-       	<textarea type="textarea" id="description" name="description"></textarea><br><br>
-       	
-       	<select id="visi" onclick="visibility_changed()">
-		  <option value="public">Public</option>
-		  <option value="friends">Friends</option>
-		  <option value="foaf">Friends of A Friend</option>
-		  <option value="private" >Private</option>
-		  <option value="serverOnly">Server Only</option>
-		</select>
-		
-		<br><br>
-		<select id="visibleTo" style="visibility: hidden;">
-			<option>@TODO get all Users here</option>
-		</select>
-		<br><br>
        	
        	<!--@TODO need to make this so post is sent to server-->
-       	<form action="/" method="POST">
+       	<form action="/author/posts/" method="POST">
        		{% csrf_token %}
+       		<input type="hidden" id="authorId" value={{author_id}}>
+       		<label for="title">Title</label> <br>
+			<textarea type="textarea" id="title" name="title"></textarea><br><br>
+			<label for="description">Description</label> <br>
+	       	<textarea type="textarea" id="description" name="description"></textarea><br><br>
+	       	
+	       	<select id="visi" onclick="visibility_changed()">
+			  <option value="public">Public</option>
+			  <option value="friends">Friends</option>
+			  <option value="foaf">Friends of A Friend</option>
+			  <option value="private" >Private</option>
+			  <option value="serverOnly">Server Only</option>
+			</select>
+
+			<br><br>
+			<select id="visibleTo" style="visibility: hidden;">
+				<option>@TODO get all Users here</option>
+			</select>
+			<br><br>
+
 		    <button type="submit">Post</button>
 		</form>
   		
