@@ -6,14 +6,13 @@
 <link rel="stylesheet" href="{% static '/users/css/style.css' %}">
 <link rel="stylesheet" href="{% static '/users/css/mandala.css' %}">
 
-<div class="container row h-100 m-3">
-
-	<div class=" col-8">
+<div class="container item-center" style="max-width: 90%">
+	<div id="mandala" class="login-l">
 		<iframe src="{% url 'mandala' %}" frameborder="no" height="100%" width="100%">
 		</iframe>
 	</div>
 
-	<div class=" col-4">
+	<div class="login-r">
 		<form method="POST">
 			{% csrf_token %}
 			<fieldset class="form-group">
@@ -32,6 +31,18 @@
 			</small>
 		</div>
 	</div>
-
 </div>
+
+<script>
+	function resizeCanvas() {
+		var width = $('.login-l').width();
+		$('.login-l').css({ 'height': width + 'px' });
+	}
+
+	window.onload = function () {
+		resizeCanvas();
+		window.addEventListener("resize", resizeCanvas);
+	}
+
+</script>
 {% endblock %}
