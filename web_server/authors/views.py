@@ -203,16 +203,16 @@ def post_creation_and_retrival_to_curr_auth_user(request):
 
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
         new_post.title       = post['title']        #: "A post title about a post about web dev",
-        #new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
-        #new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
+        # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
+        # new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
         new_post.description = post['description']  # : "This post discusses stuff -- brief",
-        #new_post.contentType = post['contentType']  # : "text/plain",
+        # new_post.contentType = post['contentType']  # : "text/plain",
         new_post.content     = post['content']      #: "stuffs",
         new_post.author      = request.user         # the authenticated user
         # Categories added after new post is saved
         new_post.count       = 0                    #: 1023, initially the number of comments is zero
         new_post.size        = size                 #: 50,
-        #new_post.next        = post['next']         #: "http://service/posts/{post_id}/comments",
+        # new_post.next        = post['next']         #: "http://service/posts/{post_id}/comments",
 
         # @todo allow adding comments to new post
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
@@ -226,13 +226,14 @@ def post_creation_and_retrival_to_curr_auth_user(request):
 
         new_post.save()
 
-        for category in categories:
-            cat_object = None
-            try:
-                cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
-            except Category.DoesNotExist as e:
-                cat_object = Category.objects.create(name=category)  # Create one if not
-            new_post.categories.add(cat_object)    #: LIST,
+        # Categories is commented out because it's not yet in the post data, uncomment once available
+        # for category in categories:
+        #     cat_object = None
+        #     try:
+        #         cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
+        #     except Category.DoesNotExist as e:
+        #         cat_object = Category.objects.create(name=category)  # Create one if not
+        #     new_post.categories.add(cat_object)    #: LIST,
 
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
