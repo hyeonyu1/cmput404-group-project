@@ -177,7 +177,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         
         # First get the information out of the request body
         body = request.body.decode('utf-8')
+        
+        #@todo fix this size calculation
         size = len(body)
+        
         #body = json.load(body)
         body = dict(x.split("=") for x in body.split("&"))
         print("BODY",body)
@@ -237,7 +240,8 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return HttpResponse("<h1>http://service/author/posts POST</h1>")
+        return render(request, 'posted.html')
+        #return HttpResponse("<h1>http://service/author/posts POST</h1>")
     elif request.method == 'GET':
         # retrive posts that are visible to the currently authenticated user
         # GET from http://service/author/posts
