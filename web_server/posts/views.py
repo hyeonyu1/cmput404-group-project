@@ -9,6 +9,9 @@ from django.core import serializers
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler
 
+def index(request):
+
+    return HttpResponse(request.headers)
 
 def retrieve_all_public_posts_on_local_server(request):
     """
@@ -69,7 +72,7 @@ def retrieve_all_public_posts_on_local_server(request):
         if next_uri:
             html += f"<a href='{next_uri}'>NEXT PAGE</a>"
 
-        return HttpResponse(html)
+        return render(request, 'posts/home.html', {'posts':posts})
 
 
     endpoint = Endpoint(request,
