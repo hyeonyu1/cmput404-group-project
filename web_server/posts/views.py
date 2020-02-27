@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 
@@ -9,10 +10,8 @@ from django.core import serializers
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler
 
-def index(request):
 
-    return HttpResponse(request.headers)
-
+@login_required
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
