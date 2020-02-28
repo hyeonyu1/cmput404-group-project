@@ -62,16 +62,13 @@ def retrieve_all_public_posts_on_local_server(request):
         return JsonResponse(output)
 
     def html_handler(request, posts, pager, pagination_uris):
-        html = ""
-        for post in posts:
-            html += f"<p>{post.__str__()}</p>"
         (prev_uri, next_uri) = pagination_uris
-        if prev_uri:
-            html += f"<a href='{prev_uri}'>PREV PAGE</a>"
-        if next_uri:
-            html += f"<a href='{next_uri}'>NEXT PAGE</a>"
 
-        return render(request, 'posts/home.html', {'posts':posts})
+        return render(request, 'posts/stream.html', {
+            'posts': posts,
+            'prev_uri': prev_uri,
+            'next_uri': next_uri
+        })
 
 
     endpoint = Endpoint(request,

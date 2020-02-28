@@ -9,7 +9,7 @@
         </div>
         <div class="col-sm-7">
             <div class="mt-3">
-                <a class="btn btn-info">+ ADD</a>
+                <a class="btn btn-info" href="{% url 'add_or_get_post' %}">+ ADD</a>
             </div>
 
 
@@ -32,7 +32,14 @@
                     {% endfor %}
                 </div>
             </div>
-
+            <div class="pagination_urls">
+                {% if prev_uri is not None %}
+                    <a href="{{ prev_uri }}">PREVIOUS</a>
+                {% endif %}
+                {% if next_uri is not None %}
+                    <a href="{{ next_uri }}">NEXT</a>
+                {% endif %}
+            </div>
         </div>
         <div class="col-sm-3">
 

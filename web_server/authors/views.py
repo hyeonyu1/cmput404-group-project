@@ -245,6 +245,9 @@ def post_creation_and_retrival_to_curr_auth_user(request):
 
     return None
 
+def post_edit_and_delete(request, post_id):
+    pass
+
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
 
