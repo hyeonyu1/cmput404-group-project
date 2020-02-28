@@ -92,8 +92,12 @@ def retrieve_single_post_with_id(request, post_id):
         return HttpResponse("<h1>http://service/posts/{} POST</h1>".format(post_id))
     # Get a single post
     elif request.method == 'GET':
-
-        return render(request, 'posts/post.html', {'post': get_object_or_404(Post, pk=post_id)})
+        post = Post.objects.get(id=post_id)
+        print(post.categories.all())
+        # post = get_object_or_404(Post, pk=post_id)
+        # for c in post.categories:
+        #     print(c)
+        return render(request, 'posts/post.html', {'post': post})
     return None
 
 def comments_retrieval_and_creation_to_post_id(request, post_id):
