@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 
 from .models import Post
@@ -92,7 +92,8 @@ def retrieve_single_post_with_id(request, post_id):
         return HttpResponse("<h1>http://service/posts/{} POST</h1>".format(post_id))
     # Get a single post
     elif request.method == 'GET':
-        return HttpResponse("<h1>http://service/posts/{} GET</h1>".format(post_id))
+
+        return render(request, 'posts/post.html', {'post': get_object_or_404(Post, pk=post_id)})
     return None
 
 def comments_retrieval_and_creation_to_post_id(request, post_id):
