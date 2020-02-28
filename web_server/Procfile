@@ -1,2 +1,2 @@
 web: gunicorn social_distribution.wsgi
-release: python manage.py migrate
+release: ./release_tasks.sh
