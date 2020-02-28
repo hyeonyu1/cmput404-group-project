@@ -1,2 +1,0 @@
-Do not remove this directory. Heroku does not automatically create the static directory so this file allows git
-to specify that this directory is part of our distribution. Do not commit files in this directory.
