@@ -1,2 +1,2 @@
 web: gunicorn social_distribution.wsgi
-release: ./release_tasks.sh
+release: bash release_tasks.sh
