@@ -18,7 +18,7 @@ from django.urls import include, path
 from . import views
 from users import views as users_views
 urlpatterns = [
-    path('', views.main_page),
+    path('', users_views.profile),
     path('admin/', admin.site.urls),
 
     # App for handling all user information and user-user relationships is user.

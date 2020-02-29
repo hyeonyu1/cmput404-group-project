@@ -1,61 +1,45 @@
 @charset "UTF-8";
 
-body {
+#postPage {
+  margin-left: 10pt;
+  margin-top: 6pt;
   font-size: 14pt;
 }
 
-.topBar{
-	display: flex;
-}
-
-.topBar span:nth-child(2) {
-    margin-left: auto;
-}
-
-.title{
-  font-family: 'Open Sans', sans-serif;
-  color: black;
-  font-size: 32pt;
-  letter-spacing: -1px;
+#title {
+  text-align: left;
+  justify-content: top;
+  font-size: 12pt;
   line-height: 1;
-  align-content: left;
-  margin-top: 10pt;
-}
-
-.profile{
-  font-family: 'Open Sans', sans-serif;
-  color: black;
-  text-decoration: none;
-  font-size: 16pt;
-  letter-spacing: -2px;
-  line-height: 1;
-  float: right;
-  margin-right: 3pt;
-  margin-top: 22pt;
-}
-
-label {
-  font-size: 150%;
 }
 
 #description {
-  width: 40%;
+  width: 60%;
   text-align: left;
   justify-content: top;
+  font-size: 12pt;
+  line-height: 1;
 }
 
 #content {
   height:50pt;
-  width: 40%;
+  width: 60%;
+  font-size: 12pt;
   text-align: left;
   justify-content: top;
 }
 
-select{
+#visi {
   width: 20%;
-  font-size: 14pt;
+  font-size: 12pt;
 }
 
-button {
-   font-size: 14pt;
+#visibleFor{
+  width: 20%;
+  font-size: 12pt;
+}
+
+#postButton {
+   padding-right: 10pt;
+   padding-left: 10pt;
 }
