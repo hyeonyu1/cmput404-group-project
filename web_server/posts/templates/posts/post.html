@@ -17,6 +17,7 @@
              <div class="form-inline">
                  <div class="d-flex w-100 justify-content-between">
                      <h2>{{post.title}}</h2>
+                     <h3><{{post.description}}/h3>
                  {% if post.author.id == user.id %}
                  <!-- direct to edit page which is as same as create page-->
                  <div class="btn-group">
@@ -64,7 +65,7 @@
 
             <h4>Leave a Comment:</h4>
 
-             <form role="form" method="POST" action="{% url 'get_or_add_comment' post.id %}">
+             <form role="form" method="POST" action="{% url 'post_create_form' post.id %}">
                 <div class="form-group">
                     <textarea class="form-control" rows="3" required></textarea>
                 </div>

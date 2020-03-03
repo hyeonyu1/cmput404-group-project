@@ -336,3 +336,7 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
+
+
+def post_creation_page(request):
+    return HttpResponse("Not Implemented", status=404)
