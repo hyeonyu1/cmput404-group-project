@@ -218,7 +218,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
 
         new_post.published = str(make_aware(datetime.datetime.now()))  #: "2015-03-09T13:07:04+00:00",
-        new_post.visibility = post['visibility']   #: "PUBLIC",
+        new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         #new_post.unlisted = post['unlisted']       #: true
         # @todo allow setting visibility of new post
@@ -238,7 +238,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return redirect(reverse('profile'))
+        return redirect("/")
         #return HttpResponse("<h1>http://service/author/posts POST</h1>")
 
         '''
