@@ -1,26 +1,48 @@
 {% extends "index.html" %}
+{% block index_content %}
+{% load static %}
 {% load crispy_forms_tags %}
-{% block content %}
-<div class="container m-3">
-    <form method="POST">
-        {% csrf_token %}
-        <fieldset class="form-group">
-            <legend class="border-bottom mb-4">Log In Now!</legend>
-            {{form | crispy}}
-        </fieldset>
-        <div class="form-group">
-            <button class="btn btn-outline-info" type="submit">
-                Log In
-            </button>
-        </div>
-    </form>
-    <div class="border-top pt-3">
-        <small class="text-muted">
-            Need An Account ? <a class="ml-2" href="{% url 'register' %}">Sign Up Now</a>
-        </small>
 
-    </div>
+<link rel="stylesheet" href="{% static '/users/css/style.css' %}">
+<link rel="stylesheet" href="{% static '/users/css/mandala.css' %}">
 
+<div class="container item-center" style="max-width: 90%">
+	<div id="mandala" class="login-l">
+		<iframe src="{% url 'mandala' %}" frameborder="no" height="100%" width="100%">
+		</iframe>
+	</div>
 
+	<div class="login-r">
+		<form method="POST">
+			{% csrf_token %}
+			<fieldset class="form-group">
+				<legend class="border-bottom mb-4">Sign in to <span style="font-size: 40px">Mandala</span></legend>
+				{{form | crispy}}
+			</fieldset>
+			<div class="form-group">
+				<button class="btn btn-primary" type="submit">
+					Sign In
+				</button>
+			</div>
+		</form>
+		<div class="border-top pt-3">
+			<small class="text-muted">
+				Need An Account ? <a class="ml-2" href="{% url 'register' %}">Sign Up Now</a>
+			</small>
+		</div>
+	</div>
 </div>
+
+<script>
+	function resizeCanvas() {
+		var width = $('.login-l').width();
+		$('.login-l').css({ 'height': width + 'px' });
+	}
+
+	window.onload = function () {
+		resizeCanvas();
+		window.addEventListener("resize", resizeCanvas);
+	}
+
+</script>
 {% endblock %}

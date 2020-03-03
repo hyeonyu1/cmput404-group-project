@@ -1,0 +1,43 @@
+{% extends "index.html" %}
+{% block index_content %}
+{% load static %}
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="/">
+        <img src="{% static 'users/images/logo.jpg' %}" width="30" height="30" class="d-inline-block align-top" alt="">
+        Mandala
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a class="nav-link" href="{% url 'post_index' %}">Stream</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="{% url 'profile' %}">Profile</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="/">Request</a>
+            </li>
+
+        </ul>
+        <div class="form-inline my-2 my-lg-0">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'profile' %}"><img src="{% static '/users/images/logo.jpg' %}"
+                            width="30" height="30" class="d-inline-block align-top" alt=""></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% block navigation_content %}
+{% endblock navigation_content %}
+{% endblock %}

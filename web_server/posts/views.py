@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 
 from .models import Post
@@ -10,6 +11,7 @@ from django.core import serializers
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler
 
 
+@login_required
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
@@ -60,16 +62,13 @@ def retrieve_all_public_posts_on_local_server(request):
         return JsonResponse(output)
 
     def html_handler(request, posts, pager, pagination_uris):
-        html = ""
-        for post in posts:
-            html += f"<p>{post.__str__()}</p>"
         (prev_uri, next_uri) = pagination_uris
-        if prev_uri:
-            html += f"<a href='{prev_uri}'>PREV PAGE</a>"
-        if next_uri:
-            html += f"<a href='{next_uri}'>NEXT PAGE</a>"
 
-        return HttpResponse(html)
+        return render(request, 'posts/stream.html', {
+            'posts': posts,
+            'prev_uri': prev_uri,
+            'next_uri': next_uri
+        })
 
 
     endpoint = Endpoint(request,
@@ -124,28 +123,22 @@ def retrieve_single_post_with_id(request, post_id):
         return JsonResponse(output)
 
     def html_handler(request, posts, pager, pagination_uris):
-        html = ""
-        for post in posts:
-            html += f"<p>{post.__str__()}</p>"
-        (prev_uri, next_uri) = pagination_uris
-        if prev_uri:
-            html += f"<a href='{prev_uri}'>PREV PAGE</a>"
-        if next_uri:
-            html += f"<a href='{next_uri}'>NEXT PAGE</a>"
-
-        return HttpResponse(html)
+        post = Post.objects.get(id=post_id)
+        print(post.categories.all())
+        # post = get_object_or_404(Post, pk=post_id)
+        # for c in post.categories:
+        #     print(c)
+        return render(request, 'posts/post.html', {'post': post})
 
     # Get a single post
-    if request.method == 'GET':
-        endpoint = Endpoint(request,
-                            Post.objects.filter(id=post_id),
-                            [
-                                PagingHandler("GET", "text/html", html_handler),
-                                PagingHandler("GET", "application/json", json_handler)
-                            ])
+    endpoint = Endpoint(request,
+                        Post.objects.filter(id=post_id),
+                        [
+                            PagingHandler("GET", "text/html", html_handler),
+                            PagingHandler("GET", "application/json", json_handler)
+                        ])
 
-        return endpoint.resolve()
-    return None
+    return endpoint.resolve()
 
 def comments_retrieval_and_creation_to_post_id(request, post_id):
     if request.method == 'POST':
