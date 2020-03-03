@@ -18,7 +18,8 @@ from django.urls import include, path
 from . import views
 from users import views as users_views
 urlpatterns = [
-    path('', users_views.profile),
+    #After logging in successfully, redirect to home page
+    path('', views.home),
     path('admin/', admin.site.urls),
 
     # App for handling all user information and user-user relationships is user.

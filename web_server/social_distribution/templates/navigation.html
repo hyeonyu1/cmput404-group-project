@@ -15,10 +15,10 @@
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-                <a class="nav-link" href="/posts/">Public</a>
+                <a class="nav-link" href="{% url 'post_index' %}">Stream</a>
             </li>
             <li class="nav-item active">
-                <a class="nav-link" href="/">Friends</a>
+                <a class="nav-link" href="{% url 'profile' %}">Profile</a>
             </li>
             <li class="nav-item active">
                 <a class="nav-link" href="/">Request</a>

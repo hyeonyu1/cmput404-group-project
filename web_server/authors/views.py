@@ -183,24 +183,24 @@ def post_creation_and_retrival_to_curr_auth_user(request):
     if request.method == 'POST':
         # POST to http://service/author/posts
         # Create a post to the currently authenticated user
-        
+
         # First get the information out of the request body
         body = request.body.decode('utf-8')
-        
+
         size = len(body.encode('utf-8'))
-        
+
         #body = json.load(body)
         body = dict(x.split("=") for x in body.split("&"))
-        
+
         #post = body['post']
         post = body
         author = post['author']
         #comments = post['comments']
         #categories = post['categories']
         visible_to = post['visibleTo']
-    
+
         new_post = Post()
-    
+
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
         new_post.title       = post['title']        #: "A post title about a post about web dev",
         # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
@@ -213,19 +213,19 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         new_post.count       = 0                    #: 1023, initially the number of comments is zero
         new_post.size        = size                 #: 50,
         # new_post.next        = post['next']         #: "http://service/posts/{post_id}/comments",
-    
+
         # @todo allow adding comments to new post
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
-    
+
         new_post.published = str(make_aware(datetime.datetime.now()))  #: "2015-03-09T13:07:04+00:00",
         new_post.visibility = post['visibility']   #: "PUBLIC",
-    
+
         #new_post.unlisted = post['unlisted']       #: true
         # @todo allow setting visibility of new post
         # new_post.visibleTo = post['visibleTo']  #: LIST,
-    
+
         new_post.save()
-    
+
         # Categories is commented out because it's not yet in the post data, uncomment once available
         # for category in categories:
         #     cat_object = None
@@ -234,10 +234,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         #     except Category.DoesNotExist as e:
         #         cat_object = Category.objects.create(name=category)  # Create one if not
         #     new_post.categories.add(cat_object)    #: LIST,
-    
+
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
-    
+
         return redirect(reverse('profile'))
         #return HttpResponse("<h1>http://service/author/posts POST</h1>")
 
@@ -262,7 +262,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         return HttpResponse("<h1>http://service/author/posts GET</h1>")
 
     return None
-    
+
+
+def post_edit_and_delete(request, post_id):
+    pass
 
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)

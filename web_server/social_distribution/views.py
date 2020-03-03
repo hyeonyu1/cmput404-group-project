@@ -1,6 +1,10 @@
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse
 
-# This file is used to display web pages
 
-def main_page(request):
-    return render(request, 'mainPage.html')
+def home(request):
+    if request.method == 'GET':
+        return redirect(reverse('post_index'))
+    else:
+        return HttpResponse('404 Error', status=404)
