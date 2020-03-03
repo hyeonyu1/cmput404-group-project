@@ -190,10 +190,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         size = len(body.encode('utf-8'))
 
         #body = json.load(body)
-        body = dict(x.split("=") for x in body.split("&"))
+        # body = dict(x.split("=") for x in body.split("&"))
 
         #post = body['post']
-        post = body
+        post = request.POST
         author = post['author']
         #comments = post['comments']
         #categories = post['categories']
