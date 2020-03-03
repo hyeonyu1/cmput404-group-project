@@ -1,0 +1,45 @@
+@charset "UTF-8";
+
+#postPage {
+  margin-left: 10pt;
+  margin-top: 6pt;
+  font-size: 14pt;
+}
+
+#title {
+  text-align: left;
+  justify-content: top;
+  font-size: 12pt;
+  line-height: 1;
+}
+
+#description {
+  width: 60%;
+  text-align: left;
+  justify-content: top;
+  font-size: 12pt;
+  line-height: 1;
+}
+
+#content {
+  height:50pt;
+  width: 60%;
+  font-size: 12pt;
+  text-align: left;
+  justify-content: top;
+}
+
+#visi {
+  width: 20%;
+  font-size: 12pt;
+}
+
+#visibleFor{
+  width: 20%;
+  font-size: 12pt;
+}
+
+#postButton {
+   padding-right: 10pt;
+   padding-left: 10pt;
+}

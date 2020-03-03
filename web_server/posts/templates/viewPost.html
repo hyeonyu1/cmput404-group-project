@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang=en>
+	<head>
+		<title>Mandala: View Post</title>
+		<meta charset='UTF-8'/>
+		<link rel="stylesheet" type="text/css" 
+		href="{% static '/css/viewPost.css' %}"/>
+	</head>
+
+	<body>
+		<section class="topBar">
+			<a href="/" title="Go to Mandala Home Page" class="title" style="text-decoration: none">Mandala</a>
+			<span class="profile">USER NAME</span>
+		</section>
+		<hr>
+
+		<h1>{{post.title}}</h1><br><br>
+		<p>{{post.description}}</p>
+       	
+       	
+		<script type="text/javascript" src="{% static 'javascript/viewPost.js' %}"></script>
+	</body>
+
+</html>
