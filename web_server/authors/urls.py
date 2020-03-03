@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 urlpatterns = [
     path('posts/', views.post_creation_and_retrival_to_curr_auth_user),
-    path('posts/createPost', views.post_creation_page),
     path('<str:author_id>/posts/',
          views.retrieve_posts_of_author_id_visible_to_current_auth_user),
     path('<str:author_id>/friends/',
@@ -13,5 +12,8 @@ urlpatterns = [
     path('<str:author_id>/update', views.update_author_profile),
     path('unfriend', views.unfriend),
     path('<str:author_id>/addfriend',
-         views.view_list_of_available_authors_to_befriend)
+         views.view_list_of_available_authors_to_befriend),
+    
+    # Webpage URLS
+    path('create_post', views.post_creation_page, name='post_create_form')
 ]

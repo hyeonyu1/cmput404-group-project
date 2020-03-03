@@ -187,7 +187,6 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # First get the information out of the request body
         body = request.body.decode('utf-8')
         
-        #@todo fix this size calculation
         size = len(body.encode('utf-8'))
         
         #body = json.load(body)
