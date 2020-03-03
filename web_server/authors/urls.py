@@ -13,5 +13,5 @@ urlpatterns = [
     path('<str:author_id>/addfriend', views.view_list_of_available_authors_to_befriend),
 
     # Webpage URLS
-    path('posts/create', views.post_creation_page, name='post_create_form')
+    path('create_post', views.post_creation_page, name='post_create_form')
 ]
