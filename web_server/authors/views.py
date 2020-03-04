@@ -1,16 +1,18 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404, redirect, render_to_response
 from django.http import HttpResponse, JsonResponse
 from users.models import Author
 from friendship.models import Friend
 from posts.models import Post, Category
 from comments.models import Comment
 from django.db.models import Q
-from django.utils.timezone import make_aware
+from django.utils import timezone
 from django.urls import reverse
+from django.template import RequestContext
 
 import json
 import datetime
 import sys
+import pytz
 
 from social_distribution.utils.endpoint_utils import Endpoint, Handler
 
@@ -190,10 +192,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         size = len(body.encode('utf-8'))
 
         #body = json.load(body)
-        body = dict(x.split("=") for x in body.split("&"))
+        # body = dict(x.split("=") for x in body.split("&"))
 
         #post = body['post']
-        post = body
+        post = request.POST
         author = post['author']
         #comments = post['comments']
         #categories = post['categories']
@@ -217,8 +219,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # @todo allow adding comments to new post
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
 
-        new_post.published = str(make_aware(datetime.datetime.now()))  #: "2015-03-09T13:07:04+00:00",
-        new_post.visibility = post['visibility']   #: "PUBLIC",
+        current_tz = pytz.timezone('America/Edmonton')
+        timezone.activate(current_tz)  
+        new_post.published = str(datetime.datetime.now())  #: "2015-03-09T13:07:04+00:00",
+        new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         #new_post.unlisted = post['unlisted']       #: true
         # @todo allow setting visibility of new post
@@ -238,7 +242,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return redirect(reverse('profile'))
+        return redirect("/")
         #return HttpResponse("<h1>http://service/author/posts POST</h1>")
 
         '''
@@ -265,7 +269,23 @@ def post_creation_and_retrival_to_curr_auth_user(request):
 
 
 def post_edit_and_delete(request, post_id):
-    pass
+    #REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
+    
+    # Obtain the context from the HTTP request.
+    context = RequestContext(request)
+
+    # Query the database for a list of ALL categories currently stored.
+    # Place the list in our context_dict dictionary which will be passed to the template engine.
+    post_list = Post.objects.all()
+    context_dict  = {}
+    for post in post_list:
+        if (str(post.id) == str(post_id)):
+            context_dict = {'post': post}
+            break
+
+    # Render the response and send it back!
+    return render_to_response('editPost.html', context_dict, context)
+    
 
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
