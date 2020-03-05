@@ -7,6 +7,7 @@ from .forms import UserRegisterForm
 from django.contrib.auth import views as auth_views
 from django.urls import reverse
 
+
 class CustomLogin(auth_views.LoginView):
     def form_valid(self, form):
         login(self.request, form.get_user())
@@ -41,23 +42,18 @@ def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
             # wait for admin permission to activate account
             user.is_active = False
             host = request.get_host()
-
-            if request.is_secure():
-
-                host = "https://" + host
-            else:
-                host = "http://" + host
-
             url = host + "/author/" + str(user.id)
+            print(url)
+            print(user.id)
 
             # set user url
             user.url = url
             # set user id
-            # format: http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013
+            # format: 127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013
             user.uid = url
             # set user host
             user.host = host
@@ -69,6 +65,7 @@ def register(request):
     else:
         form = UserRegisterForm()
     return render(request, 'users/register.html', {'form': form})
+
 
 def mandala(request):
     return render(request, 'users/mandala.html')

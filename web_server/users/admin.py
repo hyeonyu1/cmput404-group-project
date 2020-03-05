@@ -42,11 +42,6 @@ class CustomUserAdmin(UserAdmin):
         if not change:
             obj.is_active = False
             host = request.get_host()
-            if request.is_secure():
-
-                host = "https://" + host
-            else:
-                host = "http://" + host
 
             url = host + "/author/" + str(obj.id)
             obj.url = url
