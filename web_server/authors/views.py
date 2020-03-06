@@ -263,6 +263,12 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
 
 def post_edit_and_delete(request, post_id):
+    # This endpoint REQUIRES that the individual accessing it is the original author of the Post in question.
+    post = Post.objects.get(pk=post_id)
+
+    if post.author != request.user:
+        return HttpResponse("Forbidden: you must be the original author of the post in order to change it.", status=403)
+
     def get_edit_dialog(request):
         #REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
 
@@ -288,7 +294,6 @@ def post_edit_and_delete(request, post_id):
         :return:
         """
         vars = request.POST
-        post = Post.objects.get(pk=post_id)
         for key in vars:
             if hasattr(post, key):
                 if len(vars.getlist(key)) <= 1:  # Simple value or empty
@@ -304,8 +309,13 @@ def post_edit_and_delete(request, post_id):
         return JsonResponse({"success": "Post updated"})
 
     def delete_post(request):
-        # @todo implement
-        return JsonResponse({"error": "Not Implemented"}, status=404)
+        """
+        We simply need to delete the post at this endpoint
+        :param request:
+        :return:
+        """
+        post.delete()
+        return JsonResponse({"success": "Post Deleted"}, status=200)
 
     return Endpoint(request, None, [
         Handler('GET', 'text/html', get_edit_dialog),
