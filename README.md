@@ -1,6 +1,8 @@
 # cmput404-group-project
 Group project for the 404, team EarlyBirds
 
+Website URL: https://cmput404-group-project-mandala.herokuapp.com/
+
 # Test Data
 ## Creating Test Data
 The following command will create a copy of your database and dump it into a file for others to load
