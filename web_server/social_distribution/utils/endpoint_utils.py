@@ -146,11 +146,8 @@ class Handler:
         :param produces: Which content type this handler produces (e.g. "text/html")
         :param handling_func: function used to handle the request.
             Should take the following arguments:
-                results: the list of results from the query, may have been filtered by the Endpoint
-                pager: A Paginator that has been loaded with the query to get information about pagination
-                pagination_uris: A tuple of absolute_uris of form (previous_page, next_page).
-                    If there is no previous or next page the uri should be None
-            And return:
+                request: the original http request
+            Should return:
                 A valid HttpResponse object consistent with it's produces string
         """
         self.method = method
@@ -176,6 +173,12 @@ class PagingHandler(Handler):
     """
     This handler will be provided the results of the query provided to the Endpoint, along with information
     about paging over that query.
+
+    Requires additional arguments to the handler function:
+        results: the list of results from the query, may have been filtered by the Endpoint
+        pager: A Paginator that has been loaded with the query to get information about pagination
+        pagination_uris: A tuple of absolute_uris of form (previous_page, next_page).
+            If there is no previous or next page the uri should be None
     """
     def handle(self, request, results, pager, pagination_uris):
         """

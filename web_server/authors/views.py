@@ -269,22 +269,36 @@ def post_creation_and_retrival_to_curr_auth_user(request):
 
 
 def post_edit_and_delete(request, post_id):
-    #REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
-    
-    # Obtain the context from the HTTP request.
-    context = RequestContext(request)
+    def get_edit_dialog(request):
+        #REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
 
-    # Query the database for a list of ALL categories currently stored.
-    # Place the list in our context_dict dictionary which will be passed to the template engine.
-    post_list = Post.objects.all()
-    context_dict  = {}
-    for post in post_list:
-        if (str(post.id) == str(post_id)):
-            context_dict = {'post': post}
-            break
+        # Obtain the context from the HTTP request.
+        context = RequestContext(request)
 
-    # Render the response and send it back!
-    return render_to_response('editPost.html', context_dict, context)
+        # Query the database for a list of ALL categories currently stored.
+        # Place the list in our context_dict dictionary which will be passed to the template engine.
+        post_list = Post.objects.all()
+        context_dict  = {}
+        for post in post_list:
+            if str(post.id) == str(post_id):
+                context_dict = {'post': post}
+                break
+
+        # Render the response and send it back!
+        return render_to_response('editPost.html', context_dict, context)
+
+    def edit_post(request):
+        return JsonResponse('{"error":"Not Implemented}', status=404)
+
+    def delete_post(request):
+        return JsonResponse('{"error":"Not Implemented}', status=404)
+
+    return Endpoint(request, None, [
+        Handler('GET', 'text/html', get_edit_dialog),
+        # @todo should this be PUT? Or should we allow a PUT and a POST to both perform this action?
+        Handler('POST', 'application/json', edit_post),
+        Handler('DELETE', 'application/json', delete_post)
+    ]).resolve()
     
 
 # http://service/author/{AUTHOR_ID}/posts
