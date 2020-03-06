@@ -14,7 +14,7 @@ import datetime
 import sys
 import pytz
 
-from social_distribution.utils.endpoint_utils import Endpoint, Handler
+from social_distribution.utils.endpoint_utils import Endpoint, Handler, PagingHandler
 
 
 # Ida Hou
@@ -173,7 +173,7 @@ def retrieve_author_profile(request, author_id):
     return HttpResponse("You can only GET the URL", status=405)
 
 
-def post_creation_and_retrival_to_curr_auth_user(request):
+def post_creation_and_retrieval_to_curr_auth_user(request):
     """
     Endpoint handler for service/author/posts
     POST is for creating a new post using the currently authenticated user
@@ -181,8 +181,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
     :param request:
     :return:
     """
-    #def create_new_post(request):
-    if request.method == 'POST':
+    def create_new_post(request):
         # POST to http://service/author/posts
         # Create a post to the currently authenticated user
 
@@ -243,29 +242,24 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         #     print(f'{key}: {body[key]}')
 
         return redirect("/")
-        #return HttpResponse("<h1>http://service/author/posts POST</h1>")
 
-        '''
-        return JsonResponse({
-            "query": "addPost",
-            "success": True,
-            "message": "Post Added"
-        })
-        
-        return Endpoint(request,None,[
-            Handler("POST", "application/json", create_new_post)
-        ]).resolve()
-    
-        
-        if request.method == 'POST':
-            pass
-        '''
-    elif request.method == 'GET':
+    def get_visible_posts(request, results, pager, pagination_uris):
+        # @todo implement
         # retrive posts that are visible to the currently authenticated user
         # GET from http://service/author/posts
         return HttpResponse("<h1>http://service/author/posts GET</h1>")
 
-    return None
+    def json_visible_posts(request, results, pager, pagination_uris):
+        # @todo implement
+        # retrive posts that are visible to the currently authenticated user
+        # GET from http://service/author/posts
+        return JsonResponse({"error":"Not Implemented"})
+        
+    return Endpoint(request, None, [
+        Handler("POST", "application/json", create_new_post),
+        PagingHandler("GET", "text/html", get_visible_posts),
+        PagingHandler("GET", "application/json", json_visible_posts)
+    ]).resolve()
 
 
 def post_edit_and_delete(request, post_id):
@@ -288,10 +282,30 @@ def post_edit_and_delete(request, post_id):
         return render_to_response('editPost.html', context_dict, context)
 
     def edit_post(request):
-        return JsonResponse('{"error":"Not Implemented}', status=404)
+        """
+        Expects the request to contain all the variables defining a post to be provided by the POST vars.
+        :param request:
+        :return:
+        """
+        vars = request.POST
+        post = Post.objects.get(pk=post_id)
+        for key in vars:
+            if hasattr(post, key):
+                if len(vars.getlist(key)) <= 1:  # Simple value or empty
+                    try:
+                        setattr(post, key, vars.get(key))
+                    except Exception as e:
+                        # @todo remove this try/except block. This should ACTUALLY throw an error if we hit a problem here
+                        pass
+                elif len(vars.getlist(key)) > 1:  # Multiple values
+                    # @todo implement handling multiple values for key
+                    print("NOT IMPLEMENTED: Unable to handle multiple values for key")
+        post.save()
+        return JsonResponse({"success": "Post updated"})
 
     def delete_post(request):
-        return JsonResponse('{"error":"Not Implemented}', status=404)
+        # @todo implement
+        return JsonResponse({"error": "Not Implemented"}, status=404)
 
     return Endpoint(request, None, [
         Handler('GET', 'text/html', get_edit_dialog),
