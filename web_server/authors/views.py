@@ -11,7 +11,7 @@ from urllib.parse import urlparse, urlunparse
 
 import json
 
-from social_distribution.utils.endpoint_utils import Endpoint, Handler
+from social_distribution.utils.endpoint_utils import Endpoint, Handler, PagingHandler
 
 DEFAULT_PAGE_SIZE = 10
 
@@ -241,152 +241,151 @@ def post_creation_and_retrival_to_curr_auth_user(request):
     #     Handler("POST", "application/json", create_new_post)
     # ]).resolve()
 
-    if request.method == 'POST':
-        pass
-    elif request.method == 'GET':
+    # if request.method == 'POST':
+    #     pass
+    # elif request.method == 'GET':
+        # retrive posts that are visible to the currently authenticated user
+        # GET from http://service/author/posts
+    if request.method == 'GET':
         # retrive posts that are visible to the currently authenticated user
         # GET from http://service/author/posts
 
-        if not request.user.is_authenticated:
-            return JsonResponse({
-                "success": False,
-                "message": "You must be logged in to access this Endpoint"
-            }, status=403)
+        def retrieve_posts(request):
+            # visibility =  PUBLIC
+            public_post = Post.objects.filter(visibility="PUBLIC")
 
-        # visibility =  PUBLIC
-        public_post = Post.objects.filter(visibility="PUBLIC")
+            # visibility = FOAF
+            FOAF_post_authors = []
+            FOAF_post = Post.objects.filter(visibility="FOAF")
+            for post in FOAF_post:
+                FOAF_post_authors.append(post.author_id)
 
-        # visibility = FOAF
-        FOAF_post_authors = []
-        FOAF_post = Post.objects.filter(visibility="FOAF")
-        for post in FOAF_post:
-            FOAF_post_authors.append(post.author_id)
+            FOAF_uid = []
+            for author in FOAF_post_authors:
+                FOAF_uid.append(Author.objects.get(id=author).uid)
 
-        FOAF_uid = []
-        for author in FOAF_post_authors:
-            FOAF_uid.append(Author.objects.get(id=author).uid)
+            visible_FOAF_author = []
+            for friend_of_author in FOAF_uid:
+                friend_of_authors_friend = Friend.objects.filter(author_id=friend_of_author)
+                for friend in friend_of_authors_friend:
+                    if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
+                        visible_FOAF_author.append(friend_of_author.split("/")[-1])
 
-        visible_FOAF_author = []
-        for friend_of_author in FOAF_uid:
-            friend_of_authors_friend = Friend.objects.filter(author_id=friend_of_author)
-            for friend in friend_of_authors_friend:
-                if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
-                    visible_FOAF_author.append(friend_of_author.split("/")[-1])
+            foaf_post = Post.objects.filter(author__in=visible_FOAF_author, visibility="FOAF")
 
-        foaf_post = Post.objects.filter(author__in=visible_FOAF_author, visibility="FOAF")
+            # visibility = FRIENDS
+            users_friends = []
+            friends = Friend.objects.filter(author_id=request.user.uid)
+            for friend in friends:
+                users_friends.append(friend.friend_id)
 
-        # visibility = FRIENDS
-        users_friends = []
-        friends = Friend.objects.filter(author_id=request.user.uid)
-        for friend in friends:
-            users_friends.append(friend.friend_id)
+            usernames = []
+            for uid in users_friends:
+                usernames.append(Author.objects.get(uid=uid).id)
 
-        usernames = []
-        for uid in users_friends:
-            usernames.append(Author.objects.get(uid=uid).id)
+            friend_post = Post.objects.filter(author__in=usernames, visibility="FRIENDS")
 
-        friend_post = Post.objects.filter(author__in=usernames, visibility="FRIENDS")
+            # visibility = PRIVATE
+            private_post = Post.objects.filter(visibleTo=request.user.id)
 
-        # visibility = PRIVATE
-        private_post = Post.objects.filter(visibleTo=request.user.id)
+            # visibility = SERVERONLY
+            local_host = request.user.host
+            server_only_post = Post.objects.filter(author__host=local_host, visibility="SERVERONLY")
 
-        # visibility = SERVERONLY
-        local_host = request.user.host
-        server_only_post = Post.objects.filter(author__host=local_host, visibility="SERVERONLY")
+            visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
 
-        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
+            array_of_posts = []
+            count = visible_post.count()
 
-        array_of_posts = []
-        count = visible_post.count()
+            page_num = int(request.GET.get('page', "1"))
+            size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
-        page_num = int(request.GET.get('page', "1"))
-        size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
+            for post in visible_post.order_by("-published"):
+                author_id = Author.objects.get(id=post.author_id)
+                author_info = {
+                    "id": str(author_id.uid),
+                    "email": str(author_id.email),
+                    "bio": str(author_id.bio),
+                    "host": str(author_id.host),
+                    "firstName": str(author_id.first_name),
+                    "lastName": str(author_id.last_name),
+                    "displayName": str(author_id.display_name),
+                    "url": str(author_id.url),
+                    "github": str(author_id.github)
+                }
 
-        for post in visible_post.order_by("-published"):
-            author_id = Author.objects.get(id=post.author_id)
-            author_info = {
-                "id": str(author_id.uid),
-                "email": str(author_id.email),
-                "bio": str(author_id.bio),
-                "host": str(author_id.host),
-                "firstName": str(author_id.first_name),
-                "lastName": str(author_id.last_name),
-                "displayName": str(author_id.display_name),
-                "url": str(author_id.url),
-                "github": str(author_id.github)
-            }
+                categories = Category.objects.filter(post=post.id)
+                categories_list = []
+                for c in categories:
+                    categories_list.append(c.name)
 
-            categories = Category.objects.filter(post=post.id)
-            categories_list = []
-            for c in categories:
-                categories_list.append(c.name)
+                visible_to = post.visibleTo.all()
+                visible_to_list = []
+                for visible in visible_to:
+                    visible_to_list.append(visible.username)
 
-            visible_to = post.visibleTo.all()
-            visible_to_list = []
-            for visible in visible_to:
-                visible_to_list.append(visible.username)
+                next_http = "http://service/posts/{}/comments".format(post.id)
+                comment_size, comments = get_comments(post.id)
+                array_of_posts.append({
+                    "id": str(post.id),
+                    "title": str(post.title),
+                    "source": str(post.source),
+                    "origin": str(post.origin),
+                    "description": str(post.description),
+                    "contentType": str(post.contentType),
+                    "content": str(post.content),
+                    "author": author_info,
+                    "categories": categories_list,
+                    "count": int(comment_size),  # count of comment
+                    "size": int(size),
+                    "next": str(next_http),
+                    "comments": comments,  # return ~5
+                    "published": str(post.published),
+                    "visibility": str(post.visibility),
+                    "visibleTo": visible_to_list,
+                    "unlisted": post.unlisted
+                })
+            pager = Paginator(array_of_posts, size)
+            current_page = pager.page(page_num)
 
-            next_http = "http://service/posts/{}/comments".format(post.id)
-            comment_size, comments = get_comments(post.id)
-            array_of_posts.append({
-                "id": str(post.id),
-                "title": str(post.title),
-                "source": str(post.source),
-                "origin": str(post.origin),
-                "description": str(post.description),
-                "contentType": str(post.contentType),
-                "content": str(post.content),
-                "author": author_info,
-                "categories": categories_list,
-                "count": int(comment_size),  # count of comment
-                "size": int(size),
-                "next": str(next_http),
-                "comments": comments,  # return ~5
-                "published": str(post.published),
-                "visibility": str(post.visibility),
-                "visibleTo": visible_to_list,
-                "unlisted": post.unlisted
-            })
+            uri = request.build_absolute_uri()
 
-        pager = Paginator(array_of_posts, size)
-        current_page = pager.page(page_num)
+            if current_page.has_previous() and current_page.has_next():
+                response_data = {
+                    "query": "posts",
+                    "count": int(count),
+                    "size": int(size),
+                    "next": str(get_page_url(uri, current_page.next_page_number())),
+                    "previous": str(get_page_url(uri, current_page.previous_page_number())),
+                    "posts": current_page.object_list
+                }
+            elif not current_page.has_next() and not current_page.has_previous():
+                response_data = {
+                    "query": "posts",
+                    "count": int(count),
+                    "size": int(size),
+                    "posts": current_page.object_list
+                }
+            elif not current_page.has_next():
+                response_data = {
+                    "query": "posts",
+                    "count": int(count),
+                    "size": int(size),
+                    "previous": str(get_page_url(uri, current_page.previous_page_number())),
+                    "posts": current_page.object_list
+                }
+            elif not current_page.has_previous():
+                response_data = {
+                    "query": "posts",
+                    "count": int(count),
+                    "size": int(size),
+                    "next": str(get_page_url(uri, current_page.next_page_number())),
+                    "posts": current_page.object_list
+                }
 
-        uri = request.build_absolute_uri()
+            return JsonResponse(response_data)
 
-        if current_page.has_previous() and current_page.has_next():
-            response_data = {
-                "query": "posts",
-                "count": int(count),
-                "size": int(size),
-                "next": str(get_page_url(uri, current_page.next_page_number())),
-                "previous": str(get_page_url(uri, current_page.previous_page_number())),
-                "posts": current_page.object_list
-            }
-        elif not current_page.has_next() and not current_page.has_previous():
-            response_data = {
-                "query": "posts",
-                "count": int(count),
-                "size": int(size),
-                "posts": current_page.object_list
-            }
-        elif not current_page.has_next():
-            response_data = {
-                "query": "posts",
-                "count": int(count),
-                "size": int(size),
-                "previous": str(get_page_url(uri, current_page.previous_page_number())),
-                "posts": current_page.object_list
-            }
-        elif not current_page.has_previous():
-            response_data = {
-                "query": "posts",
-                "count": int(count),
-                "size": int(size),
-                "next": str(get_page_url(uri, current_page.next_page_number())),
-                "posts": current_page.object_list
-            }
-
-        return JsonResponse(response_data)
+        return Endpoint(request, None, [Handler("GET", "text/html", retrieve_posts)]).resolve()
 
     return None
 
@@ -436,15 +435,15 @@ def get_page_url(request, page_number):
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
-    if request.method == 'GET':
-
-        if not request.user.is_authenticated:
-            return JsonResponse({
-                "success": False,
-                "message": "You must be logged in to access this Endpoint"
-            }, status=403)
+    def retrieve_author_posts(request):
+        # if not request.user.is_authenticated:
+        #     return JsonResponse({
+        #         "success": False,
+        #         "message": "You must be logged in to access this Endpoint"
+        #     }, status=403)
         author = get_object_or_404(Author, id=author_id)
 
+        print("host ", request)
         host = request.get_host()
         if request.is_secure():
             host = "https://" + host
@@ -452,7 +451,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             host = "http://" + host
 
         author_uid = host + "/author/" + str(author_id)
-
 
         # visibility =  PUBLIC
         public_post = Post.objects.filter(author=author, visibility="PUBLIC")
@@ -471,7 +469,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             foaf_post = Post.objects.filter(author=author, visibility="FOAF")
         else:
             foaf_post = Post.objects.none()
-
 
         # visibility = FRIENDS
         if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
@@ -581,8 +578,158 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "next": str(get_page_url(uri, current_page.next_page_number())),
                 "posts": current_page.object_list
             }
+        print("response data => {}".format(response_data))
 
         return JsonResponse(response_data)
+        # def retrieve_author_post(request):
+        #     # if not request.user.is_authenticated:
+        #     #     return JsonResponse({
+        #     #         "success": False,
+        #     #         "message": "You must be logged in to access this Endpoint"
+        #     #     }, status=403)
+        #     author = get_object_or_404(Author, id=author_id)
+        #
+        #     host = request.get_host()
+        #     if request.is_secure():
+        #         host = "https://" + host
+        #     else:
+        #         host = "http://" + host
+        #
+        #     author_uid = host + "/author/" + str(author_id)
+        #
+        #     # visibility =  PUBLIC
+        #     public_post = Post.objects.filter(author=author, visibility="PUBLIC")
+        #
+        #     # visibility = FOAF
+        #     foaf = False
+        #     author_friends = Friend.objects.filter(author_id=author_uid)
+        #     for friend_of_author in author_friends:
+        #         friend_of_authors_friend = Friend.objects.filter(author_id=friend_of_author.friend_id)
+        #         for friend in friend_of_authors_friend:
+        #             if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
+        #                 foaf = True
+        #                 break
+        #
+        #     if foaf:
+        #         foaf_post = Post.objects.filter(author=author, visibility="FOAF")
+        #     else:
+        #         foaf_post = Post.objects.none()
+        #
+        #     # visibility = FRIENDS
+        #     if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
+        #         friend_post = Post.objects.filter(author=author, visibility="FRIENDS")
+        #     else:
+        #         friend_post = Post.objects.none()
+        #
+        #     # visibility = PRIVATE
+        #     private_post = Post.objects.filter(author=author, visibleTo=request.user.id)
+        #
+        #     # visibility = SERVERONLY
+        #     if request.user.host == author.host:
+        #         server_only_post = Post.objects.filter(author=author, visibility="SERVERONLY")
+        #     else:
+        #         server_only_post = Post.objects.none()
+        #
+        #     visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
+        #
+        #     print(visible_post.order_by('-published'))
+        #
+        #     array_of_posts = []
+        #     count = visible_post.count()
+        #     page_num = int(request.GET.get('page', "1"))
+        #     size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
+        #
+        #     for post in visible_post.order_by("-published"):
+        #         author_id = Author.objects.get(id=post.author_id)
+        #         author_info = {
+        #             "id": str(author_id.uid),
+        #             "email": str(author_id.email),
+        #             "bio": str(author_id.bio),
+        #             "host": str(author_id.host),
+        #             "firstName": str(author_id.first_name),
+        #             "lastName": str(author_id.last_name),
+        #             "displayName": str(author_id.display_name),
+        #             "url": str(author_id.url),
+        #             "github": str(author_id.github)
+        #         }
+        #
+        #         categories = Category.objects.filter(post=post.id)
+        #         categories_list = []
+        #         for c in categories:
+        #             categories_list.append(c.name)
+        #
+        #         visible_to = post.visibleTo.all()
+        #         visible_to_list = []
+        #         for visible in visible_to:
+        #             visible_to_list.append(visible.username)
+        #
+        #         next_http = "http://service/posts/{}/comments".format(post.id)
+        #         comment_size, comments = get_comments(post.id)
+        #         array_of_posts.append({
+        #             "id": str(post.id),
+        #             "title": str(post.title),
+        #             "source": str(post.source),
+        #             "origin": str(post.origin),
+        #             "description": str(post.description),
+        #             "contentType": str(post.contentType),
+        #             "content": str(post.content),
+        #             "author": author_info,
+        #             "categories": categories_list,
+        #             "count": int(comment_size),  # count of comment
+        #             "size": int(size),
+        #             "next": str(next_http),
+        #             "comments": comments,  # return ~5
+        #             "published": str(post.published),
+        #             "visibility": str(post.visibility),
+        #             "visibleTo": visible_to_list,
+        #             "unlisted": post.unlisted
+        #         })
+        #
+        #     pager = Paginator(array_of_posts, size)
+        #
+        #     current_page = pager.page(page_num)
+        #
+        #     uri = request.build_absolute_uri()
+        #
+        #     if current_page.has_previous() and current_page.has_next():
+        #         response_data = {
+        #             "query": "posts",
+        #             "count": int(count),
+        #             "size": int(size),
+        #             "next": str(get_page_url(uri, current_page.next_page_number())),
+        #             "previous": str(get_page_url(uri, current_page.previous_page_number())),
+        #             "posts": current_page.object_list
+        #         }
+        #     elif not current_page.has_next() and not current_page.has_previous():
+        #         response_data = {
+        #             "query": "posts",
+        #             "count": int(count),
+        #             "size": int(size),
+        #             "posts": current_page.object_list
+        #         }
+        #     elif not current_page.has_next():
+        #         response_data = {
+        #             "query": "posts",
+        #             "count": int(count),
+        #             "size": int(size),
+        #             "previous": str(get_page_url(uri, current_page.previous_page_number())),
+        #             "posts": current_page.object_list
+        #         }
+        #     elif not current_page.has_previous():
+        #         response_data = {
+        #             "query": "posts",
+        #             "count": int(count),
+        #             "size": int(size),
+        #             "next": str(get_page_url(uri, current_page.next_page_number())),
+        #             "posts": current_page.object_list
+        #         }
+        #
+        #     return JsonResponse(response_data)
+        #
+
+    return Endpoint(request, None,
+                    [Handler("GET", "text/html", retrieve_author_posts)]
+                    ).resolve()
 
 
 # Ida Hou
