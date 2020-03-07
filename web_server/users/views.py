@@ -46,10 +46,7 @@ def register(request):
             # wait for admin permission to activate account
             user.is_active = False
             host = request.get_host()
-            url = host + "/author/" + str(user.id)
-            print(url)
-            print(user.id)
-
+            url = host + "/author/" + str(user.id.hex)
             # set user url
             user.url = url
             # set user id

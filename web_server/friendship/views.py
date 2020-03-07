@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from friendship.models import FriendRequest, Friend
+from friendship.models import FriendRequest, Friend, Follow
 import json
 import re
 url_regex = re.compile(r"(http(s?))?://")
@@ -31,12 +31,22 @@ def handle_friend_request(request):
     if request.method == 'POST':
 
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
-            # add new entry in Friend Model
-            new_friend = Friend(author_id=from_id, friend_id=to_id)
-            new_friend.save()
+
             # delete the entry in FriendRequest
             FriendRequest.objects.filter(
                 from_id=from_id).filter(to_id=to_id).delete()
+
+            # if both way follows exist in Follow, real friendship established.
+            # then remove both entries from Follow but add a row in Friend table
+            if Follow.objects.filter(follower_id=to_id).filter(followee_id=from_id).exists():
+                Follow.objects.filter(
+                    follower_id=to_id).filter(followee_id=from_id).delete()
+                new_friend = Friend(author_id=from_id, friend_id=to_id)
+                new_friend.save()
+            else:
+                new_follow = Follow(follower_id=from_id, followee_id=to_id)
+                new_follow.save()
+
             return HttpResponse("Friend successfully added", status=200)
         else:
             return HttpResponse("No such friend request", status=404)

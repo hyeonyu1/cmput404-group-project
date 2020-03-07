@@ -43,7 +43,7 @@ class CustomUserAdmin(UserAdmin):
             obj.is_active = False
             host = request.get_host()
 
-            url = host + "/author/" + str(obj.id)
+            url = host + "/author/" + str(obj.id.hex)
             obj.url = url
             obj.uid = url
             obj.host = host
