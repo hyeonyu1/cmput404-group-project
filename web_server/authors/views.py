@@ -14,7 +14,7 @@ import json
 
 from social_distribution.utils.endpoint_utils import Endpoint, Handler, PagingHandler
 
-DEFAULT_PAGE_SIZE = 2
+DEFAULT_PAGE_SIZE = 10
 
 # Ida Hou
 # return a list of author id that are currently stored in database and
