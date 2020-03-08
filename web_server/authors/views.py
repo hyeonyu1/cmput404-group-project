@@ -1,5 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
+from django.core.paginator import Paginator
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
 from friendship.models import Friend
 from posts.models import Post, Category
@@ -7,12 +10,17 @@ from comments.models import Comment
 from django.db.models import Q
 from django.utils.timezone import make_aware
 from django.urls import reverse
+from urllib.parse import urlparse, urlunparse
+from uuid import UUID
+
 
 import json
 import datetime
 import sys
 
-from social_distribution.utils.endpoint_utils import Endpoint, Handler
+from social_distribution.utils.endpoint_utils import Endpoint, Handler, PagingHandler
+
+DEFAULT_PAGE_SIZE = 10
 
 
 # Ida Hou
@@ -247,21 +255,211 @@ def post_creation_and_retrival_to_curr_auth_user(request):
             "success": True,
             "message": "Post Added"
         })
-        
-        return Endpoint(request,None,[
-            Handler("POST", "application/json", create_new_post)
-        ]).resolve()
-    
-        
-        if request.method == 'POST':
-            pass
         '''
-    elif request.method == 'GET':
-        # retrive posts that are visible to the currently authenticated user
-        # GET from http://service/author/posts
-        return HttpResponse("<h1>http://service/author/posts GET</h1>")
 
-    return None
+
+    # retrive posts that are visible to the currently authenticated user
+    # GET from http://service/author/posts
+    # retrive posts that are visible to the currently authenticated user
+    # GET from http://service/author/posts
+
+    def retrieve_posts(request):
+        # visibility =  PUBLIC
+        public_post = Post.objects.filter(visibility="PUBLIC")
+
+        # visibility = FOAF
+        FOAF_post_authors = []
+        FOAF_post = Post.objects.filter(visibility="FOAF")
+        for post in FOAF_post:
+            FOAF_post_authors.append(post.author_id)
+
+        FOAF_uid = []
+        for author in FOAF_post_authors:
+            FOAF_uid.append(Author.objects.get(id=author).uid)
+
+        visible_FOAF_author = []
+        for friend_of_author in FOAF_uid:
+            friend_of_authors_friend = Friend.objects.filter(author_id=friend_of_author)
+            for friend in friend_of_authors_friend:
+                if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
+                    visible_FOAF_author.append(friend_of_author.split("/")[-1])
+
+        foaf_post = Post.objects.filter(author__in=visible_FOAF_author, visibility="FOAF")
+
+        # visibility = FRIENDS
+        users_friends = []
+        friends = Friend.objects.filter(author_id=request.user.uid)
+        for friend in friends:
+            users_friends.append(friend.friend_id)
+
+        usernames = []
+        for uid in users_friends:
+            usernames.append(Author.objects.get(uid=uid).id)
+
+        friend_post = Post.objects.filter(author__in=usernames, visibility="FRIENDS")
+
+        # visibility = PRIVATE
+        private_post = Post.objects.filter(visibleTo=request.user.id)
+
+        # visibility = SERVERONLY
+        local_host = request.user.host
+        server_only_post = Post.objects.filter(author__host=local_host, visibility="SERVERONLY")
+
+        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
+
+        array_of_posts = []
+        count = visible_post.count()
+
+        page_num = int(request.GET.get('page', "1"))
+        size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
+
+        for post in visible_post.order_by("-published"):
+            author_id = Author.objects.get(id=post.author_id)
+            author_info = {
+                "id": str(author_id.uid),
+                "email": str(author_id.email),
+                "bio": str(author_id.bio),
+                "host": str(author_id.host),
+                "firstName": str(author_id.first_name),
+                "lastName": str(author_id.last_name),
+                "displayName": str(author_id.display_name),
+                "url": str(author_id.url),
+                "github": str(author_id.github)
+            }
+
+            categories = Category.objects.filter(post=post.id)
+            categories_list = []
+            for c in categories:
+                categories_list.append(c.name)
+
+            visible_to = post.visibleTo.all()
+            visible_to_list = []
+            for visible in visible_to:
+                visible_to_list.append(visible.username)
+
+            host = request.get_host()
+            if request.is_secure():
+                host = "https://" + host
+            else:
+                host = "http://" + host
+
+            next_http = "{}/posts/{}/comments".format(host, post.id)
+            comment_size, comments = get_comments(post.id)
+            array_of_posts.append({
+                "id": str(post.id),
+                "title": str(post.title),
+                "source": str(post.source),
+                "origin": str(post.origin),
+                "description": str(post.description),
+                "contentType": str(post.contentType),
+                "content": str(post.content),
+                "author": author_info,
+                "categories": categories_list,
+                "count": int(comment_size),  # count of comment
+                "size": int(size),
+                "next": str(next_http),
+                "comments": comments,  # return ~5
+                "published": str(post.published),
+                "visibility": str(post.visibility),
+                "visibleTo": visible_to_list,
+                "unlisted": post.unlisted
+            })
+        pager = Paginator(array_of_posts, size)
+
+        if page_num > pager.num_pages:
+            return JsonResponse({
+                "success": False,
+                "message": "Empty"
+            }, status=200)
+
+        current_page = pager.page(page_num)
+        uri = request.build_absolute_uri()
+
+        if current_page.has_previous() and current_page.has_next():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "next": str(get_page_url(uri, current_page.next_page_number())),
+                "previous": str(get_page_url(uri, current_page.previous_page_number())),
+                "posts": current_page.object_list
+            }
+        elif not current_page.has_next() and not current_page.has_previous():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "posts": current_page.object_list
+            }
+        elif not current_page.has_next():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "previous": str(get_page_url(uri, current_page.previous_page_number())),
+                "posts": current_page.object_list
+            }
+        elif not current_page.has_previous():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "next": str(get_page_url(uri, current_page.next_page_number())),
+                "posts": current_page.object_list
+            }
+
+        return JsonResponse(response_data)
+
+    return Endpoint(request, None, [Handler("POST", "application/json", create_new_post),
+                                    Handler("GET", "application/json", retrieve_posts)
+                                    ]).resolve()
+
+
+# Returns 5 newest comment on the post
+def get_comments(post_id):
+    comments_list = []
+    comments = Comment.objects.filter(parentPost=post_id).order_by("-published")[:5]
+    size = comments.count()
+
+    for comment in comments:
+        author = Author.objects.get(username=comment.author)
+        c = {
+            "id": str(comment.id),
+            "contentType": str(comment.contentType),
+            "comment": str(comment.content),
+            "published": str(comment.published),
+            "author": {
+                "id": str(author.uid),
+                "email": str(author.email),
+                "bio": str(author.bio),
+                "host": str(author.host),
+                "firstName": str(author.first_name),
+                "lastName": str(author.last_name),
+                "displayName": str(author.display_name),
+                "url": str(author.url),
+                "github": str(author.github)
+            }
+        }
+        comments_list.append(c)
+
+    return size, comments_list
+
+
+# https://stackoverflow.com/questions/5755150/altering-one-query-parameter-in-a-url-django
+def get_page_url(request, page_number):
+
+    (scheme, netloc, path, params, query, fragment) = urlparse(request)
+    query_dict = QueryDict(query).copy()
+    query_dict["page"] = page_number
+    query = query_dict.urlencode()
+
+
+    return urlunparse((scheme, netloc, path[:-1], params, query, fragment))
+
+
+def post_edit_and_delete(request, post_id):
+    pass
+
 
 
 def post_edit_and_delete(request, post_id):
@@ -272,7 +470,166 @@ def post_edit_and_delete(request, post_id):
 
 
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
-    return HttpResponse("<h1>http://service/author/{}/posts GET</h1>".format(author_id))
+    id_of_author = author_id
+
+    def retrieve_author_posts(request):
+        try:
+            valid_uuid = UUID(id_of_author, version=4)
+        except ValueError:
+            return JsonResponse({
+                "success": False,
+                "message": "Not a valid uuid"
+            }, status=200)
+
+        author = get_object_or_404(Author, id=id_of_author)
+
+        host = request.get_host()
+        if request.is_secure():
+            host = "https://" + host
+        else:
+            host = "http://" + host
+
+        author_uid = host + "/author/" + str(id_of_author)
+
+        # visibility =  PUBLIC
+        public_post = Post.objects.filter(author=author, visibility="PUBLIC")
+
+        # visibility = FOAF
+        foaf = False
+        author_friends = Friend.objects.filter(author_id=author_uid)
+        for friend_of_author in author_friends:
+            friend_of_authors_friend = Friend.objects.filter(author_id=friend_of_author.friend_id)
+            for friend in friend_of_authors_friend:
+                if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
+                    foaf = True
+                    break
+
+        if foaf:
+            foaf_post = Post.objects.filter(author=author, visibility="FOAF")
+        else:
+            foaf_post = Post.objects.none()
+
+        # visibility = FRIENDS
+        if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
+            friend_post = Post.objects.filter(author=author, visibility="FRIENDS")
+        else:
+            friend_post = Post.objects.none()
+
+        # visibility = PRIVATE
+        private_post = Post.objects.filter(author=author, visibleTo=request.user.id)
+
+        # visibility = SERVERONLY
+        if request.user.host == author.host:
+            server_only_post = Post.objects.filter(author=author, visibility="SERVERONLY")
+        else:
+            server_only_post = Post.objects.none()
+
+        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
+
+
+        array_of_posts = []
+        count = visible_post.count()
+        page_num = int(request.GET.get('page', "1"))
+        size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
+
+        for post in visible_post.order_by("-published"):
+            author_id = Author.objects.get(id=post.author_id)
+            author_info = {
+                "id": str(author_id.uid),
+                "email": str(author_id.email),
+                "bio": str(author_id.bio),
+                "host": str(author_id.host),
+                "firstName": str(author_id.first_name),
+                "lastName": str(author_id.last_name),
+                "displayName": str(author_id.display_name),
+                "url": str(author_id.url),
+                "github": str(author_id.github)
+            }
+
+            categories = Category.objects.filter(post=post.id)
+            categories_list = []
+            for c in categories:
+                categories_list.append(c.name)
+
+            visible_to = post.visibleTo.all()
+            visible_to_list = []
+            for visible in visible_to:
+                visible_to_list.append(visible.username)
+
+            next_http = "{}/posts/{}/comments".format(host, post.id)
+
+            comment_size, comments = get_comments(post.id)
+            array_of_posts.append({
+                "id": str(post.id),
+                "title": str(post.title),
+                "source": str(post.source),
+                "origin": str(post.origin),
+                "description": str(post.description),
+                "contentType": str(post.contentType),
+                "content": str(post.content),
+                "author": author_info,
+                "categories": categories_list,
+                "count": int(comment_size),  # count of comment
+                "size": int(size),
+                "next": str(next_http),
+                "comments": comments,  # return ~5
+                "published": str(post.published),
+                "visibility": str(post.visibility),
+                "visibleTo": visible_to_list,
+                "unlisted": post.unlisted
+            })
+
+        pager = Paginator(array_of_posts, size)
+
+        if page_num > pager.num_pages:
+            return JsonResponse({
+                "success": False,
+                "message": "Empty"
+            }, status=200)
+
+        current_page = pager.page(page_num)
+
+        uri = request.build_absolute_uri()
+
+        if current_page.has_previous() and current_page.has_next():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "next": str(get_page_url(uri, current_page.next_page_number())),
+                "previous": str(get_page_url(uri, current_page.previous_page_number())),
+                "posts": current_page.object_list
+            }
+        elif not current_page.has_next() and not current_page.has_previous():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "posts": current_page.object_list
+            }
+        elif not current_page.has_next():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "previous": str(get_page_url(uri, current_page.previous_page_number())),
+                "posts": current_page.object_list
+            }
+        elif not current_page.has_previous():
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "next": str(get_page_url(uri, current_page.next_page_number())),
+                "posts": current_page.object_list
+            }
+
+        return JsonResponse(response_data)
+
+    return Endpoint(request, None,
+                    [Handler("GET", "application/json", retrieve_author_posts)]
+                    ).resolve()
+
 
 # Ida Hou
 
