@@ -2,8 +2,6 @@ from django.db import models
 
 from uuid import uuid4
 from django.contrib.auth.models import AbstractUser
-
-
 # Create your models here.
 
 """Author Model: This model is used to store all Author related information. This model is an extension of 
@@ -12,7 +10,7 @@ from django.contrib.auth.models import AbstractUser
     Important Columns to Note
     ----------
     id: UUIDField. eg: d7a387df-2b46-43ed-90f1-51c7e02c51d6
-    uid: primary key which is the full url id of an author. eg: http://127.0.0.1:8000/author/d7a387df-2b46-43ed-90f1-51c7e02c51d6
+    uid: primary key which is the full url id of an author. eg: 127.0.0.1:8000/author/d7a387df-2b46-43ed-90f1-51c7e02c51d6
     url: same value as uid, this is an url to author's profile page. eg: http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
     is_active: default to False when author signs up, as per requirements. 
 
@@ -45,10 +43,10 @@ class Author(AbstractUser):
     # Author ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
     id = models.UUIDField(primary_key=False, default=uuid4,
                           editable=False, unique=True)
-    uid = models.URLField(primary_key=True, max_length=500)
-
+    uid = models.CharField(
+        primary_key=True, max_length=500)  # without protocol
     bio = models.TextField(blank=True)
-    host = models.URLField()
+    host = models.URLField(max_length=500)
     display_name = models.CharField(max_length=256, blank=True)
     url = models.URLField(max_length=500)
     github = models.URLField(blank=True)

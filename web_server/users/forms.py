@@ -14,7 +14,7 @@ class UserRegisterForm(UserCreationForm):
     display_name = forms.CharField(
         label="displayname", max_length=256, required=False, help_text="optional"
     )
-    email = forms.EmailField(required=True)
+    email = forms.EmailField(label="email", required=True)
 
     bio = forms.CharField(label="bio", required=False, help_text="optional")
 

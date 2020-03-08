@@ -23,7 +23,7 @@ url_regex = re.compile(r"(http(s?))?://")
 
 def view_list_of_available_authors_to_befriend(request, author_id):
     if request.method != 'GET':
-        return HttpResponse("Method not Allowed", status=405)
+        return HttpResponse("Method Not Allowed", status=405)
     host = request.get_host()
     author_id = host + "/author/" + str(author_id)
     if not Author.objects.filter(uid=author_id).exists():
@@ -338,7 +338,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
 def check_if_two_authors_are_friends(request, author1_id, author2_id):
     if request.method == 'GET':
         # compose author id from author uid
-        print("what is my author2_id", author2_id)
+
         host = request.get_host()
         author1_id = host + "/author/" + str(author1_id)
         # decode + strip url protocol
