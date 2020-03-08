@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="{% static '/users/css/style.css' %}" xmlns:v-bind="http://www.w3.org/1999/xhtml">
 
 
-<div>
+<div id="app">
     <div class="container profile-image">
         <div>
             <img src="{% static '/users/images/profile.png' %}" height="100%" width="100%">
@@ -18,54 +18,65 @@
                 <h1 style="text-align: center"> {{user.first_name}}, Welcome to Mandala </h1>
             </div>
 
-            <div class="container profile-info-body">
-                <form action="{% url 'profile' %}" method="post">
-                    <div class="form-group">
-                        <label for="new_fname">Firstname: </label>
-                        <input class="form-control" id="new_fname" type="text" name="new_fname"
-                            value="{{ user.first_name }}">
-                        <label for="new_lname">Lastname: </label>
-                        <input class="form-control" id="new_lname" type="text" name="new_lname"
-                            value="{{ user.last_name }}">
-                        <label for="new_dname">Displayname: </label>
-                        <input class="form-control" id="new_dname" type="text" name="new_dname"
-                            value="{{ user.display_name }}">
-                        <label for="new_email">Email: </label>
-                        <input class="form-control" id="new_email" type="text" name="new_email"
-                            value="{{ user.email }}">
-                        <label for="new_bio">Bio: </label>
-                        <input class="form-control" id="new_bio" type="text" name="new_bio" value="{{ user.bio }}">
-                        <label for="new_github">Github: </label>
-                        <input class="form-control" id="new_github" type="text" name="new_github"
-                            value="{{ user.github}}">
-
-                        <span id="test"></span>
-                    </div>
-
-                    <input class="btn btn-primary " type="submit" value="Edit">
-                </form>
-
+            <user-info
+                    v-bind:user="user"
+            ></user-info>
             </div>
 
-            <div  id="app">
+
+        <div class="card">
+             <div class="card-header">
+                 Friends Requests
+             </div>
+             <div class="card-body">
                 <ul class="list-group">
-                       <request-list
-                    v-for="(sender, index) in request_senders"
-                    v-bind:sender="sender"
-                    v-bind:index="index"
-                >
-                </request-list>
-
+                    <request-list
+                        v-for="(sender, index) in request_senders"
+                        v-bind:sender="sender"
+                        v-bind:index="index"
+                    >
+                    </request-list>
                 </ul>
-
-
-
-            </div>
+             </div>
         </div>
 
 
+         <div class="card">
+             <div class="card-header">
+                 My Friends
+             </div>
+             <div class="card-body">
+                 <ul class="list-group">
+                     <friend-list
+                       v-for="(friend, index) in friends"
+                       v-bind:friend="friend"
+                       v-bind:index="index"
+                     >
+                    </friend-list>
+                 </ul>
+             </div>
+
+         </div>
     </div>
+
+
+
+
+
 </div>
+<template id="list-friend">
+    <div v-if="!friend.isDeleted">
+        <li class="list-group-item">
+            <div class="form-inline">
+                <a v-bind:href="'{% url 'profile' %}' + friend.uid">[[friend.displayName]]</a>
+                <button class="btn btn-primary" @click="app.unfriend(friend.id, '{{ user.id }}', index)">Delete</button>
+
+            </div>
+        </li>
+    </div>
+</template>
+
+
 <template id="list-item">
     <div v-if="!sender.isDeleted">
         <li class="list-group-item">
@@ -73,11 +84,37 @@
                 <a v-bind:href="'{% url 'profile' %}' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
                 <button class="btn btn-primary" @click="app.accept(sender.id, '{{ user.id }}', index)">Accept</button>
                 <button class="btn btn-warning" @click="app.deny(sender.id, '{{ user.id }}', index)">Deny</button>
-
             </div>
         </li>
     </div>
+</template>
 
+
+<template id="user-info">
+    <div class="container profile-info-body">
+        <div class="form-group">
+            <label for="first_name">Firstname: </label>
+            <input class="form-control" id="first_name" type="text" name="first_name"
+                v-bind:value="user.firstName">
+            <label for="last_name">Lastname: </label>
+            <input class="form-control" id="last_name" type="text" name="last_name"
+                v-bind:value="user.lastName">
+            <label for="display_name">Displayname: </label>
+            <input class="form-control" id="display_name" type="text" name="display_name"
+                v-bind:value=" user.displayName">
+            <label for="email">Email: </label>
+            <input class="form-control" id="email" type="text" name="email"
+                v-bind:value="user.email">
+            <label for="bio">Bio: </label>
+            <input class="form-control" id="bio" type="text" name="bio" v-bind:value="user.bio">
+            <label for="github">Github: </label>
+            <input class="form-control" id="github" type="text" name="github"
+                v-bind:value=" user.github">
+        </div>
+        {% if author_id == user.id %}
+            <button class="btn btn-primary ">Edit</button>
+        {% endif %}
+    </div>
 </template>
 <script>
     Vue.component('request-list', {
@@ -86,20 +123,38 @@
         template: '#list-item'
     });
 
-    function sender({id, firstName, lastName}) {
-        this.uid = uid;
-        this.name = name;
-    }
+    Vue.component('friend-list', {
+        delimiters: ['[[', ']]'],
+        props: ['friend', 'index'],
+        template: '#list-friend'
+    });
+
+    Vue.component('user-info', {
+        delimiters: ['[[', ']]'],
+        props: ['user'],
+        template: '#user-info'
+    });
 
     var app = new Vue({
         el: '#app',
         data() {
             return {
-                request_senders: []
+                request_senders: [],
+                user: {},
+                friends: []
             }
         },
         methods: {
-            get(url) {
+            get_user(id){
+                let url = '/author/'+ id;
+                window.axios.get(url).then((response)=>{
+                    this.user = response.data;
+                    this.friends = response.data['friends'];
+                    console.log(this.friends);
+                })
+            },
+
+            get_request(url) {
                 window.axios.get(url).then((response)=>{
                     let data = response.data;
                     let from_ids = data['request'];
@@ -152,10 +207,23 @@
                         this.request_senders[index]['isDeleted'] = true;
                     }
                 })
-            }
+            },
+            unfriend: function(friend_id, user_id,index){
+                window.axios.post("/author/unfriend", {
+                    'author_id':user_id,
+                    'friend_id':friend_id
+                }).then((response) => {
+                    if(response.status === 200){
+                        alert(response.data);
+                        this.friends[index]['isDeleted'] = true;
+                    }
+                });
+            },
         },
+
         created() {
-            this.get('/friendrequest/{{user.id}}');
+            this.get_user("{{user.id}}");
+            this.get_request('/friendrequest/{{user.id}}');
         }
     });
 
