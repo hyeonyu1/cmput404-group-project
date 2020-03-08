@@ -49,17 +49,8 @@
 
 	<script> type="text/javascript"
 	function editPost() {
-		fetch("{% url 'edit_or_delete_post' post.id%}", {
-	        method: 'POST',
-	    })
-	    .then(response=>{
-	        if (response.status == 200){
-	            window.location.href = "/"
-	        } else {
-	            alert("Unable to edit post")
-	        }
-	    })
-	};
+		window.open("/");
+	}
 	</script>
 
     <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
