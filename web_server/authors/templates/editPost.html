@@ -45,12 +45,26 @@
     </div>
     <br>
 
-    <button type="submit" form="postForm" id="editButton" onclick="editPost()">Edit</button>
+    <!-- type="submit" form="postForm" -->
+    <button id="editButton" onclick="editPost()">Edit</button>
 
-	<script> type="text/javascript"
-	function editPost() {
-		window.open("/");
-	}
+    <script type="text/javascript">
+    function editPost() {
+    	var formData = new FormData(document.querySelector('#postForm'))
+
+        fetch("{% url 'edit_or_delete_post' post.id%}", {
+            method: 'POST',
+            body: formData
+        })
+        
+        .then(response=>{
+            if (response.status == 200){
+                window.location.href = "/"
+            } else {
+                alert("Unable to edit post")
+            }
+        })
+    }
 	</script>
 
     <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
