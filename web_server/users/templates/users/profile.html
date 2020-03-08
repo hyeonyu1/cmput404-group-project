@@ -63,8 +63,8 @@
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'{% url 'profile' %}' + friend.uid">[[friend.displayName]]</a>
-                <button class="btn btn-primary" @click="app.unfriend(friend.id, '{{ user.id }}', index)">Delete</button>
+                <a v-bind:href="'{% url 'profile' %}' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
+                <button class="btn btn-primary" @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
 
             </div>
         </li>
@@ -77,8 +77,8 @@
         <li class="list-group-item">
             <div class="form-inline">
                 <a v-bind:href="'{% url 'profile' %}' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
-                <button class="btn btn-primary" @click="app.accept(sender.id, '{{ user.id }}', index)">Accept</button>
-                <button class="btn btn-warning" @click="app.deny(sender.id, '{{ user.id }}', index)">Deny</button>
+                <button class="btn btn-primary" @click="app.accept(sender.id, '{{ user.uid }}', index)">Accept</button>
+                <button class="btn btn-warning" @click="app.deny(sender.id, '{{ user.uid }}', index)">Deny</button>
             </div>
         </li>
     </div>
@@ -105,8 +105,8 @@
             <label for="github">Github: </label>
             <input class="form-control" id="github" type="text" name="github"
                 v-model=" user.github">
-            <button class="btn btn-primary" @click="app.edit('{{ user.id }}')">Edit</button>
-            <button class="btn btn-primary" @click="app.delete_account('{{ user.id }}')">Delete My Account</button>
+            <button class="btn btn-primary" @click="app.edit('{{ user.id.hex }}')">Edit</button>
+            <button class="btn btn-primary" @click="app.delete_account('{{ user.id.hex }}')">Delete My Account</button>
         </div>
     </div>
 </template>
@@ -148,6 +148,7 @@
             get_user(id) {
                 let url = '/author/' + id;
                 window.axios.get(url).then((response) => {
+
                     this.user = response.data;
                     this.friends = response.data['friends'];
                     console.log(this.friends);
@@ -183,7 +184,7 @@
                     },
                     // Friend id is to_id (Your id)
                     "friend": {
-                        "id": "http://127.0.0.1:8000/author/" + user_id
+                        "id":  user_id
                     }
                 }).then((response) => {
                     if (response.status === 200) {
@@ -201,7 +202,7 @@
                         },
                         // Friend id is to_id (Your id)
                         "friend": {
-                            "id": "http://127.0.0.1:8000/author/" + user_id
+                            "id": user_id
                         }
                     }
 
@@ -270,8 +271,8 @@
         },
 
         created() {
-            this.get_user("{{user.id}}");
-            this.get_request('/friendrequest/{{user.id}}');
+            this.get_user("{{user.id.hex}}");
+            this.get_request('/friendrequest/{{user.id.hex}}');
         }
     });
 

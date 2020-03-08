@@ -8,45 +8,41 @@ from django.db.models import Q
 from django.utils.timezone import make_aware
 from django.urls import reverse
 
+
 import json
 import datetime
 import sys
-
+import re
 from social_distribution.utils.endpoint_utils import Endpoint, Handler
-
-
+# used for stripping url protocol
+url_regex = re.compile(r"(http(s?))?://")
 # Ida Hou
 # return a list of author id that are currently stored in database and
 # are not friend with current author
+
+
 def view_list_of_available_authors_to_befriend(request, author_id):
     if request.method != 'GET':
-        return HttpResponse("Method not Allowed", status=405)
-    if not Author.objects.filter(id=author_id).exists():
-        return HttpResponse("No Author Record", status=404)
-    authors_on_record = Author.objects.filter(~Q(id=author_id)).filter(
-        is_active=1).filter(is_superuser=0)
-    # compose full url of author id
+        return HttpResponse("Method Not Allowed", status=405)
     host = request.get_host()
-    if request.is_secure():
-        host = "https://" + host
-    else:
-        host = "http://" + host
-
     author_id = host + "/author/" + str(author_id)
+    if not Author.objects.filter(is_active=1).filter(uid=author_id).exists():
+        return HttpResponse("No Author Record", status=404)
+    authors_on_record = Author.objects.filter(~Q(uid=author_id)).filter(
+        is_active=1).filter(is_superuser=0)
     response_data = {}
     response_data["available_authors_to_befriend"] = []
     for each in authors_on_record:
         response_data["available_authors_to_befriend"].append(each.uid)
     if not Friend.objects.filter(author_id=author_id).exists():
-
         return JsonResponse(response_data)
 
-    # need to make sure that existing_friends be a subset of authors_on_record
-    # which brings up a question that where should we store foreign author? In the Author table?
-    # or should we make another "Foreign_Author" table ?
-    # TODO
     existing_friends = Friend.objects.filter(author_id=author_id)
-
+    friend_candidate_set = set(response_data["available_authors_to_befriend"])
+    existing_friends_set = set(
+        [existing_friend.friend_id for existing_friend in existing_friends])
+    response_data["available_authors_to_befriend"] = list(
+        friend_candidate_set.difference(existing_friends_set))
     return JsonResponse(response_data)
 
 
@@ -62,15 +58,18 @@ def unfriend(request):
     if request.method == 'POST':
         body = request.body.decode('utf-8')
         body = json.loads(body)
-        author_id = body.get("author_id", None)
-        friend_id = body.get("friend_id", None)
+        # strip protocol from url
+        author_id = url_regex.sub('', body.get("author_id", ""))
+        friend_id = url_regex.sub('', body.get("friend_id", ""))
+        print(author_id, friend_id)
         if not author_id or not friend_id:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
         if Friend.objects.filter(author_id=author_id).filter(friend_id=friend_id).exists():
             Friend.objects.filter(author_id=author_id).filter(
                 friend_id=friend_id).delete()
-        return HttpResponse("Unfriended !", status=200)
+            return HttpResponse("Unfriended !", status=200)
+        return HttpResponse("Friendship does not exist!", status=200)
 
     return HttpResponse("Method Not Allowed", status=405)
 # handler for endpoint: http://service/author/<str:author_id>/update
@@ -85,7 +84,10 @@ def unfriend(request):
 def update_author_profile(request, author_id):
     if request.method != 'POST':
         return HttpResponse("Method Not Allowed", status=405)
-    if not Author.objects.filter(id=author_id).exists():
+    # compose full url of author
+    host = request.get_host()
+    author_id = host + "/author/" + str(author_id)
+    if not Author.objects.filter(uid=author_id).exists():
         return HttpResponse("Author Does not Exist", status=404)
     # unpack post body data
     body = request.body.decode('utf-8')
@@ -119,12 +121,13 @@ def update_author_profile(request, author_id):
         return HttpResponse("Post body missing fields: display_name", status=404)
 
     if delete:
+
         author_to_be_deleted = Author.objects.get(
             pk=author_id)
         author_to_be_deleted.delete()
     else:
         obj, created = Author.objects.update_or_create(
-            id=author_id,
+            uid=author_id,
             defaults={'first_name': first_name, 'last_name': last_name,
                       'email': email, 'bio': bio, 'github': github,
                       'display_name': display_name},
@@ -137,11 +140,16 @@ def update_author_profile(request, author_id):
 # service/author/{author_id} endpoint handler
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
-
-        author = get_object_or_404(Author, id=author_id)
+        # compose full url of author
+        host = request.get_host()
+        author_id = host + "/author/" + str(author_id)
+        # only active authors are retrivable
+        author = get_object_or_404(
+            Author.objects.filter(is_active=1), uid=author_id)
         response_data = {}
         response_data['id'] = author.uid
         response_data['host'] = author.host
+        response_data['url'] = author.url
         response_data['displayName'] = author.display_name
         response_data['friends'] = []
         # if current user has friends
@@ -159,6 +167,8 @@ def retrieve_author_profile(request, author_id):
                 entry['host'] = each.host
                 entry['displayName'] = each.display_name
                 entry['url'] = each.url
+                entry['firstName'] = each.first_name
+                entry['lastName'] = each.last_name
                 response_data['friends'].append(entry)
         # add optional information of current user
         response_data['github'] = author.github
@@ -179,7 +189,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
     :param request:
     :return:
     """
-    #def create_new_post(request):
+    # def create_new_post(request):
     if request.method == 'POST':
         # POST to http://service/author/posts
         # Create a post to the currently authenticated user
@@ -202,25 +212,29 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         new_post = Post()
 
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
-        new_post.title       = post['title']        #: "A post title about a post about web dev",
+        #: "A post title about a post about web dev",
+        new_post.title = post['title']
         # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
         # new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
-        new_post.description = post['description']  # : "This post discusses stuff -- brief",
+        # : "This post discusses stuff -- brief",
+        new_post.description = post['description']
         # new_post.contentType = post['contentType']  # : "text/plain",
-        new_post.content     = post['content']      #: "stuffs",
-        new_post.author      = request.user         # the authenticated user
+        new_post.content = post['content']      #: "stuffs",
+        new_post.author = request.user         # the authenticated user
         # Categories added after new post is saved
-        new_post.count       = 0                    #: 1023, initially the number of comments is zero
-        new_post.size        = size                 #: 50,
+        #: 1023, initially the number of comments is zero
+        new_post.count = 0
+        new_post.size = size                 #: 50,
         # new_post.next        = post['next']         #: "http://service/posts/{post_id}/comments",
 
         # @todo allow adding comments to new post
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
 
-        new_post.published = str(make_aware(datetime.datetime.now()))  #: "2015-03-09T13:07:04+00:00",
+        #: "2015-03-09T13:07:04+00:00",
+        new_post.published = str(make_aware(datetime.datetime.now()))
         new_post.visibility = post['visibility']   #: "PUBLIC",
 
-        #new_post.unlisted = post['unlisted']       #: true
+        # new_post.unlisted = post['unlisted']       #: true
         # @todo allow setting visibility of new post
         # new_post.visibleTo = post['visibleTo']  #: LIST,
 
@@ -239,7 +253,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         #     print(f'{key}: {body[key]}')
 
         return redirect(reverse('profile'))
-        #return HttpResponse("<h1>http://service/author/posts POST</h1>")
+        # return HttpResponse("<h1>http://service/author/posts POST</h1>")
 
         '''
         return JsonResponse({
@@ -280,13 +294,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 def friend_checking_and_retrieval_of_author_id(request, author_id):
     # compose author id
     host = request.get_host()
-    if request.is_secure():
-        host = "https://" + host
-    else:
-        host = "http://" + host
-
     author_id = host + "/author/" + str(author_id)
-
     if request.method == 'POST':
         # ask a service if anyone in the list is a friend
         # POST to http://service/author/<authorid>/friends
@@ -302,6 +310,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
         response_data["authors"] = []
         if Friend.objects.filter(author_id=author_id).exists():
             for potential_friend in potential_friends:
+                potential_friend = url_regex.sub('', potential_friend)
                 if Friend.objects.filter(author_id=author_id).filter(friend_id=potential_friend).exists():
                     response_data["authors"].append(potential_friend)
 
@@ -323,24 +332,24 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
                 response_data['authors'].append(friend.friend_id)
         return JsonResponse(response_data)
     else:
-        HttpResponse("You can only GET or POST to the URL", status=405)
+        return HttpResponse("You can only GET or POST to the URL", status=405)
 
 # Ida Hou
 # Ask if 2 authors are friends
 # GET http://service/author/<authorid>/friends/<authorid2>
+# authorid : UUID
+# authorid2: https://127.0.0.1%3A5454%2Fauthor%2Fae345d54-75b4-431b-adb2-fb6b9e547891 (url-encoded)
 
 
 def check_if_two_authors_are_friends(request, author1_id, author2_id):
     if request.method == 'GET':
         # compose author id from author uid
-        host = request.get_host()
-        if request.is_secure():
-            host = "https://" + host
-        else:
-            host = "http://" + host
 
+        host = request.get_host()
         author1_id = host + "/author/" + str(author1_id)
-        author2_id = host + "/author/" + str(author2_id)
+        # decode + strip url protocol
+        author2_id = url_regex.sub('', author2_id)
+
         # compose response data
         response_data = {}
         response_data["query"] = "friends"
