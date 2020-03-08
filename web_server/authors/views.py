@@ -166,6 +166,8 @@ def retrieve_author_profile(request, author_id):
                 entry['host'] = each.host
                 entry['displayName'] = each.display_name
                 entry['url'] = each.url
+                entry['firstName'] = each.first_name
+                entry['lastName'] = each.last_name
                 response_data['friends'].append(entry)
         # add optional information of current user
         response_data['github'] = author.github
