@@ -43,6 +43,8 @@ def handle_friend_request(request):
                     follower_id=to_id).filter(followee_id=from_id).delete()
                 new_friend = Friend(author_id=from_id, friend_id=to_id)
                 new_friend.save()
+                new_friend = Friend(author_id=to_id, friend_id=from_id)
+                new_friend.save()
             else:
                 new_follow = Follow(follower_id=from_id, followee_id=to_id)
                 new_follow.save()
