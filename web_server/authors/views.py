@@ -26,7 +26,7 @@ def view_list_of_available_authors_to_befriend(request, author_id):
         return HttpResponse("Method Not Allowed", status=405)
     host = request.get_host()
     author_id = host + "/author/" + str(author_id)
-    if not Author.objects.filter(uid=author_id).exists():
+    if not Author.objects.filter(is_active=1).filter(uid=author_id).exists():
         return HttpResponse("No Author Record", status=404)
     authors_on_record = Author.objects.filter(~Q(uid=author_id)).filter(
         is_active=1).filter(is_superuser=0)
@@ -142,10 +142,13 @@ def retrieve_author_profile(request, author_id):
         # compose full url of author
         host = request.get_host()
         author_id = host + "/author/" + str(author_id)
-        author = get_object_or_404(Author, uid=author_id)
+        # only active authors are retrivable
+        author = get_object_or_404(
+            Author.objects.filter(is_active=1), uid=author_id)
         response_data = {}
         response_data['id'] = author.uid
         response_data['host'] = author.host
+        response_data['url'] = author.url
         response_data['displayName'] = author.display_name
         response_data['friends'] = []
         # if current user has friends
