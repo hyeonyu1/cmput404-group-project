@@ -1,13 +1,18 @@
 from django.test import SimpleTestCase
 from django.urls import reverse, resolve
-from authors.views import view_list_of_available_authors_to_befriend, unfriend, update_author_profile, retrieve_author_profile, post_creation_and_retrival_to_curr_auth_user, retrieve_posts_of_author_id_visible_to_current_auth_user, friend_checking_and_retrieval_of_author_id, check_if_two_authors_are_friends
+from authors.views import view_list_of_available_authors_to_befriend, unfriend, update_author_profile, retrieve_author_profile, post_creation_and_retrival_to_curr_auth_user, retrieve_posts_of_author_id_visible_to_current_auth_user, friend_checking_and_retrieval_of_author_id, check_if_two_authors_are_friends, post_edit_and_delete
 
 
 class TestAuthorUrls(SimpleTestCase):
 
     def test_post_creation_and_retrieval_to_curr_auth_user(self):
-        url = reverse("post_creation_and_retrieval_to_curr_auth_user")
+        url = reverse("add_or_get_post")
         self.assertEqual(resolve(url).func, post_creation_and_retrival_to_curr_auth_user)
+
+    def test_post_edit_and_delete(self):
+        url = reverse("edit_or_delete_post")
+        self.assertEqual(resolve(url).func, post_edit_and_delete)
+
 
     def test_retrieve_posts_of_author_id_visible_to_current_auth_user(self):
         url = reverse("retrieve_posts_of_author_id_visible_to_current_auth_user",

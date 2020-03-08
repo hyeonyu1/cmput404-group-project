@@ -2,7 +2,10 @@ from django.urls import path
 from . import views
 urlpatterns = [
     path('posts/', views.post_creation_and_retrival_to_curr_auth_user,
-         name="post_creation_and_retrieval_to_curr_auth_user"),
+         name="add_or_get_post"),
+    path('posts/<str:post_id>', views.post_edit_and_delete,
+         name="edit_or_delete_post"),
+
     path('<str:author_id>/posts/',
          views.retrieve_posts_of_author_id_visible_to_current_auth_user,
          name="retrieve_posts_of_author_id_visible_to_current_auth_user"),
