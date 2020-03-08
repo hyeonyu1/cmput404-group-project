@@ -67,6 +67,10 @@ def unfriend(request):
         if Friend.objects.filter(author_id=author_id).filter(friend_id=friend_id).exists():
             Friend.objects.filter(author_id=author_id).filter(
                 friend_id=friend_id).delete()
+        if Friend.objects.filter(author_id=friend_id).filter(friend_id=author_id).exists():
+            Friend.objects.filter(author_id=friend_id).filter(
+                friend_id=author_id).delete()
+
             return HttpResponse("Unfriended !", status=200)
         return HttpResponse("Friendship does not exist!", status=200)
 
