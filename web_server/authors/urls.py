@@ -5,7 +5,6 @@ urlpatterns = [
          name="add_or_get_post"),
     path('posts/<str:post_id>', views.post_edit_and_delete,
          name="edit_or_delete_post"),
-
     path('<str:author_id>/posts/',
          views.retrieve_posts_of_author_id_visible_to_current_auth_user,
          name="retrieve_posts_of_author_id_visible_to_current_auth_user"),
@@ -23,6 +22,9 @@ urlpatterns = [
          name="unfriend"),
     path('<str:author_id>/addfriend',
          views.view_list_of_available_authors_to_befriend,
-         name="view_list_of_available_authors_to_befriend")
+         name="view_list_of_available_authors_to_befriend"),
+
+# Webpage URLS
+    path('create_post', views.post_creation_page, name='post_create_form')
 
 ]

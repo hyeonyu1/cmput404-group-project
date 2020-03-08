@@ -432,8 +432,10 @@ def get_page_url(request, page_number):
 
     return urlunparse((scheme, netloc, path[:-1], params, query, fragment))
 
+
 def post_edit_and_delete(request, post_id):
     pass
+
 
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
@@ -677,3 +679,7 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
+
+
+def post_creation_page(request):
+    return render(request, 'posting.html')

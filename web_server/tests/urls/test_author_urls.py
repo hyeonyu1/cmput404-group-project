@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 from django.urls import reverse, resolve
-from authors.views import view_list_of_available_authors_to_befriend, unfriend, update_author_profile, retrieve_author_profile, post_creation_and_retrival_to_curr_auth_user, retrieve_posts_of_author_id_visible_to_current_auth_user, friend_checking_and_retrieval_of_author_id, check_if_two_authors_are_friends, post_edit_and_delete
+from authors.views import view_list_of_available_authors_to_befriend, unfriend, update_author_profile, retrieve_author_profile, post_creation_and_retrival_to_curr_auth_user, retrieve_posts_of_author_id_visible_to_current_auth_user, friend_checking_and_retrieval_of_author_id, check_if_two_authors_are_friends, post_edit_and_delete, post_creation_page
 
 
 class TestAuthorUrls(SimpleTestCase):
@@ -48,4 +48,6 @@ class TestAuthorUrls(SimpleTestCase):
                       args=["01ee71da-c303-4675-a09c-46f1942dabaf"])
         self.assertEqual(resolve(url).func, view_list_of_available_authors_to_befriend)
 
-
+    def test_view_list_of_available_authors_to_befriend(self):
+        url = reverse("post_create_form")
+        self.assertEqual(resolve(url).func, post_creation_page)
