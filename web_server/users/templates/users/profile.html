@@ -4,7 +4,6 @@
 {% load static %}
 <link rel="stylesheet" href="{% static '/users/css/style.css' %}">
 
-
 <div id="app">
     <div class="container profile-image">
         <div>
@@ -12,6 +11,7 @@
         </div>
 
     </div>
+
     <div class="container profile-info">
         <div class="container">
             <div class="container profile-info-head">
@@ -22,7 +22,6 @@
                     v-bind:user="user"
             ></user-info>
             </div>
-
 
         <div class="card">
              <div class="card-header">
@@ -40,8 +39,7 @@
              </div>
         </div>
 
-
-         <div class="card">
+        <div class="card">
              <div class="card-header">
                  My Friends
              </div>
@@ -59,11 +57,8 @@
          </div>
     </div>
 
-
-
-
-
 </div>
+
 <template id="list-friend">
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
@@ -113,11 +108,10 @@
             <button class="btn btn-primary" @click="app.edit('{{ user.id }}')">Edit</button>
             <button class="btn btn-primary" @click="app.delete_account('{{ user.id }}')">Delete My Account</button>
         </div>
-
-
-
     </div>
 </template>
+
+
 <script>
     Vue.component('request-list', {
         delimiters: ['[[', ']]'],
@@ -150,6 +144,7 @@
             }
         },
         methods: {
+            // Retrieve users' friends and info
             get_user(id) {
                 let url = '/author/' + id;
                 window.axios.get(url).then((response) => {
@@ -159,6 +154,7 @@
                 })
             },
 
+            // Retrieve users' friend requests
             get_request(url) {
                 window.axios.get(url).then((response) => {
                     let data = response.data;
@@ -177,6 +173,8 @@
                     }
                 });
             },
+
+            // Accept users' friend requests
             accept: function (sender_id, user_id, index) {
                 window.axios.post("/friendrequest/handle", {
                     // Author id is from_id (Other's id)
@@ -194,6 +192,7 @@
                     }
                 })
             },
+            // Deny users' friend requests
             deny: function (sender_id, user_id, index) {
                 window.axios.delete("/friendrequest/handle", {
                     data: {
@@ -213,6 +212,7 @@
                     }
                 })
             },
+            // Delete users' friends
             unfriend: function (friend_id, user_id, index) {
                 window.axios.post("/author/unfriend", {
                     'author_id': user_id,
@@ -225,6 +225,7 @@
                 });
             },
 
+            //This function is used to allow users edit their profile info
             edit(user_id) {
 
                 window.axios.post("/author/" + user_id + "/update", {
@@ -246,6 +247,7 @@
 
             },
 
+            //This function is used to allow users delete their account
             delete_account(user_id){
 
                 window.axios.post("/author/" + user_id + "/update", {
