@@ -2,7 +2,7 @@
 {% extends "navigation.html" %}
 {% block navigation_content %}
 {% load static %}
-<link rel="stylesheet" href="{% static '/users/css/style.css' %}">
+<link rel="stylesheet" href="{% static '/users/css/style.css' %}" xmlns:v-bind="http://www.w3.org/1999/xhtml">
 
 
 <div>
@@ -39,10 +39,26 @@
                         <input class="form-control" id="new_github" type="text" name="new_github"
                             value="{{ user.github}}">
 
+                        <span id="test"></span>
                     </div>
 
                     <input class="btn btn-primary " type="submit" value="Edit">
                 </form>
+
+            </div>
+
+            <div  id="app">
+                <ul class="list-group">
+                       <request-list
+                    v-for="(sender, index) in request_senders"
+                    v-bind:sender="sender"
+                    v-bind:index="index"
+                >
+                </request-list>
+
+                </ul>
+
+
 
             </div>
         </div>
@@ -50,7 +66,100 @@
 
     </div>
 </div>
+<template id="list-item">
+    <div v-if="!sender.isDeleted">
+        <li class="list-group-item">
+            <div class="form-inline">
+                <a v-bind:href="'{% url 'profile' %}' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
+                <button class="btn btn-primary" @click="app.accept(sender.id, '{{ user.id }}', index)">Accept</button>
+                <button class="btn btn-warning" @click="app.deny(sender.id, '{{ user.id }}', index)">Deny</button>
 
+            </div>
+        </li>
+    </div>
+
+</template>
+<script>
+    Vue.component('request-list', {
+        delimiters: ['[[', ']]'],
+        props: ['sender', 'index'],
+        template: '#list-item'
+    });
+
+    function sender({id, firstName, lastName}) {
+        this.uid = uid;
+        this.name = name;
+    }
+
+    var app = new Vue({
+        el: '#app',
+        data() {
+            return {
+                request_senders: []
+            }
+        },
+        methods: {
+            get(url) {
+                window.axios.get(url).then((response)=>{
+                    let data = response.data;
+                    let from_ids = data['request'];
+
+                    for (var uid of from_ids){
+                        let idlist = uid.split('/');
+
+                        let from_id = idlist[idlist.length - 1];
+                        window.axios.get('/author/'+ from_id).then((response) =>{
+                            //let username = response.data['firstName'] +' '+ response.data['lastName'];
+                            response.data['uid'] = idlist[idlist.length - 1];
+                            response.data['isDeleted'] = false;
+                            this.request_senders.push(response.data);
+                        })
+                    }
+                });
+            },
+            accept: function (sender_id, user_id, index) {
+                window.axios.post("/friendrequest/handle", {
+                    // Author id is from_id (Other's id)
+                    "author": {
+                        "id": sender_id
+                    },
+                    // Friend id is to_id (Your id)
+                    "friend": {
+                        "id": "http://127.0.0.1:8000/author/" + user_id
+                    }
+                }).then((response) => {
+                    if(response.status === 200){
+                        alert(response.data);
+                        this.request_senders[index]['isDeleted'] = true;
+                    }
+                })
+            },
+            deny: function (sender_id, user_id, index) {
+                window.axios.delete("/friendrequest/handle", {
+                    data:{
+                        "author": {
+                            "id": sender_id
+                        },
+                        // Friend id is to_id (Your id)
+                        "friend": {
+                            "id": "http://127.0.0.1:8000/author/" + user_id
+                        }
+                    }
+
+                    }).then((response) => {
+                    if (response.status === 200) {
+                        alert(response.data);
+                        this.request_senders[index]['isDeleted'] = true;
+                    }
+                })
+            }
+        },
+        created() {
+            this.get('/friendrequest/{{user.id}}');
+        }
+    });
+
+</script>
 
 
 {% endblock %}

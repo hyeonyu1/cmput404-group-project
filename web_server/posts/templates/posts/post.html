@@ -42,7 +42,7 @@
              <div class="form-inline">
                  <i class="far fa-clock mr-2"></i>
                  <p class="mt-3 mr-2">Post by</p>
-                 <a class="mr-2" href="{% url 'profile' %}">
+                 <a class="mr-2" href="{% url 'author_profile' post.author.id %}">
                       {{post.author}}
                  </a>
                  <small>{{post.published}}</small>
