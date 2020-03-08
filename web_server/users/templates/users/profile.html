@@ -2,7 +2,7 @@
 {% extends "navigation.html" %}
 {% block navigation_content %}
 {% load static %}
-<link rel="stylesheet" href="{% static '/users/css/style.css' %}" xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<link rel="stylesheet" href="{% static '/users/css/style.css' %}">
 
 
 <div id="app">
@@ -95,25 +95,27 @@
         <div class="form-group">
             <label for="first_name">Firstname: </label>
             <input class="form-control" id="first_name" type="text" name="first_name"
-                v-bind:value="user.firstName">
+                v-model="user.firstName">
             <label for="last_name">Lastname: </label>
             <input class="form-control" id="last_name" type="text" name="last_name"
-                v-bind:value="user.lastName">
+                v-model="user.lastName">
             <label for="display_name">Displayname: </label>
             <input class="form-control" id="display_name" type="text" name="display_name"
-                v-bind:value=" user.displayName">
+                v-model=" user.displayName">
             <label for="email">Email: </label>
             <input class="form-control" id="email" type="text" name="email"
-                v-bind:value="user.email">
+                v-model="user.email">
             <label for="bio">Bio: </label>
-            <input class="form-control" id="bio" type="text" name="bio" v-bind:value="user.bio">
+            <input class="form-control" id="bio" type="text" name="bio" v-model="user.bio">
             <label for="github">Github: </label>
             <input class="form-control" id="github" type="text" name="github"
-                v-bind:value=" user.github">
+                v-model=" user.github">
+            <button class="btn btn-primary" @click="app.edit('{{ user.id }}')">Edit</button>
+            <button class="btn btn-primary" @click="app.delete_account('{{ user.id }}')">Delete My Account</button>
         </div>
-        {% if author_id == user.id %}
-            <button class="btn btn-primary ">Edit</button>
-        {% endif %}
+
+
+
     </div>
 </template>
 <script>
@@ -137,6 +139,9 @@
 
     var app = new Vue({
         el: '#app',
+        data: {
+            msg: 'aaa'
+        },
         data() {
             return {
                 request_senders: [],
@@ -145,9 +150,9 @@
             }
         },
         methods: {
-            get_user(id){
-                let url = '/author/'+ id;
-                window.axios.get(url).then((response)=>{
+            get_user(id) {
+                let url = '/author/' + id;
+                window.axios.get(url).then((response) => {
                     this.user = response.data;
                     this.friends = response.data['friends'];
                     console.log(this.friends);
@@ -155,15 +160,15 @@
             },
 
             get_request(url) {
-                window.axios.get(url).then((response)=>{
+                window.axios.get(url).then((response) => {
                     let data = response.data;
                     let from_ids = data['request'];
 
-                    for (var uid of from_ids){
+                    for (var uid of from_ids) {
                         let idlist = uid.split('/');
 
                         let from_id = idlist[idlist.length - 1];
-                        window.axios.get('/author/'+ from_id).then((response) =>{
+                        window.axios.get('/author/' + from_id).then((response) => {
                             //let username = response.data['firstName'] +' '+ response.data['lastName'];
                             response.data['uid'] = idlist[idlist.length - 1];
                             response.data['isDeleted'] = false;
@@ -183,7 +188,7 @@
                         "id": "http://127.0.0.1:8000/author/" + user_id
                     }
                 }).then((response) => {
-                    if(response.status === 200){
+                    if (response.status === 200) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
@@ -191,7 +196,7 @@
             },
             deny: function (sender_id, user_id, index) {
                 window.axios.delete("/friendrequest/handle", {
-                    data:{
+                    data: {
                         "author": {
                             "id": sender_id
                         },
@@ -201,24 +206,65 @@
                         }
                     }
 
-                    }).then((response) => {
+                }).then((response) => {
                     if (response.status === 200) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
                 })
             },
-            unfriend: function(friend_id, user_id,index){
+            unfriend: function (friend_id, user_id, index) {
                 window.axios.post("/author/unfriend", {
-                    'author_id':user_id,
-                    'friend_id':friend_id
+                    'author_id': user_id,
+                    'friend_id': friend_id
                 }).then((response) => {
-                    if(response.status === 200){
+                    if (response.status === 200) {
                         alert(response.data);
                         this.friends[index]['isDeleted'] = true;
                     }
                 });
             },
+
+            edit(user_id) {
+
+                window.axios.post("/author/" + user_id + "/update", {
+
+                    'delete':false,
+                    'first_name':this.user.firstName,
+                    'last_name':this.user.lastName,
+                    'email':this.user.email,
+                    'bio':this.user.bio,
+                    'github': this.user.github,
+                    'display_name': this.user.displayName
+
+                }).then((response) => {
+                    if (response.status === 200) {
+                        alert("Profile successfully updated");
+                    }
+                });
+
+
+            },
+
+            delete_account(user_id){
+
+                window.axios.post("/author/" + user_id + "/update", {
+                    'delete':true,
+                    'first_name':this.user.firstName,
+                    'last_name':this.user.lastName,
+                    'email':this.user.email,
+                    'bio':this.user.bio,
+                    'github': this.user.github,
+                    'display_name': this.user.displayName
+
+                }).then((response) => {
+                    if(response.status === 200) {
+                        alert("Delete successfully !");
+                        window.location.reload();
+                    }
+                });
+            }
+
         },
 
         created() {
