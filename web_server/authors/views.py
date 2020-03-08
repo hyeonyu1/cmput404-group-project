@@ -319,7 +319,13 @@ def post_creation_and_retrival_to_curr_auth_user(request):
             for visible in visible_to:
                 visible_to_list.append(visible.username)
 
-            next_http = "http://service/posts/{}/comments".format(post.id)
+            host = request.get_host()
+            if request.is_secure():
+                host = "https://" + host
+            else:
+                host = "http://" + host
+
+            next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
             array_of_posts.append({
                 "id": str(post.id),
@@ -526,7 +532,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             for visible in visible_to:
                 visible_to_list.append(visible.username)
 
-            next_http = "http://service/posts/{}/comments".format(post.id)
+            next_http = "{}/posts/{}/comments".format(host, post.id)
+
             comment_size, comments = get_comments(post.id)
             array_of_posts.append({
                 "id": str(post.id),
