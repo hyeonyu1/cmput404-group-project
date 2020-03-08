@@ -20,7 +20,6 @@ url_regex = re.compile(r"(http(s?))?://")
 # return a list of author id that are currently stored in database and
 # are not friend with current author
 
-
 def view_list_of_available_authors_to_befriend(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method Not Allowed", status=405)
