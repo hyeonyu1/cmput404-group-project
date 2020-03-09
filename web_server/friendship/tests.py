@@ -12,7 +12,7 @@ class TestViews(TestCase):
 
     def test_retrieve_friendrequest_of_author_method_not_allowed(self):
         friend_request_retrieval_url = reverse(
-            'retrieve_friend_request', args=['A'])
+            'retrieve_friend_request_of_author_id', args=['A'])
         response = self.client.post(friend_request_retrieval_url)
         self.assertTrue(response.status_code == 405)
         response = self.client.put(friend_request_retrieval_url)
@@ -24,7 +24,7 @@ class TestViews(TestCase):
 
     def test_retrieve_friendrequest_of_author(self):
         friend_request_retrieval_url = reverse(
-            'retrieve_friend_request', args=['A'])
+            'retrieve_friend_request_of_author_id', args=['A'])
         request_1 = FriendRequest(from_id="B", to_id="testserver/author/A")
         request_1.save()
         request_2 = FriendRequest(from_id="C", to_id="testserver/author/A")

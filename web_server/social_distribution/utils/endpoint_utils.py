@@ -11,6 +11,7 @@ class Endpoint:
     It also manages some basic errors that can arise when dealing with requests:
     Error 405 - there is no handler that accepts the method verb requested (e.g. GET or POST)
     Error 406 - there is no handler that produces the requested content (e.g. Accepts: text/html)
+    Error 500 - An exception occurred when running the handler
     """
 
     def __init__(self, request, query, handlers, default_page_size=10, max_page_size=50):
@@ -61,6 +62,13 @@ class Endpoint:
             if len(supported_content_types) == 0:
                 # We dont support any types
                 break
+
+            # accept headers can specify a quality indicator per content_type, this has to be stripped off
+            # As described at https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
+            quality_value = 1
+            if ";q=" in content_type:
+                content_type, quality_value = content_type.split(';q=')
+
             # @todo do we need to do actual pattern matching for things like 'application/*'
             if content_type == '*/*':
                 # The user will accept anything, serve the first available type on this method
@@ -71,7 +79,7 @@ class Endpoint:
                 break
 
         if accepted_type is None:
-            return HttpResponse(f"Server unable to produce content of type {accepted_type}. "
+            return HttpResponse(f"Server unable to produce content of type {accepted_content_types}. "
                                 f"Available content types one of {supported_content_types}.",
                                 status=406)
 
@@ -146,11 +154,8 @@ class Handler:
         :param produces: Which content type this handler produces (e.g. "text/html")
         :param handling_func: function used to handle the request.
             Should take the following arguments:
-                results: the list of results from the query, may have been filtered by the Endpoint
-                pager: A Paginator that has been loaded with the query to get information about pagination
-                pagination_uris: A tuple of absolute_uris of form (previous_page, next_page).
-                    If there is no previous or next page the uri should be None
-            And return:
+                request: the original http request
+            Should return:
                 A valid HttpResponse object consistent with it's produces string
         """
         self.method = method
@@ -176,6 +181,12 @@ class PagingHandler(Handler):
     """
     This handler will be provided the results of the query provided to the Endpoint, along with information
     about paging over that query.
+
+    Requires additional arguments to the handler function:
+        results: the list of results from the query, may have been filtered by the Endpoint
+        pager: A Paginator that has been loaded with the query to get information about pagination
+        pagination_uris: A tuple of absolute_uris of form (previous_page, next_page).
+            If there is no previous or next page the uri should be None
     """
     def handle(self, request, results, pager, pagination_uris):
         """

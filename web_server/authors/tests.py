@@ -53,7 +53,7 @@ class TestViews(TestCase):
 
     # test for <str:author1_id>/friends/<path:author2_id>/
     def test_friend_checking_and_retrieval(self):
-        check_if_friends_url = reverse('check_if_friends', kwargs={
+        check_if_friends_url = reverse('check_if_two_authors_are_friends', kwargs={
             'author1_id': 'de305d54-75b4-431b-adb2-eb6b9e546013', 'author2_id': '127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891'})
         response = self.client.get(check_if_friends_url)
         self.assertTrue(response.status_code == 200)
@@ -68,7 +68,7 @@ class TestViews(TestCase):
     # test forbidden methods for <str:author1_id>/friends/<path:author2_id>/
 
     def test_friend_checking_and_retrieval_method_not_allowed(self):
-        check_if_friends_url = reverse('check_if_friends', kwargs={
+        check_if_friends_url = reverse('check_if_two_authors_are_friends', kwargs={
             'author1_id': 'de305d54-75b4-431b-adb2-eb6b9e546013', 'author2_id': '127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891'})
         # 405 except GET
         response = self.client.post(check_if_friends_url)
@@ -82,7 +82,7 @@ class TestViews(TestCase):
 
     def test_friend_checking_and_retrieval_GET(self):
         friend_checking_and_retrieval_url = reverse(
-            'friend_checking_and_retrieval', args=[self.test_author.uid])
+            'friend_checking_and_retrieval_of_author_id', args=[self.test_author.uid])
         response = self.client.get(friend_checking_and_retrieval_url)
         json_response = response.json()
 
@@ -104,7 +104,7 @@ class TestViews(TestCase):
     # test POST author/<path:author_id>/friends/
     def test_friend_checking_and_retrieval_POST(self):
         friend_checking_and_retrieval_url = reverse(
-            'friend_checking_and_retrieval', args=[self.test_author.uid])
+            'friend_checking_and_retrieval_of_author_id', args=[self.test_author.uid])
 
         test_friend = Friend(author_id=self.test_author.uid,
                              friend_id="test_friend")
@@ -128,7 +128,7 @@ class TestViews(TestCase):
 
     def test_friend_checking_and_retrieval_not_allowed_method(self):
         friend_checking_and_retrieval_url = reverse(
-            'friend_checking_and_retrieval', args=[self.test_author.uid])
+            'friend_checking_and_retrieval_of_author_id', args=[self.test_author.uid])
 
         response = self.client.put(
             friend_checking_and_retrieval_url)
@@ -171,7 +171,7 @@ class TestViews(TestCase):
     # http://service/<str:author_id>/addfriend/
     def test_view_friend_candidate_method_not_allowed(self):
         view_friend_candidate_url = reverse(
-            'view_friend_candidate', args=[self.test_author.id])
+            'view_list_of_available_authors_to_befriend', args=[self.test_author.id])
         response = self.client.post(view_friend_candidate_url)
         self.assertTrue(response.status_code == 405)
         response = self.client.put(view_friend_candidate_url)
@@ -192,7 +192,7 @@ class TestViews(TestCase):
         author2.save()
 
         view_friend_candidate_url = reverse(
-            'view_friend_candidate', args=[author.id])
+            'view_list_of_available_authors_to_befriend', args=[author.id])
 
         response = self.client.get(view_friend_candidate_url)
         json_response = response.json()
