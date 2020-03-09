@@ -13,10 +13,19 @@
 		<label for="description">Description</label> <br>
        	<textarea type="textarea" id="description" name="description"></textarea><br><br>
     	<label for="content">Content</label> <br>
-       	<textarea type="textarea" id="content" name="content"></textarea>
+       	<textarea type="textarea" id="content" name="content"></textarea> <br>
+       	<label for="categories">Categories</label> <br>
+       	<textarea type="textarea" id="categories" name="categories"></textarea> <br>
     </form>
 
     <br>
+
+    <label for="contentType">Choose your content type:</label> <br>
+   	<select id="contentType" form="postForm" name="contentType">
+	  <option value="TYPE_PLAIN">Plain Text</option>
+	  <option value="TYPE_MARKDOWN">Markdown</option>
+	</select>
+	<br><br>
 
     <!-- Select for choosing visibility of post -->
    	<label for="visi">Choose the Visibility of your post:</label> <br>

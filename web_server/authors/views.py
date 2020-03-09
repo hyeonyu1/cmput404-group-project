@@ -198,7 +198,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         post = request.POST
         author = post['author']
         #comments = post['comments']
-        #categories = post['categories']
+        categories = post['categories'].split('\n')
         visible_to = post['visibleTo']
 
         new_post = Post()
@@ -208,7 +208,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
         # new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
         new_post.description = post['description']  # : "This post discusses stuff -- brief",
-        # new_post.contentType = post['contentType']  # : "text/plain",
+        new_post.contentType = post['contentType']  # : "text/plain",
         new_post.content     = post['content']      #: "stuffs",
         new_post.author      = request.user         # the authenticated user
         # Categories added after new post is saved
@@ -231,13 +231,13 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         new_post.save()
 
         # Categories is commented out because it's not yet in the post data, uncomment once available
-        # for category in categories:
-        #     cat_object = None
-        #     try:
-        #         cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
-        #     except Category.DoesNotExist as e:
-        #         cat_object = Category.objects.create(name=category)  # Create one if not
-        #     new_post.categories.add(cat_object)    #: LIST,
+        for category in categories:
+            cat_object = None
+            try:
+                cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
+            except Category.DoesNotExist as e:
+                cat_object = Category.objects.create(name=category)  # Create one if not
+            new_post.categories.add(cat_object)    #: LIST,
 
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')

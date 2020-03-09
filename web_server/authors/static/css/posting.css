@@ -29,6 +29,19 @@
   justify-content: top;
 }
 
+#categories {
+  height:50pt;
+  width: 20%;
+  font-size: 12pt;
+  text-align: left;
+  justify-content: top;
+}
+
+#contentType {
+  width: 20%;
+  font-size: 12pt;
+}
+
 #visi {
   width: 20%;
   font-size: 12pt;
