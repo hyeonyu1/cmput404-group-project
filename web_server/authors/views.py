@@ -64,15 +64,16 @@ def unfriend(request):
         if not author_id or not friend_id:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
+
         if Friend.objects.filter(author_id=author_id).filter(friend_id=friend_id).exists():
             Friend.objects.filter(author_id=author_id).filter(
                 friend_id=friend_id).delete()
+        else:
+            return HttpResponse("Friendship does not exist!", status=200)
         if Friend.objects.filter(author_id=friend_id).filter(friend_id=author_id).exists():
             Friend.objects.filter(author_id=friend_id).filter(
                 friend_id=author_id).delete()
-
-            return HttpResponse("Unfriended !", status=200)
-        return HttpResponse("Friendship does not exist!", status=200)
+        return HttpResponse("Unfriended !", status=200)
 
     return HttpResponse("Method Not Allowed", status=405)
 # handler for endpoint: http://service/author/<str:author_id>/update
@@ -294,16 +295,18 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
 # Ida Hou
 
+# author_id : (http://)localhost:8000/author/<UUID>
+
 
 def friend_checking_and_retrieval_of_author_id(request, author_id):
-    # compose author id
-    host = request.get_host()
-    author_id = host + "/author/" + str(author_id)
     if request.method == 'POST':
         # ask a service if anyone in the list is a friend
         # POST to http://service/author/<authorid>/friends
+        author_id = url_regex.sub('', author_id)
+
         body_unicode = str(request.body, 'utf-8')
         body = json.loads(body_unicode)
+
         potential_friends = body.get("authors", None)
         if not potential_friends:
             return HttpResponse("Post body missing fields", status=404)

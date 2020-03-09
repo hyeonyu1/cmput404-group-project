@@ -8,7 +8,7 @@ urlpatterns = [
          name="edit_or_delete_post"),
     path('<str:author_id>/posts/',
          views.retrieve_posts_of_author_id_visible_to_current_auth_user),
-    path('<str:author_id>/friends/',
+    path('<path:author_id>/friends/',
          views.friend_checking_and_retrieval_of_author_id, name="friend_checking_and_retrieval"),
     path('<str:author1_id>/friends/<path:author2_id>/',
          views.check_if_two_authors_are_friends, name="check_if_friends"),

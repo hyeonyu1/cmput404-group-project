@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from users.models import Author
+from friendship.models import Friend
 from django.urls import reverse
 
 
@@ -14,16 +15,29 @@ class TestViews(TestCase):
         # sample test data: http://service/author/de305d54-75b4-431b-adb2-eb6b9e546013/friends/127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891
 
         self.client = Client()
-    # test for service/author/<str:author_id>/
+    # test forbidden methods for service/author/<str:author_id>/
 
-    def test_retrieve_author_profile(self):
+    def test_retrieve_author_profile_method_not_allowed(self):
         # create test_author
         # 405 except GET
         response = self.client.post(self.retrieve_author_profile_url)
         self.assertTrue(response.status_code == 405)
+        response = self.client.delete(self.retrieve_author_profile_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.put(self.retrieve_author_profile_url)
+        self.assertTrue(response.status_code == 405)
+
+    # test for retrieving inactive author service/author/<str:author_id>/
+
+    def test_retrieve_inactive_author_profile(self):
+
         # user should not be retrievalble if not active
         response = self.client.get(self.retrieve_author_profile_url)
         self.assertTrue(response.status_code == 404)
+
+    # test for retrieving active author service/author/<str:author_id>/
+    def test_retrieve_active_author_profile(self):
+
         self.test_author.is_active = 1
         self.test_author.save()
         response = self.client.get(self.retrieve_author_profile_url)
@@ -41,10 +55,6 @@ class TestViews(TestCase):
     def test_friend_checking_and_retrieval(self):
         check_if_friends_url = reverse('check_if_friends', kwargs={
             'author1_id': 'de305d54-75b4-431b-adb2-eb6b9e546013', 'author2_id': '127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891'})
-        # 405 except GET
-        response = self.client.post(check_if_friends_url)
-        self.assertTrue(response.status_code == 405)
-        # user should not be retrievalble if not active
         response = self.client.get(check_if_friends_url)
         self.assertTrue(response.status_code == 200)
         json_response = response.json()
@@ -55,9 +65,105 @@ class TestViews(TestCase):
         self.assertEquals(
             json_response['authors'][1], "127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891")
 
-    # test author/<str:author_id>/friends/
-    def test_friend_checking_and_retrieval(self):
-        friend_checking_and_retrieval_url = reverse(
-            'friend_checking_and_retrieval', args=[self.test_author.id.hex])
+    # test forbidden methods for <str:author1_id>/friends/<path:author2_id>/
 
-        print(friend_checking_and_retrieval_url)
+    def test_friend_checking_and_retrieval_method_not_allowed(self):
+        check_if_friends_url = reverse('check_if_friends', kwargs={
+            'author1_id': 'de305d54-75b4-431b-adb2-eb6b9e546013', 'author2_id': '127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891'})
+        # 405 except GET
+        response = self.client.post(check_if_friends_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.put(check_if_friends_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.delete(check_if_friends_url)
+        self.assertTrue(response.status_code == 405)
+
+    # test GET author/<path:author_id>/friends/
+
+    def test_friend_checking_and_retrieval_GET(self):
+        friend_checking_and_retrieval_url = reverse(
+            'friend_checking_and_retrieval', args=[self.test_author.uid])
+        response = self.client.get(friend_checking_and_retrieval_url)
+        json_response = response.json()
+
+        self.assertTrue(response.status_code == 200)
+        # test response data entry
+        self.assertEquals(json_response["query"], "friends")
+        self.assertFalse(json_response["authors"])
+        test_friend = Friend(author_id=self.test_author.uid,
+                             friend_id="test_friend")
+        test_friend.save()
+
+        response = self.client.get(friend_checking_and_retrieval_url)
+        json_response = response.json()
+        self.assertTrue(json_response["authors"][0] == "test_friend")
+        Friend.objects.filter(author_id=self.test_author.uid).filter(
+            friend_id="test_friend").delete()
+
+    # test POST author/<path:author_id>/friends/
+    def test_friend_checking_and_retrieval_POST(self):
+        friend_checking_and_retrieval_url = reverse(
+            'friend_checking_and_retrieval', args=[self.test_author.uid])
+
+        test_friend = Friend(author_id=self.test_author.uid,
+                             friend_id="test_friend")
+        test_friend.save()
+        post_data = {
+            "query": "friends",
+            "authors": ["test_friend", "not_a_friend"]
+        }
+        response = self.client.post(
+            friend_checking_and_retrieval_url, data=post_data, content_type="application/json")
+        json_response = response.json()
+        self.assertTrue(response.status_code == 200)
+        self.assertEquals(json_response["query"], "friends")
+        self.assertEquals(json_response["author"], self.test_author.uid)
+        self.assertEquals(len(json_response["authors"]), 1)
+        Friend.objects.filter(author_id=self.test_author.uid).filter(
+            friend_id="test_friend").delete()
+
+    # test forbidden method author/<path:author_id>/friends/
+
+    def test_friend_checking_and_retrieval_not_allowed_method(self):
+        friend_checking_and_retrieval_url = reverse(
+            'friend_checking_and_retrieval', args=[self.test_author.uid])
+
+        response = self.client.put(
+            friend_checking_and_retrieval_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.delete(
+            friend_checking_and_retrieval_url)
+        self.assertTrue(response.status_code == 405)
+
+    # test forbidden methods for http://service/author/unfriend
+
+    def test_unfriend_method_not_allowed(self):
+        unfriend_url = reverse("unfriend")
+        response = self.client.get(unfriend_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.put(unfriend_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.delete(unfriend_url)
+        self.assertTrue(response.status_code == 405)
+
+    # test  http://service/author/unfriend
+
+    def test_unfriend(self):
+        unfriend_url = reverse("unfriend")
+        new_friend = Friend(author_id="A", friend_id="B")
+        new_friend.save()
+
+        post_data = {
+            "author_id": new_friend.author_id,
+            "friend_id": new_friend.friend_id
+        }
+        response = self.client.post(unfriend_url, data=post_data,
+                                    content_type="application/json")
+
+        self.assertTrue(response.status_code, 200)
+
+        self.assertFalse(Friend.objects.filter(
+            author_id="A", friend_id="B").exists())
+
+    def tearDown(self):
+        Author.objects.filter(username="test_retrieve_author_profile").delete()
