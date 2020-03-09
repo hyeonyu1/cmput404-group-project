@@ -35,6 +35,10 @@ class TestViews(TestCase):
         self.assertEquals(json_response['query'], 'retrieve_friend_requests')
         self.assertEquals(json_response['author'], 'testserver/author/A')
         self.assertEquals(len(json_response['request']), 2)
+        FriendRequest.objects.filter(from_id="B").filter(
+            to_id="testserver/author/A").delete()
+        FriendRequest.objects.filter(from_id="C").filter(
+            to_id="testserver/author/A").delete()
 
     # test forbidden methods for http://service/friendrequest
 
@@ -48,7 +52,7 @@ class TestViews(TestCase):
         self.assertTrue(response.status_code == 405)
 
     # test http://service/friendrequest
-    def test_send_friendrequest_method_not_allowed(self):
+    def test_send_friendrequest(self):
         send_friendrequest_url = reverse('send_friend_request')
         post_data = {
             "query": "friendrequest",
