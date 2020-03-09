@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404, redirect, render_to_response
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
@@ -8,8 +8,9 @@ from friendship.models import Friend
 from posts.models import Post, Category
 from comments.models import Comment
 from django.db.models import Q
-from django.utils.timezone import make_aware
+from django.utils import timezone
 from django.urls import reverse
+from django.template import RequestContext
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from uuid import UUID
 import json
 import datetime
 import sys
+import pytz
 
 from social_distribution.utils.endpoint_utils import Endpoint, Handler, PagingHandler
 
@@ -179,7 +181,7 @@ def retrieve_author_profile(request, author_id):
     return HttpResponse("You can only GET the URL", status=405)
 
 
-def post_creation_and_retrival_to_curr_auth_user(request):
+def post_creation_and_retrieval_to_curr_auth_user(request):
     """
     Endpoint handler for service/author/posts
     POST is for creating a new post using the currently authenticated user
@@ -187,8 +189,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
     :param request:
     :return:
     """
-    #def create_new_post(request):
-    if request.method == 'POST':
+    def create_new_post(request):
         # POST to http://service/author/posts
         # Create a post to the currently authenticated user
 
@@ -198,10 +199,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         size = len(body.encode('utf-8'))
 
         #body = json.load(body)
-        body = dict(x.split("=") for x in body.split("&"))
+        # body = dict(x.split("=") for x in body.split("&"))
 
         #post = body['post']
-        post = body
+        post = request.POST
         author = post['author']
         #comments = post['comments']
         #categories = post['categories']
@@ -225,8 +226,10 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # @todo allow adding comments to new post
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
 
-        new_post.published = str(make_aware(datetime.datetime.now()))  #: "2015-03-09T13:07:04+00:00",
-        new_post.visibility = post['visibility']   #: "PUBLIC",
+        current_tz = pytz.timezone('America/Edmonton')
+        timezone.activate(current_tz)
+        new_post.published = str(datetime.datetime.now())  #: "2015-03-09T13:07:04+00:00",
+        new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         #new_post.unlisted = post['unlisted']       #: true
         # @todo allow setting visibility of new post
@@ -246,22 +249,7 @@ def post_creation_and_retrival_to_curr_auth_user(request):
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return redirect(reverse('profile'))
-        #return HttpResponse("<h1>http://service/author/posts POST</h1>")
-
-        '''
-        return JsonResponse({
-            "query": "addPost",
-            "success": True,
-            "message": "Post Added"
-        })
-        '''
-
-
-    # retrive posts that are visible to the currently authenticated user
-    # GET from http://service/author/posts
-    # retrive posts that are visible to the currently authenticated user
-    # GET from http://service/author/posts
+        return redirect("/")
 
     def retrieve_posts(request):
         # visibility =  PUBLIC
@@ -410,10 +398,26 @@ def post_creation_and_retrival_to_curr_auth_user(request):
 
         return JsonResponse(response_data)
 
-    return Endpoint(request, None, [Handler("POST", "application/json", create_new_post),
-                                    Handler("GET", "application/json", retrieve_posts)
-                                    ]).resolve()
+    '''
+    return JsonResponse({
+        "query": "addPost",
+        "success": True,
+        "message": "Post Added"
+    })
+    
+    return Endpoint(request,None,[
+        Handler("POST", "application/json", create_new_post)
+    ]).resolve()
 
+    
+    if request.method == 'POST':
+        pass
+    '''
+    return Endpoint(request, None, [
+        Handler("POST", "application/json", create_new_post),
+        PagingHandler("GET", "text/html", retrieve_posts),
+        PagingHandler("GET", "application/json", retrieve_posts)
+    ]).resolve()
 
 # Returns 5 newest comment on the post
 def get_comments(post_id):
@@ -458,12 +462,67 @@ def get_page_url(request, page_number):
 
 
 def post_edit_and_delete(request, post_id):
-    pass
+    # This endpoint REQUIRES that the individual accessing it is the original author of the Post in question.
+    post = Post.objects.get(pk=post_id)
 
+    if post.author != request.user:
+        return HttpResponse("Forbidden: you must be the original author of the post in order to change it.", status=403)
 
+    def get_edit_dialog(request):
+        #REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
 
-def post_edit_and_delete(request, post_id):
-    pass
+        # Obtain the context from the HTTP request.
+        context = RequestContext(request)
+
+        # Query the database for a list of ALL categories currently stored.
+        # Place the list in our context_dict dictionary which will be passed to the template engine.
+        post_list = Post.objects.all()
+        context_dict  = {}
+        for post in post_list:
+            if str(post.id) == str(post_id):
+                context_dict = {'post': post}
+                break
+
+        # Render the response and send it back!
+        return render_to_response('editPost.html', context_dict, context)
+
+    def edit_post(request):
+        """
+        Expects the request to contain all the variables defining a post to be provided by the POST vars.
+        :param request:
+        :return:
+        """
+        vars = request.POST
+        for key in vars:
+            if hasattr(post, key):
+                if len(vars.getlist(key)) <= 1:  # Simple value or empty
+                    try:
+                        setattr(post, key, vars.get(key))
+                    except Exception as e:
+                        # @todo remove this try/except block. This should ACTUALLY throw an error if we hit a problem here
+                        pass
+                elif len(vars.getlist(key)) > 1:  # Multiple values
+                    # @todo implement handling multiple values for key
+                    print("NOT IMPLEMENTED: Unable to handle multiple values for key")
+        post.save()
+        return JsonResponse({"success": "Post updated"})
+
+    def delete_post(request):
+        """
+        We simply need to delete the post at this endpoint
+        :param request:
+        :return:
+        """
+        post.delete()
+        return JsonResponse({"success": "Post Deleted"}, status=200)
+
+    return Endpoint(request, None, [
+        Handler('GET', 'text/html', get_edit_dialog),
+        # @todo should this be PUT? Or should we allow a PUT and a POST to both perform this action?
+        Handler('POST', 'application/json', edit_post),
+        Handler('DELETE', 'application/json', delete_post)
+    ]).resolve()
+
 
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
