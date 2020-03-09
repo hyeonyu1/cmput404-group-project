@@ -397,26 +397,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             }
 
         return JsonResponse(response_data)
-
-    '''
-    return JsonResponse({
-        "query": "addPost",
-        "success": True,
-        "message": "Post Added"
-    })
-    
-    return Endpoint(request,None,[
-        Handler("POST", "application/json", create_new_post)
-    ]).resolve()
-
-    
-    if request.method == 'POST':
-        pass
-    '''
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
-        PagingHandler("GET", "text/html", retrieve_posts),
-        PagingHandler("GET", "application/json", retrieve_posts)
+        Handler("GET", "text/html", retrieve_posts),
+        Handler("GET", "application/json", retrieve_posts)
     ]).resolve()
 
 # Returns 5 newest comment on the post
