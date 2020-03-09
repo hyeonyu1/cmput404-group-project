@@ -97,6 +97,7 @@ class TestViews(TestCase):
         response = self.client.get(friend_checking_and_retrieval_url)
         json_response = response.json()
         self.assertTrue(json_response["authors"][0] == "test_friend")
+        # clean up test data
         Friend.objects.filter(author_id=self.test_author.uid).filter(
             friend_id="test_friend").delete()
 
@@ -119,6 +120,7 @@ class TestViews(TestCase):
         self.assertEquals(json_response["query"], "friends")
         self.assertEquals(json_response["author"], self.test_author.uid)
         self.assertEquals(len(json_response["authors"]), 1)
+        # clean up test data
         Friend.objects.filter(author_id=self.test_author.uid).filter(
             friend_id="test_friend").delete()
 
@@ -164,6 +166,53 @@ class TestViews(TestCase):
 
         self.assertFalse(Friend.objects.filter(
             author_id="A", friend_id="B").exists())
+        Friend.objects.filter(author_id="A").filter(friend_id="B").delete()
+
+    # http://service/<str:author_id>/addfriend/
+    def test_view_friend_candidate_method_not_allowed(self):
+        view_friend_candidate_url = reverse(
+            'view_friend_candidate', args=[self.test_author.id])
+        response = self.client.post(view_friend_candidate_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.put(view_friend_candidate_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.delete(view_friend_candidate_url)
+        self.assertTrue(response.status_code == 405)
+
+    # http://service/<str:author_id>/addfriend/
+    def test_view_friend_candidate(self):
+        # create two test authors
+        author = Author(username="B", email="dummy@gmail.com",
+                        password="password", first_name="testing", last_name="testing", is_active=1)
+        author.uid = "testserver/author/" + str(author.id)
+        author.save()
+        author2 = Author(username="C", email="dummy@gmail.com",
+                         password="password", first_name="testing", last_name="testing", is_active=1)
+        author2.uid = "testserver/author/" + str(author2.id)
+        author2.save()
+
+        view_friend_candidate_url = reverse(
+            'view_friend_candidate', args=[author.id])
+
+        response = self.client.get(view_friend_candidate_url)
+        json_response = response.json()
+        self.assertTrue(response.status_code == 200)
+        self.assertTrue(
+            json_response["available_authors_to_befriend"][0] == author2.uid)
+        # friend author with author2
+        new_friend1 = Friend(author_id=author.uid, friend_id=author2.uid)
+        new_friend1.save()
+
+        response = self.client.get(view_friend_candidate_url)
+        json_response = response.json()
+        self.assertTrue(response.status_code == 200)
+        self.assertTrue(
+            len(json_response["available_authors_to_befriend"]) == 0)
+        # clean up test data
+        Friend.objects.filter(author_id=author.uid).filter(
+            friend_id=author2.uid).delete()
+        Author.objects.filter(username="B").delete()
+        Author.objects.filter(username="C").delete()
 
     def tearDown(self):
         Author.objects.filter(username="test_retrieve_author_profile").delete()
