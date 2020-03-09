@@ -2,7 +2,9 @@ from django.urls import path
 from . import views
 urlpatterns = [
     # API URLS
-    path('posts/', views.post_creation_and_retrival_to_curr_auth_user, name="add_or_get_post"),
+    path('posts/', views.post_creation_and_retrieval_to_curr_auth_user, name="add_or_get_post"),
+
+    # GET is also the user UI for editing
     path('posts/<str:post_id>', views.post_edit_and_delete, name="edit_or_delete_post"),
     path('<str:author_id>/posts/', views.retrieve_posts_of_author_id_visible_to_current_auth_user),
     path('<str:author_id>/friends/', views.friend_checking_and_retrieval_of_author_id),
