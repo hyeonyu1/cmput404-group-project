@@ -2,68 +2,101 @@
 {% extends "navigation.html" %}
 {% block navigation_content %}
 {% load static %}
-<link rel="stylesheet" href="{% static '/users/css/style.css' %}">
 
 <div id="app">
-    <div class="container profile-image">
-        <div>
-            <img src="{% static '/users/images/profile.png' %}" height="100%" width="100%">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-1"></div>
+            <div class="col-sm-10">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <div>
+                            <img src="{% static '/users/images/profile.png' %}" height="100%" width="100%">
+                        </div>
+                    </div>
+                    <div class="col-sm-9 my-auto">
+                        <div class="row justify-content-center">
+                            <h1 v-if="is_visitor" style="color: #362dff"> [[user.firstName ]]'s &nbsp; Profile </h1>
+                            <h1 v-else style="color: #22b315"> [[user.firstName ]], Welcome to Mandala </h1>
+                        </div>
+                        <div class="row justify-content-center">
+                            <button v-if="is_visitor" class="btn btn-light" @click="app.add_friend()">Add Friend</button>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+            </div>
+            <div class="col-sm-1"></div>
         </div>
 
-    </div>
-
-    <div class="container profile-info">
-        <div class="container">
-            <div class="container profile-info-head">
-                <h1 style="text-align: center"> {{user.first_name}}, Welcome to Mandala </h1>
+        <div class="row">
+            <div class="col-sm-4"></div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                        <button class="btn" @click="app.show_page('info')">Info</button>
+                        <button class="btn" @click="app.show_page('friend')">Friends</button>
+                        <button class="btn" @click="app.show_page('friend_request')">Friend Requests</button>
+                        <button class="btn" @click="app.show_page('post')">My Post</button>
+                </div>
             </div>
+            <div class="col-sm-4"></div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-1"></div>
+            <div class="col-sm-10">
+                <nav-content
+                :show="show"
+                :friends="friends"
+                :request_senders="request_senders"
+                :user="user"
+                :is_visitor="is_visitor">
+
+                </nav-content>
+            </div>
+            <div class="col-sm-1"></div>
+        </div>
+    </div>
+</div>
+
+
+<template id="nav">
+    <div>
+        <div class="card card-body">
+            <ul class="list-group" v-if="show['friend_request'] && !is_visitor">
+                <request-list
+                    v-for="(sender, index) in request_senders"
+                    v-bind:sender="sender"
+                    v-bind:index="index"
+                >
+                </request-list>
+            </ul>
+
+            <ul class="list-group" v-if="show['friend']">
+                <friend-list
+                    v-for="(friend, index) in friends"
+                    v-bind:friend="friend"
+                    v-bind:index="index"
+                >
+                </friend-list>
+            </ul>
 
             <user-info
-                    v-bind:user="user"
-            ></user-info>
-            </div>
-
-        <div class="card">
-             <div class="card-header">
-                 Friends Requests
-             </div>
-             <div class="card-body">
-                <ul class="list-group">
-                    <request-list
-                        v-for="(sender, index) in request_senders"
-                        v-bind:sender="sender"
-                        v-bind:index="index"
-                    >
-                    </request-list>
-                </ul>
-             </div>
+                v-bind:user="user"
+                v-if="show['info']"
+                :is_visitor="is_visitor"
+            >
+            </user-info>
         </div>
-
-        <div class="card">
-             <div class="card-header">
-                 My Friends
-             </div>
-             <div class="card-body">
-                 <ul class="list-group">
-                     <friend-list
-                       v-for="(friend, index) in friends"
-                       v-bind:friend="friend"
-                       v-bind:index="index"
-                     >
-                    </friend-list>
-                 </ul>
-             </div>
-
-         </div>
     </div>
+</template>
 
-</div>
 
 <template id="list-friend">
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'{% url 'profile' %}' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
+                <a v-bind:href="'/user/profile/' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
                 <button class="btn btn-primary" @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
 
             </div>
@@ -76,7 +109,7 @@
     <div v-if="!sender.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'{% url 'profile' %}' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
+                <a v-bind:href="'/user/profile/' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
                 <button class="btn btn-primary" @click="app.accept(sender.id, '{{ user.uid }}', index)">Accept</button>
                 <button class="btn btn-warning" @click="app.deny(sender.id, '{{ user.uid }}', index)">Deny</button>
             </div>
@@ -105,8 +138,10 @@
             <label for="github">Github: </label>
             <input class="form-control" id="github" type="text" name="github"
                 v-model=" user.github">
-            <button class="btn btn-primary" @click="app.edit('{{ user.id.hex }}')">Edit</button>
-            <button class="btn btn-primary" @click="app.delete_account('{{ user.id.hex }}')">Delete My Account</button>
+        </div>
+        <div class="row justify-content-between">
+                <button v-if="!is_visitor" class="btn btn-outline-primary ml-3" @click="app.edit('{{ user.id.hex }}')">Edit</button>
+                <button v-if="!is_visitor" class="btn btn-outline-danger mr-3" @click="app.delete_account('{{ user.id.hex }}')">Delete My Account</button>
         </div>
     </div>
 </template>
@@ -119,6 +154,11 @@
         template: '#list-item'
     });
 
+    Vue.component('nav-content',{
+        props: ['show', 'friends', 'user', 'request_senders','is_visitor'],
+        template: '#nav'
+    });
+
     Vue.component('friend-list', {
         delimiters: ['[[', ']]'],
         props: ['friend', 'index'],
@@ -127,20 +167,27 @@
 
     Vue.component('user-info', {
         delimiters: ['[[', ']]'],
-        props: ['user'],
+        props: ['user','is_visitor'],
         template: '#user-info'
     });
 
     var app = new Vue({
         el: '#app',
-        data: {
-            msg: 'aaa'
-        },
+        delimiters: ['[[', ']]'],
         data() {
             return {
                 request_senders: [],
                 user: {},
-                friends: []
+                friends: [],
+                show: {
+                    'info':true,
+                    'friend':false,
+                    'friend_request':false,
+                    'post':false,
+                },
+
+                is_visitor:true,
+                is_added:false
             }
         },
         methods: {
@@ -148,8 +195,15 @@
             get_user(id) {
                 let url = '/author/' + id;
                 window.axios.get(url).then((response) => {
-
                     this.user = response.data;
+                    let alist=this.user.id.split('/');
+                    let user_id = alist[alist.length-1];
+                    console.log(user_id);
+                    console.log('{{user.id.hex}}');
+                    if('{{user.id.hex}}' === user_id){
+                        this.is_visitor=false
+                    }
+
                     this.friends = response.data['friends'];
                     console.log(this.friends);
                 })
@@ -166,6 +220,7 @@
 
                         let from_id = idlist[idlist.length - 1];
                         window.axios.get('/author/' + from_id).then((response) => {
+                            console.log(response.data);
                             //let username = response.data['firstName'] +' '+ response.data['lastName'];
                             response.data['uid'] = idlist[idlist.length - 1];
                             response.data['isDeleted'] = false;
@@ -266,13 +321,32 @@
                         window.location.reload();
                     }
                 });
+            },
+
+            show_page(name) {
+                this.show[name]=true;
+                for(let key in this.show){
+                    if(key != name){
+                        this.show[key]=false;
+                    }
+                }
+            },
+
+            add_friend(){
+                window.axios.post("/friendrequest/",{
+                    'author':{'id': '{{user.uid}}'},
+                    'friend':{'id': this.user.id}
+                }).then((response) =>{
+                    alert(response.data);
+
+                });
             }
 
         },
 
         created() {
-            this.get_user("{{user.id.hex}}");
-            this.get_request('/friendrequest/{{user.id.hex}}');
+            this.get_user("{{user_id}}");
+            this.get_request('/friendrequest/{{user_id}}');
         }
     });
 
