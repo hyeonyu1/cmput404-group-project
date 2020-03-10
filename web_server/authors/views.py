@@ -417,12 +417,20 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "posts": current_page.object_list
             }
 
+        return response_data
+
+    def retrieve_stream_posts(request):
+        response_data = retrieve_posts(request)
+        return render(request, 'posts/stream.html', response_data)
+
+    def retrieve_api_posts(request):
+        response_data = retrieve_posts(request)
         return JsonResponse(response_data)
 
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
-        Handler("GET", "text/html", retrieve_posts),
-        Handler("GET", "application/json", retrieve_posts)
+        Handler("GET", "text/html", retrieve_stream_posts),
+        Handler("GET", "application/json", retrieve_api_posts)
     ]).resolve()
 
 # Returns 5 newest comment on the post
@@ -700,10 +708,19 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "posts": current_page.object_list
             }
 
+        return response_data
+
+    def retrieve_stream_posts(request):
+        response_data = retrieve_author_posts(request)
+        return render(request, 'posts/stream.html', response_data)
+
+    def retrieve_api_posts(request):
+        response_data = retrieve_author_posts(request)
         return JsonResponse(response_data)
 
     return Endpoint(request, None,
-                    [Handler("GET", "application/json", retrieve_author_posts)]
+                    [ Handler("GET", "text/html", retrieve_stream_posts),
+                     Handler("GET", "application/json", retrieve_api_posts)]
                     ).resolve()
 
 
