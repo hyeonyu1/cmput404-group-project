@@ -20,7 +20,7 @@
                             <h1 v-else style="color: #22b315"> [[user.firstName ]], Welcome to Mandala </h1>
                         </div>
                         <div class="row justify-content-center">
-                            <button v-if="is_visitor" class="btn btn-light" @click="app.add_friend()">Add Friend</button>
+                            <button v-if="is_visitor && !is_already_friend" class="btn btn-light" @click="app.add_friend()">Add Friend</button>
                         </div>
                     </div>
                 </div>
@@ -68,6 +68,7 @@
                     v-for="(sender, index) in request_senders"
                     v-bind:sender="sender"
                     v-bind:index="index"
+                    v-bind:is_visitor="is_visitor"
                 >
                 </request-list>
             </ul>
@@ -77,6 +78,8 @@
                     v-for="(friend, index) in friends"
                     v-bind:friend="friend"
                     v-bind:index="index"
+                    v-bind:is_visitor="is_visitor"
+                >
                 >
                 </friend-list>
             </ul>
@@ -97,7 +100,7 @@
         <li class="list-group-item">
             <div class="form-inline">
                 <a v-bind:href="'/user/profile/' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
-                <button class="btn btn-primary" @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
+                <button class="btn btn-primary" v-if="!is_visitor" @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
 
             </div>
         </li>
@@ -110,8 +113,8 @@
         <li class="list-group-item">
             <div class="form-inline">
                 <a v-bind:href="'/user/profile/' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
-                <button class="btn btn-primary" @click="app.accept(sender.id, '{{ user.uid }}', index)">Accept</button>
-                <button class="btn btn-warning" @click="app.deny(sender.id, '{{ user.uid }}', index)">Deny</button>
+                <button class="btn btn-primary" v-if="!is_visitor" @click="app.accept(sender.id, '{{ user.uid }}', index)">Accept</button>
+                <button class="btn btn-warning" v-if="!is_visitor" @click="app.deny(sender.id, '{{ user.uid }}', index)">Deny</button>
             </div>
         </li>
     </div>
@@ -150,7 +153,7 @@
 <script>
     Vue.component('request-list', {
         delimiters: ['[[', ']]'],
-        props: ['sender', 'index'],
+        props: ['sender', 'index','is_visitor'],
         template: '#list-item'
     });
 
@@ -161,7 +164,7 @@
 
     Vue.component('friend-list', {
         delimiters: ['[[', ']]'],
-        props: ['friend', 'index'],
+        props: ['friend', 'index','is_visitor'],
         template: '#list-friend'
     });
 
@@ -187,7 +190,8 @@
                 },
 
                 is_visitor:true,
-                is_added:false
+                is_added:false,
+                is_already_friend: false
             }
         },
         methods: {
@@ -204,8 +208,11 @@
                         this.is_visitor=false
                     }
 
-                    this.friends = response.data['friends'];
-                    console.log(this.friends);
+                    for (let friend of response.data['friends']){
+                        let idlist = friend.id.split('/');
+                        friend['uid']= idlist[idlist.length - 1];
+                        this.friends.push(friend);
+                    }
                 })
             },
 
@@ -340,13 +347,21 @@
                     alert(response.data);
 
                 });
-            }
+            },
+
+            check_already_friend(user_id, author_id){
+                window.axios.get("/author/"+user_id+ "/friends/" + author_id).then((response)=>{
+                    this.is_already_friend=response.data["friends"];
+                });
+
+            },
 
         },
 
         created() {
             this.get_user("{{user_id}}");
             this.get_request('/friendrequest/{{user_id}}');
+            this.check_already_friend("{{user_id}}","{{user.uid}}");
         }
     });
 
