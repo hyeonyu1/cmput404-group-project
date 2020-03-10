@@ -47,8 +47,8 @@ INSTALLED_APPS = [
     'comments.apps.CommentsConfig',
     'friendship.apps.FriendshipConfig',
     'users.apps.UsersConfig',
-    'crispy_forms'
-
+    'crispy_forms',
+    'markdown_deux'
 ]
 
 MIDDLEWARE = [
