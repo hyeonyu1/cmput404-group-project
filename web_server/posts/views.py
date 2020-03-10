@@ -5,7 +5,10 @@ from django.http import HttpResponse, JsonResponse
 from .models import Post
 from comments.models import Comment
 
+
 from json import loads
+import json
+
 from django.core import serializers
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler
@@ -141,13 +144,54 @@ def retrieve_single_post_with_id(request, post_id):
     return endpoint.resolve()
 
 def comments_retrieval_and_creation_to_post_id(request, post_id):
-    if request.method == 'POST':
-        # JSON post body of what you post to a posts' comemnts
-        # POST to http://service/posts/{POST_ID}/comments
-        return HttpResponse("http://service/posts/{POST_ID}/comments POST")
-    elif request.method == 'GET':
-        # access to the comments in a post
-        # GET from http://service/posts/{post_id}/comments 
-        return HttpResponse("http://service/posts/{post_id}/comments GET")
-    return None
-    
+    # if request.method == 'POST':
+    #     # JSON post body of what you post to a posts' comemnts
+    #     # POST to http://service/posts/{POST_ID}/comments
+    #     return HttpResponse("http://service/posts/{POST_ID}/comments POST")
+    # elif request.method == 'GET':
+    #     # access to the comments in a post
+    #     # GET from http://service/posts/{post_id}/comments
+
+
+    # return HttpResponse(my_json_string )
+
+    #
+
+    def return_comments(request, comments, pager, pagination_uris):
+
+        json_comments = loads(serializers.serialize('json', comments))
+
+        for comment in json_comments:
+            print(comment)
+            del comment['model']
+
+        author_exclude_fields = ('password', "is_superuser", "is_staff", "groups", "user_permissions",
+                                 "last_login", "is_active", "date_joined", "username", "parentPost")
+
+        for i in range(0, len(json_comments)):
+            comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
+            json_comments[i]['fields']['author'] = comments_author_json[i]['fields']
+
+        output = {
+            "query": "posts",
+            "count": pager.count,
+            "size": len(json_comments),
+            "comments": json_comments
+        }
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
+
+        print(output)
+        return JsonResponse(output)
+
+    endpoint = Endpoint(request,
+                        Comment.objects.filter(parentPost=post_id).order_by("-published"),
+                        [
+                            PagingHandler("GET", "text/html", return_comments)
+                        ])
+
+    return endpoint.resolve()
+

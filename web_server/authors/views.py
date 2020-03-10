@@ -252,6 +252,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         return redirect("/")
 
     def retrieve_posts(request):
+
+        print("request.user.id", request.user.id)
+        # own post
+        own_post = Post.objects.filter(author_id=request.user.id)
+
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC")
 
@@ -293,7 +298,9 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         local_host = request.user.host
         server_only_post = Post.objects.filter(author__host=local_host, visibility="SERVERONLY")
 
-        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
+        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
+
+        visible_post = visible_post.distinct()
 
         array_of_posts = []
         count = visible_post.count()
@@ -406,7 +413,9 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 # Returns 5 newest comment on the post
 def get_comments(post_id):
     comments_list = []
+
     comments = Comment.objects.filter(parentPost=post_id).order_by("-published")[:5]
+
     size = comments.count()
 
     for comment in comments:
