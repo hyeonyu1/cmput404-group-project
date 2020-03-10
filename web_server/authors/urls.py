@@ -4,7 +4,6 @@ urlpatterns = [
     # API URLS
     path('posts/', views.post_creation_and_retrieval_to_curr_auth_user,
          name="add_or_get_post"),
-
     # GET is also the user UI for editing
     path('posts/<str:post_id>', views.post_edit_and_delete,
          name="edit_or_delete_post"),
@@ -19,7 +18,7 @@ urlpatterns = [
     path('<str:author_id>/update', views.update_author_profile,
          name="update_author_profile"),
     path('unfriend', views.unfriend, name="unfriend"),
-    path('<str:author_id>/addfriend', views.view_list_of_available_authors_to_befriend,
+    path('<str:author_id>/addfriend/', views.view_list_of_available_authors_to_befriend,
          name="view_list_of_available_authors_to_befriend"),
 
     # Webpage URLS
