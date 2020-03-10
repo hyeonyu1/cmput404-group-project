@@ -53,7 +53,7 @@ class TestViews(TestCase):
 
     # test for <str:author1_id>/friends/<path:author2_id>/
     def test_friend_checking_and_retrieval(self):
-        check_if_friends_url = reverse('check_if_friends', kwargs={
+        check_if_friends_url = reverse('check_if_two_authors_are_friends', kwargs={
             'author1_id': 'de305d54-75b4-431b-adb2-eb6b9e546013', 'author2_id': '127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891'})
         response = self.client.get(check_if_friends_url)
         self.assertTrue(response.status_code == 200)
@@ -68,7 +68,7 @@ class TestViews(TestCase):
     # test forbidden methods for <str:author1_id>/friends/<path:author2_id>/
 
     def test_friend_checking_and_retrieval_method_not_allowed(self):
-        check_if_friends_url = reverse('check_if_friends', kwargs={
+        check_if_friends_url = reverse('check_if_two_authors_are_friends', kwargs={
             'author1_id': 'de305d54-75b4-431b-adb2-eb6b9e546013', 'author2_id': '127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891'})
         # 405 except GET
         response = self.client.post(check_if_friends_url)
@@ -82,7 +82,7 @@ class TestViews(TestCase):
 
     def test_friend_checking_and_retrieval_GET(self):
         friend_checking_and_retrieval_url = reverse(
-            'friend_checking_and_retrieval', args=[self.test_author.uid])
+            'friend_checking_and_retrieval_of_author_id', args=[self.test_author.uid])
         response = self.client.get(friend_checking_and_retrieval_url)
         json_response = response.json()
 
@@ -97,13 +97,14 @@ class TestViews(TestCase):
         response = self.client.get(friend_checking_and_retrieval_url)
         json_response = response.json()
         self.assertTrue(json_response["authors"][0] == "test_friend")
+        # clean up test data
         Friend.objects.filter(author_id=self.test_author.uid).filter(
             friend_id="test_friend").delete()
 
     # test POST author/<path:author_id>/friends/
     def test_friend_checking_and_retrieval_POST(self):
         friend_checking_and_retrieval_url = reverse(
-            'friend_checking_and_retrieval', args=[self.test_author.uid])
+            'friend_checking_and_retrieval_of_author_id', args=[self.test_author.uid])
 
         test_friend = Friend(author_id=self.test_author.uid,
                              friend_id="test_friend")
@@ -119,6 +120,7 @@ class TestViews(TestCase):
         self.assertEquals(json_response["query"], "friends")
         self.assertEquals(json_response["author"], self.test_author.uid)
         self.assertEquals(len(json_response["authors"]), 1)
+        # clean up test data
         Friend.objects.filter(author_id=self.test_author.uid).filter(
             friend_id="test_friend").delete()
 
@@ -126,7 +128,7 @@ class TestViews(TestCase):
 
     def test_friend_checking_and_retrieval_not_allowed_method(self):
         friend_checking_and_retrieval_url = reverse(
-            'friend_checking_and_retrieval', args=[self.test_author.uid])
+            'friend_checking_and_retrieval_of_author_id', args=[self.test_author.uid])
 
         response = self.client.put(
             friend_checking_and_retrieval_url)
@@ -164,6 +166,53 @@ class TestViews(TestCase):
 
         self.assertFalse(Friend.objects.filter(
             author_id="A", friend_id="B").exists())
+        Friend.objects.filter(author_id="A").filter(friend_id="B").delete()
+
+    # http://service/<str:author_id>/addfriend/
+    def test_view_friend_candidate_method_not_allowed(self):
+        view_friend_candidate_url = reverse(
+            'view_list_of_available_authors_to_befriend', args=[self.test_author.id])
+        response = self.client.post(view_friend_candidate_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.put(view_friend_candidate_url)
+        self.assertTrue(response.status_code == 405)
+        response = self.client.delete(view_friend_candidate_url)
+        self.assertTrue(response.status_code == 405)
+
+    # http://service/<str:author_id>/addfriend/
+    def test_view_friend_candidate(self):
+        # create two test authors
+        author = Author(username="B", email="dummy@gmail.com",
+                        password="password", first_name="testing", last_name="testing", is_active=1)
+        author.uid = "testserver/author/" + str(author.id)
+        author.save()
+        author2 = Author(username="C", email="dummy@gmail.com",
+                         password="password", first_name="testing", last_name="testing", is_active=1)
+        author2.uid = "testserver/author/" + str(author2.id)
+        author2.save()
+
+        view_friend_candidate_url = reverse(
+            'view_list_of_available_authors_to_befriend', args=[author.id])
+
+        response = self.client.get(view_friend_candidate_url)
+        json_response = response.json()
+        self.assertTrue(response.status_code == 200)
+        self.assertTrue(
+            json_response["available_authors_to_befriend"][0] == author2.uid)
+        # friend author with author2
+        new_friend1 = Friend(author_id=author.uid, friend_id=author2.uid)
+        new_friend1.save()
+
+        response = self.client.get(view_friend_candidate_url)
+        json_response = response.json()
+        self.assertTrue(response.status_code == 200)
+        self.assertTrue(
+            len(json_response["available_authors_to_befriend"]) == 0)
+        # clean up test data
+        Friend.objects.filter(author_id=author.uid).filter(
+            friend_id=author2.uid).delete()
+        Author.objects.filter(username="B").delete()
+        Author.objects.filter(username="C").delete()
 
     def tearDown(self):
         Author.objects.filter(username="test_retrieve_author_profile").delete()
