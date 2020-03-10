@@ -272,6 +272,9 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         return redirect("/")
 
     def retrieve_posts(request):
+        # own post
+        own_post = Post.objects.filter(author_id=request.user.uid)
+
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC")
 
@@ -280,18 +283,13 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         FOAF_post = Post.objects.filter(visibility="FOAF")
         for post in FOAF_post:
             FOAF_post_authors.append(post.author_id)
-
-        FOAF_uid = []
-        for author in FOAF_post_authors:
-            FOAF_uid.append(Author.objects.get(id=author).uid)
-
         visible_FOAF_author = []
-        for friend_of_author in FOAF_uid:
+        for friend_of_author in FOAF_post_authors:
             friend_of_authors_friend = Friend.objects.filter(
                 author_id=friend_of_author)
             for friend in friend_of_authors_friend:
                 if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
-                    visible_FOAF_author.append(friend_of_author.split("/")[-1])
+                    visible_FOAF_author.append(friend_of_author)
 
         foaf_post = Post.objects.filter(
             author__in=visible_FOAF_author, visibility="FOAF")
@@ -301,23 +299,20 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         friends = Friend.objects.filter(author_id=request.user.uid)
         for friend in friends:
             users_friends.append(friend.friend_id)
-
-        usernames = []
-        for uid in users_friends:
-            usernames.append(Author.objects.get(uid=uid).id)
-
         friend_post = Post.objects.filter(
-            author__in=usernames, visibility="FRIENDS")
+            author__in=users_friends, visibility="FRIENDS")
 
         # visibility = PRIVATE
-        private_post = Post.objects.filter(visibleTo=request.user.id)
+        private_post = Post.objects.filter(visibleTo=request.user.uid)
 
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY")
 
-        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
+        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
+
+        visible_post = visible_post.distinct()
 
         array_of_posts = []
         count = visible_post.count()
@@ -326,7 +321,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
         for post in visible_post.order_by("-published"):
-            author_id = Author.objects.get(id=post.author_id)
+            author_id = Author.objects.get(uid=post.author_id)
+
             author_info = {
                 "id": str(author_id.uid),
                 "email": str(author_id.email),
@@ -354,6 +350,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 host = "https://" + host
             else:
                 host = "http://" + host
+
 
             next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
@@ -422,25 +419,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         return JsonResponse(response_data)
 
-    '''
-    return JsonResponse({
-        "query": "addPost",
-        "success": True,
-        "message": "Post Added"
-    })
-    
-    return Endpoint(request,None,[
-        Handler("POST", "application/json", create_new_post)
-    ]).resolve()
-
-    
-    if request.method == 'POST':
-        pass
-    '''
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
-        PagingHandler("GET", "text/html", retrieve_posts),
-        PagingHandler("GET", "application/json", retrieve_posts)
+        Handler("GET", "text/html", retrieve_posts),
+        Handler("GET", "application/json", retrieve_posts)
     ]).resolve()
 
 # Returns 5 newest comment on the post
@@ -567,53 +549,58 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             }, status=200)
 
         author = get_object_or_404(Author, id=id_of_author)
-
         host = request.get_host()
-        if request.is_secure():
-            host = "https://" + host
-        else:
-            host = "http://" + host
 
         author_uid = host + "/author/" + str(id_of_author)
 
-        # visibility =  PUBLIC
-        public_post = Post.objects.filter(author=author, visibility="PUBLIC")
+        print("user's id {} , author_id = {}".format(request.user.uid, author_uid))
+        if author_uid == request.user.uid:
+            visible_post = Post.objects.filter(author= author_uid)
 
-        # visibility = FOAF
-        foaf = False
-        author_friends = Friend.objects.filter(author_id=author_uid)
-        for friend_of_author in author_friends:
-            friend_of_authors_friend = Friend.objects.filter(
-                author_id=friend_of_author.friend_id)
-            for friend in friend_of_authors_friend:
-                if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
-                    foaf = True
-                    break
-
-        if foaf:
-            foaf_post = Post.objects.filter(author=author, visibility="FOAF")
         else:
-            foaf_post = Post.objects.none()
 
-        # visibility = FRIENDS
-        if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
-            friend_post = Post.objects.filter(
-                author=author, visibility="FRIENDS")
-        else:
-            friend_post = Post.objects.none()
+            # visibility =  PUBLIC
+            public_post = Post.objects.filter(author=author, visibility="PUBLIC")
 
-        # visibility = PRIVATE
-        private_post = Post.objects.filter(
-            author=author, visibleTo=request.user.id)
+            # visibility = FOAF
+            foaf = False
+            author_friends = Friend.objects.filter(author_id=author_uid)
+            print("author", author_friends.values("author_id"))
+            for friend_of_author in author_friends:
+                friend_of_authors_friend = Friend.objects.filter(
+                    author_id=friend_of_author.friend_id).values('friend_id')
+                for friend in friend_of_authors_friend:
+                    print(friend['friend_id'])
+                    if request.user.uid == friend['friend_id']:
+                        foaf = True
+                        print("FOAF!!!")
+                        break
+                    else:
+                        print("):")
+            if foaf:
+                foaf_post = Post.objects.filter(author=author, visibility="FOAF")
+            else:
+                foaf_post = Post.objects.none()
 
-        # visibility = SERVERONLY
-        if request.user.host == author.host:
-            server_only_post = Post.objects.filter(
-                author=author, visibility="SERVERONLY")
-        else:
-            server_only_post = Post.objects.none()
+            # visibility = FRIENDS
+            if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
+                friend_post = Post.objects.filter(
+                    author=author, visibility="FRIENDS")
+            else:
+                friend_post = Post.objects.none()
 
-        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
+            # visibility = PRIVATE
+            private_post = Post.objects.filter(
+                author=author, visibleTo=request.user.uid)
+
+            # visibility = SERVERONLY
+            if request.user.host == author.host:
+                server_only_post = Post.objects.filter(
+                    author=author, visibility="SERVERONLY")
+            else:
+                server_only_post = Post.objects.none()
+
+            visible_post = public_post | foaf_post | friend_post | private_post | server_only_post
 
         array_of_posts = []
         count = visible_post.count()
@@ -621,7 +608,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
         for post in visible_post.order_by("-published"):
-            author_id = Author.objects.get(id=post.author_id)
+            print(post.author_id)
+            author_id = Author.objects.get(uid=post.author_id)
             author_info = {
                 "id": str(author_id.uid),
                 "email": str(author_id.email),
