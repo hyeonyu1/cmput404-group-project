@@ -18,24 +18,8 @@ class CustomLogin(auth_views.LoginView):
 
 
 @login_required
-def profile(request):
-    if(request.method == 'POST'):
-        first = request.POST['new_fname']
-        last = request.POST['new_lname']
-        email = request.POST['new_email']
-        dname = request.POST['new_dname']
-        gitlink = request.POST['new_github']
-        bio = request.POST['new_bio']
-        author = request.user
-        author.first_name = first
-        author.last_name = last
-        author.email = email
-        author.github = gitlink
-        author.display_name = dname
-        author.bio = bio
-        author.save()
-        return HttpResponseRedirect(reverse('profile'))
-    return render(request, 'users/profile.html')
+def profile(request,user_id):
+    return render(request, 'users/profile.html', {'user_id':user_id})
 
 
 def register(request):

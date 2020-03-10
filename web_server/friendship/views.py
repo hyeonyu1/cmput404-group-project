@@ -72,7 +72,6 @@ def send_friend_request(request):
 
         body = request.body.decode('utf-8')
         body = json.loads(body)
-
         from_id = body.get("author", {}).get("id", None)
         to_id = body.get("friend", {}).get("id", None)
         if not from_id or not to_id:
