@@ -68,6 +68,11 @@
   fields:
     session_data: MDU5NjUxMjY3M2Q5ZTRlODQyMTMyM2U5MWIyZjY1Y2ZmODNkNmM5OTp7Il9hdXRoX3VzZXJfaWQiOiIxMjcuMC4wLjE6ODAwMC9hdXRob3IvNDJjYzA3NmFlNzNhNDZjNThkMGRlZmE1MWJlNjc1MWIiLCJfYXV0aF91c2VyX2JhY2tlbmQiOiJkamFuZ28uY29udHJpYi5hdXRoLmJhY2tlbmRzLk1vZGVsQmFja2VuZCIsIl9hdXRoX3VzZXJfaGFzaCI6ImNmNmQ1MWQzYjc1MDUwY2RkOWM3NTE0NmQ4YjNiMDk4YWU1NDhmNDIiLCJfc2Vzc2lvbl9leHBpcnkiOjM2MDAwfQ==
     expire_date: 2020-03-11 08:15:34.068216+00:00
+- model: sessions.session
+  pk: u29qrp452vxgqblhe0rohmsfpak0qn1y
+  fields:
+    session_data: ODgzOTFmYWYxZjVkOGU4ZmIyYWNkNWQxOThhOTkwYzc0NzEzZTk4ODp7Il9hdXRoX3VzZXJfaWQiOiIiLCJfYXV0aF91c2VyX2JhY2tlbmQiOiJkamFuZ28uY29udHJpYi5hdXRoLmJhY2tlbmRzLk1vZGVsQmFja2VuZCIsIl9hdXRoX3VzZXJfaGFzaCI6ImQ4NmY1ZTNkZTI1NmUwOTUwMDY5NTM4ZmE2ODM0NmU5M2U1NTBhMWMifQ==
+    expire_date: 2020-03-24 23:12:04.005873+00:00
 - model: posts.category
   pk: 1
   fields:
@@ -117,6 +122,16 @@
   pk: 6
   fields:
     author_id: 127.0.0.1:8000/author/a923df60d41a4edab518a74ef4c4b187
+    friend_id: 127.0.0.1:8000/author/42cc076ae73a46c58d0defa51be6751b
+- model: friendship.friend
+  pk: 8
+  fields:
+    author_id: 127.0.0.1:8000/author/42cc076ae73a46c58d0defa51be6751b
+    friend_id: 127.0.0.1:8000/author/edd663ae97f44507b446fca9b3249d76
+- model: friendship.friend
+  pk: 9
+  fields:
+    author_id: 127.0.0.1:8000/author/edd663ae97f44507b446fca9b3249d76
     friend_id: 127.0.0.1:8000/author/42cc076ae73a46c58d0defa51be6751b
 - model: friendship.friendrequest
   pk: 1
@@ -425,7 +440,7 @@
   pk: ''
   fields:
     password: pbkdf2_sha256$150000$eJZQ4IMxxzaO$Nm2vPPe/HUPBvtHqwtuyDDNoBp5BeqnvESdnJ95VuU4=
-    last_login: 2020-03-10 15:30:37.783658+00:00
+    last_login: 2020-03-10 23:12:04.004074+00:00
     is_superuser: true
     username: hyeon
     first_name: ''
@@ -544,6 +559,27 @@
     host: 127.0.0.1:8000
     display_name: ''
     url: 127.0.0.1:8000/author/a923df60d41a4edab518a74ef4c4b187
+    github: ''
+    groups: []
+    user_permissions: []
+- model: users.author
+  pk: 127.0.0.1:8000/author/edd663ae97f44507b446fca9b3249d76
+  fields:
+    password: pbkdf2_sha256$150000$o77ByaPG3xVr$I2/ZWlVNxkSpJBy4nh//KANTc1JrL0n8UkxIecCLHIM=
+    last_login: null
+    is_superuser: false
+    username: John
+    first_name: John
+    last_name: Smith
+    email: John@john.com
+    is_staff: false
+    is_active: false
+    date_joined: 2020-03-10 23:13:04.131633+00:00
+    id: edd663ae-97f4-4507-b446-fca9b3249d76
+    bio: ''
+    host: 127.0.0.1:8000
+    display_name: ''
+    url: 127.0.0.1:8000/author/edd663ae97f44507b446fca9b3249d76
     github: ''
     groups: []
     user_permissions: []
@@ -789,6 +825,24 @@
     unlisted: false
     categories:
     - 4
+    visibleTo: []
+- model: posts.post
+  pk: 94c31bec-b4ba-4030-b5d9-f91126c5006a
+  fields:
+    title: FOAF Post by John
+    source: http://lastplaceigotthisfrom.com/posts/yyyyy
+    origin: http://whereitcamefrom.com/posts/zzzzz
+    description: testing stream
+    contentType: text/markdown
+    content: this is a FOAF Post by John and TEST should be able to see it since they
+      are friends even though they are not FOAF
+    author: 127.0.0.1:8000/author/edd663ae97f44507b446fca9b3249d76
+    size: 1
+    published: 2020-03-10 23:17:45.612757+00:00
+    visibility: FOAF
+    unlisted: false
+    categories:
+    - 5
     visibleTo: []
 - model: posts.post
   pk: afd2886c-3132-495b-9494-9ad355a34ded
@@ -1464,3 +1518,43 @@
     object_repr: FriendRequest object (1)
     action_flag: 2
     change_message: '[{"changed": {"fields": ["from_id", "to_id"]}}]'
+- model: admin.logentry
+  pk: 65
+  fields:
+    action_time: 2020-03-10 23:13:04.213800+00:00
+    user: ''
+    content_type: 12
+    object_id: 127.0.0.1:8000/author/edd663ae97f44507b446fca9b3249d76
+    object_repr: John
+    action_flag: 1
+    change_message: '[{"added": {}}]'
+- model: admin.logentry
+  pk: 66
+  fields:
+    action_time: 2020-03-10 23:16:22.125701+00:00
+    user: ''
+    content_type: 9
+    object_id: '8'
+    object_repr: Friend object (8)
+    action_flag: 1
+    change_message: '[{"added": {}}]'
+- model: admin.logentry
+  pk: 67
+  fields:
+    action_time: 2020-03-10 23:16:29.757792+00:00
+    user: ''
+    content_type: 9
+    object_id: '9'
+    object_repr: Friend object (9)
+    action_flag: 1
+    change_message: '[{"added": {}}]'
+- model: admin.logentry
+  pk: 68
+  fields:
+    action_time: 2020-03-10 23:17:45.615935+00:00
+    user: ''
+    content_type: 7
+    object_id: 94c31bec-b4ba-4030-b5d9-f91126c5006a
+    object_repr: 'FOAF post by John: "this is a FOAF ..."'
+    action_flag: 1
+    change_message: '[{"added": {}}]'
