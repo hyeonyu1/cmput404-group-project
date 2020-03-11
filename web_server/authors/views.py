@@ -503,6 +503,11 @@ def post_edit_and_delete(request, post_id):
                 context_dict = {'post': post}
                 break
 
+        # @todo THIS IS A HACK
+        # The navigation template now requires the user object to be passed in to every view, but for some reason it
+        # is not passed in unless we explicitly pass it in here.
+        context_dict['user'] = request.user
+
         # Render the response and send it back!
         return render_to_response('editPost.html', context_dict, context)
 
@@ -538,7 +543,6 @@ def post_edit_and_delete(request, post_id):
 
     return Endpoint(request, None, [
         Handler('GET', 'text/html', get_edit_dialog),
-        # @todo should this be PUT? Or should we allow a PUT and a POST to both perform this action?
         Handler('POST', 'application/json', edit_post),
         Handler('DELETE', 'application/json', delete_post)
     ]).resolve()
