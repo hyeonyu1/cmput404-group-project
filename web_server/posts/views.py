@@ -4,11 +4,12 @@ from django.http import HttpResponse, JsonResponse
 
 from .models import Post
 from comments.models import Comment
+from users.models import Author
 
 from json import loads
 from django.core import serializers
 
-from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler
+from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 
 
 @login_required
@@ -140,14 +141,65 @@ def retrieve_single_post_with_id(request, post_id):
 
     return endpoint.resolve()
 
+
 def comments_retrieval_and_creation_to_post_id(request, post_id):
-    if request.method == 'POST':
+    def get_handler(request, posts, pager, pagination_uris):
+        # Explicitly add authors to the serialization
+        author_exclude_fields = ('password',"is_superuser", "is_staff", "groups", "user_permissions")
+
+        # Get the comments
+        comments = Comment.objects.filter(parentPost=posts[0])
+        comments_json = loads(serializers.serialize('json', comments))
+        comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
+        # Explicitly add authors to the comments
+        for j in range(0, len(comments_json)):
+            comments_json[j]['fields']['author'] = comments_author_json[j]['fields']  # avoid inserting meta data
+        # Strip meta data from each comment
+        for comment in comments_json:
+            comment['fields']['id'] = comment['pk']
+        comments_json = [comment['fields'] for comment in comments_json]
+
+        output = {
+            "query": "comments",
+            "count": pager.count,
+            "size": len(posts),
+            "comments": comments_json
+        }
+
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
+
+        return JsonResponse(output)
+
+    def post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
-        return HttpResponse("http://service/posts/{POST_ID}/comments POST")
-    elif request.method == 'GET':
-        # access to the comments in a post
-        # GET from http://service/posts/{post_id}/comments 
-        return HttpResponse("http://service/posts/{post_id}/comments GET")
-    return None
-    
+        output = {
+            "query": "addComment"
+        }
+        try:
+            body = request.POST
+            comment_info = loads(body['comment'])
+            new_comment = Comment()
+            new_comment.contentType = comment_info['contentType']
+            new_comment.comment = comment_info['comment']
+            new_comment.published = comment_info['published']
+            new_comment.author = Author.objects.filter(id=comment_info['author']['id']).first()
+            new_comment.parentPost = Post.objects.filter(id=post_id).first()
+            new_comment.save()
+            output['type'] = True
+            output['message'] = "Comment added"
+        except Exception as e:
+            output['type'] = False
+            output['message'] = "Comment not allowed"
+            output['error'] = str(e)
+        finally:
+            return JsonResponse(output)
+
+    return Endpoint(request, Post.objects.filter(id=post_id), [
+                        Handler("POST", "application/json", post_handler),
+                        PagingHandler("GET", "application/json", get_handler)
+                    ]).resolve()
