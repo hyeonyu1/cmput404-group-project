@@ -439,8 +439,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
     '''
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
-        PagingHandler("GET", "text/html", retrieve_posts),
-        PagingHandler("GET", "application/json", retrieve_posts)
+        Handler("GET", "text/html", retrieve_posts),
+        Handler("GET", "application/json", retrieve_posts)
     ]).resolve()
 
 # Returns 5 newest comment on the post
@@ -509,6 +509,11 @@ def post_edit_and_delete(request, post_id):
                 context_dict = {'post': post}
                 break
 
+        # @todo THIS IS A HACK
+        # The navigation template now requires the user object to be passed in to every view, but for some reason it
+        # is not passed in unless we explicitly pass it in here.
+        context_dict['user'] = request.user
+
         # Render the response and send it back!
         return render_to_response('editPost.html', context_dict, context)
 
@@ -544,7 +549,6 @@ def post_edit_and_delete(request, post_id):
 
     return Endpoint(request, None, [
         Handler('GET', 'text/html', get_edit_dialog),
-        # @todo should this be PUT? Or should we allow a PUT and a POST to both perform this action?
         Handler('POST', 'application/json', edit_post),
         Handler('DELETE', 'application/json', delete_post)
     ]).resolve()
