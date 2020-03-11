@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.conf import settings
 from uuid import uuid4
 from django.contrib.auth.models import AbstractUser
 # Create your models here.
@@ -50,3 +50,9 @@ class Author(AbstractUser):
     display_name = models.CharField(max_length=256, blank=True)
     url = models.URLField(max_length=500)
     github = models.URLField(blank=True)
+
+    def save(self, *args, **kwargs):
+
+        if self.is_superuser:
+            self.uid = settings.HOSTNAME + "/author/" + str(self.id.hex)
+        super(Author, self).save(*args, **kwargs)
