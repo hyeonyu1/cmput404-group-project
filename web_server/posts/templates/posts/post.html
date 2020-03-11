@@ -5,7 +5,7 @@
 
 
 
-<div class="container-fluid">
+<div id="app" class="container-fluid">
      <div class="row">
         <div class="col-sm-2">
 
@@ -83,10 +83,17 @@
 
              <div class="row">
 
-                 <div class="col-sm-10">
-                    <h4>Phoebe <small>time</small></h4>
-                     <p>hardcode comment</p>
-                    <br>
+                 <div class="col-sm-10" >
+
+                     <comment-list
+                     v-for="comment in comments"
+                     v-bind:comment="comment"
+                     >
+
+                     </comment-list>
+
+
+
                 </div>
 
              </div>
@@ -95,6 +102,15 @@
          <div class="col-sm-2"></div>
     </div>
 </div>
+
+<template id="list-comment">
+    <div>
+        <!--<a href="'/user/profile/' + comment.author.">[[sender.firstName + ' ' + sender.lastName]]</a>-->
+        <h4>[[comment.author.first_name]]</h4><small>[[comment.published]]</small>
+        <p>[[comment.content]]</p>
+        <br>
+    </div>
+</template>
 
 <script>
     function delete_post() {
@@ -109,11 +125,64 @@
         })
         .then(response=>{
             if (response.status == 200){
-                window.location.href = "{% url "stream" %}"
+                window.location.href = "{% url 'stream' %}"
             } else {
                 alert("Unable to delete post")
             }
         })
+    };
+
+    Vue.component('comment-list', {
+        delimiters: ['[[', ']]'],
+        props: ['comment' ],
+        template: '#list-comment'
+    });
+
+    class Comment{
+        constructor(comment){
+            this.contentType = comment['contentType'];
+            this.content = comment['content'];
+            this.published = comment['published'];
+            this.author = comment['author'];
+            this.commentId = comment['id'];
+        }
+
     }
+    var app = new Vue({
+        el: '#app',
+        delimiters: ['[[', ']]'],
+        data() {
+           return {
+               'comments': []
+           }
+        },
+        methods:{
+            // Retrieve all comments under the current post.
+            get_comments(){
+
+                let url ='comments/';
+                window.axios.get(url).then((response) =>{
+                    for(let item of response.data['comments']){
+                        let comment = new Comment(item);
+                        console.log(comment);
+                        this.comments.push(comment);
+                    }
+
+                });
+
+            }
+
+        },
+         created() {
+            this.get_comments("{{ post.id }}")
+         }
+
+    });
+
+
+
 </script>
+
+
+
 {% endblock %}
