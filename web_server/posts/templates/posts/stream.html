@@ -42,14 +42,36 @@
             </div>
         </div>
         <div class="col-sm-3">
-
-            <p>github activity</p>
+            <div id="feed"></div>
         </div>
         <div class="col-sm-1">
 
         </div>
 
     </div>
+
+    <script>
+        function getGit() {
+            fetch("{% url 'github' %}", {
+                method: 'GET'
+            }).then(function(response) {
+                return response.json();
+            }).then(function(data) {
+                github(data['github']);
+            }).catch(function(ex) {
+                console.log("Could not get github name");
+            });
+        }
+
+        function github(name) {
+            GitHubActivity.feed({
+                username: name,
+                selector: "#feed",
+                limit: 10
+            });
+        }
+        window.onload = getGit;
+    </script>
 </div>
 
 

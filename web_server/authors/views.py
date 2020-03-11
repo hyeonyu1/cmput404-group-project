@@ -417,7 +417,9 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "posts": current_page.object_list
             }
 
-        return JsonResponse(response_data)
+        return render(request, 'posts/stream.html', {
+            'posts': response_data
+        })
 
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
