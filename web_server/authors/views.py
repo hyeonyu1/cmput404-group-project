@@ -278,6 +278,15 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC")
 
+
+        # visibility = FRIENDS
+        users_friends = []
+        friends = Friend.objects.filter(author_id=request.user.uid)
+        for friend in friends:
+            users_friends.append(friend.friend_id)
+        friend_post = Post.objects.filter(
+            author__in=users_friends, visibility="FRIENDS")
+
         # visibility = FOAF
         FOAF_post_authors = []
         FOAF_post = Post.objects.filter(visibility="FOAF")
@@ -291,16 +300,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 if Friend.objects.filter(author_id=friend.friend_id).filter(friend_id=request.user.uid).exists():
                     visible_FOAF_author.append(friend_of_author)
 
+        # private to FOAF is jus to FOAF and friends
+        visible_FOAF_author = visible_FOAF_author + users_friends
         foaf_post = Post.objects.filter(
             author__in=visible_FOAF_author, visibility="FOAF")
-
-        # visibility = FRIENDS
-        users_friends = []
-        friends = Friend.objects.filter(author_id=request.user.uid)
-        for friend in friends:
-            users_friends.append(friend.friend_id)
-        friend_post = Post.objects.filter(
-            author__in=users_friends, visibility="FRIENDS")
 
         # visibility = PRIVATE
         private_post = Post.objects.filter(visibleTo=request.user.uid)
@@ -417,14 +420,21 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "posts": current_page.object_list
             }
 
-        return render(request, 'posts/stream.html', {
-            'posts': response_data
-        })
+        return response_data
+
+    def retrieve_stream_posts(request):
+        response_data = retrieve_posts(request)
+        print(response_data)
+        return render(request, 'posts/stream.html', response_data)
+
+    def retrieve_api_posts(request):
+        response_data = retrieve_posts(request)
+        return JsonResponse(response_data)
 
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
-        Handler("GET", "text/html", retrieve_posts),
-        Handler("GET", "application/json", retrieve_posts)
+        Handler("GET", "text/html", retrieve_stream_posts),
+        Handler("GET", "application/json", retrieve_api_posts)
     ]).resolve()
 
 # Returns 5 newest comment on the post
@@ -493,6 +503,11 @@ def post_edit_and_delete(request, post_id):
                 context_dict = {'post': post}
                 break
 
+        # @todo THIS IS A HACK
+        # The navigation template now requires the user object to be passed in to every view, but for some reason it
+        # is not passed in unless we explicitly pass it in here.
+        context_dict['user'] = request.user
+
         # Render the response and send it back!
         return render_to_response('editPost.html', context_dict, context)
 
@@ -528,7 +543,6 @@ def post_edit_and_delete(request, post_id):
 
     return Endpoint(request, None, [
         Handler('GET', 'text/html', get_edit_dialog),
-        # @todo should this be PUT? Or should we allow a PUT and a POST to both perform this action?
         Handler('POST', 'application/json', edit_post),
         Handler('DELETE', 'application/json', delete_post)
     ]).resolve()
@@ -555,7 +569,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
         author_uid = host + "/author/" + str(id_of_author)
 
-        print("user's id {} , author_id = {}".format(request.user.uid, author_uid))
         if author_uid == request.user.uid:
             visible_post = Post.objects.filter(author= author_uid)
 
@@ -564,32 +577,30 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             # visibility =  PUBLIC
             public_post = Post.objects.filter(author=author, visibility="PUBLIC")
 
+            # visibility = FRIENDS
+            if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
+                friend_post = Post.objects.filter(
+                    author=author, visibility__in=["FRIENDS","FOAF"])
+            else:
+                friend_post = Post.objects.none()
+
             # visibility = FOAF
             foaf = False
             author_friends = Friend.objects.filter(author_id=author_uid)
-            print("author", author_friends.values("author_id"))
             for friend_of_author in author_friends:
                 friend_of_authors_friend = Friend.objects.filter(
                     author_id=friend_of_author.friend_id).values('friend_id')
                 for friend in friend_of_authors_friend:
-                    print(friend['friend_id'])
                     if request.user.uid == friend['friend_id']:
                         foaf = True
-                        print("FOAF!!!")
                         break
-                    else:
-                        print("):")
+
             if foaf:
                 foaf_post = Post.objects.filter(author=author, visibility="FOAF")
             else:
                 foaf_post = Post.objects.none()
 
-            # visibility = FRIENDS
-            if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
-                friend_post = Post.objects.filter(
-                    author=author, visibility="FRIENDS")
-            else:
-                friend_post = Post.objects.none()
+
 
             # visibility = PRIVATE
             private_post = Post.objects.filter(
@@ -702,10 +713,19 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "posts": current_page.object_list
             }
 
+        return response_data
+
+    def retrieve_stream_posts(request):
+        response_data = retrieve_author_posts(request)
+        return render(request, 'posts/stream.html', response_data)
+
+    def retrieve_api_posts(request):
+        response_data = retrieve_author_posts(request)
         return JsonResponse(response_data)
 
     return Endpoint(request, None,
-                    [Handler("GET", "application/json", retrieve_author_posts)]
+                    [ Handler("GET", "text/html", retrieve_stream_posts),
+                     Handler("GET", "application/json", retrieve_api_posts)]
                     ).resolve()
 
 

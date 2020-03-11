@@ -5,7 +5,7 @@ from django.urls import reverse
 
 def home(request):
     if request.method == 'GET':
-        return redirect(reverse('post_index'))
+        return redirect(reverse('stream'))
     else:
         return HttpResponse('404 Error', status=404)
 
