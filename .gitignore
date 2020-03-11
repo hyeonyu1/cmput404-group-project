@@ -133,3 +133,5 @@ dmypy.json
 # IntelliJ
 /.idea/
 /web_server/staticfiles/
+*/*/.DS_Store
+*.bak

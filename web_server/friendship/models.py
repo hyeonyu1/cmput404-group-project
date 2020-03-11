@@ -1,6 +1,5 @@
 from django.db import models
 from uuid import uuid4
-from users.models import Author
 
 
 # Create your models here.
@@ -10,8 +9,8 @@ from users.models import Author
     Columns
     ----------
     id: django auto-inserted column
-    author_id: the full url id of an author. eg: http://127.0.0.1:8000/author/d7a387df-2b46-43ed-90f1-51c7e02c51d6
-    friend_id: the full url id of a friend of the current author. eg: http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
+    author_id: the full url id of an author. eg: 127.0.0.1:8000/author/d7a387df-2b46-43ed-90f1-51c7e02c51d6
+    friend_id: the full url id of a friend of the current author. eg: 127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
 
     Schema
     -------
@@ -22,6 +21,7 @@ from users.models import Author
     -------
     my intention was to make author_id and friend_id together acts as primary key, the order does matter. 
     i.e author_id = 1, friend_id = 2 identifies a different row from author_id = 2, friend_id = 1 
+    However, each row identifies mutual relationship. i.e: if a row with author_id = 1, friend_id = 2 then author 1 already friended with 2 and vice versa 
 
     """
 # Author: Ida Hou
@@ -29,8 +29,8 @@ from users.models import Author
 
 class Friend(models.Model):
 
-    author_id = models.URLField(max_length=500)
-    friend_id = models.URLField(max_length=500)
+    author_id = models.CharField(max_length=500)
+    friend_id = models.CharField(max_length=500)
 
     class Meta:
         unique_together = (("author_id", "friend_id"),)
@@ -42,8 +42,8 @@ class Friend(models.Model):
     Columns
     ----------
     id: django auto-inserted column
-    from_id: the full url id of an author who sends the friend request. eg: http://127.0.0.1:8000/author/d7a387df-2b46-43ed-90f1-51c7e02c51d6
-    to_id: the full url id of an author who receives the friend request. eg: http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
+    from_id: the full url id of an author who sends the friend request. eg: 127.0.0.1:8000/author/d7a387df-2b46-43ed-90f1-51c7e02c51d6
+    to_id: the full url id of an author who receives the friend request. eg: 127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
 
     Schema
     -------
@@ -60,8 +60,41 @@ class Friend(models.Model):
 
 
 class FriendRequest(models.Model):
-    from_id = models.URLField(max_length=500)
-    to_id = models.URLField(max_length=500)
+    from_id = models.CharField(max_length=500)
+    to_id = models.CharField(max_length=500)
 
     class Meta:
         unique_together = (("from_id", "to_id"),)
+
+
+"""Follow Model: This model is used to store follow information. There are
+    in total three columns within the model
+
+    Columns
+    ----------
+    id: django auto-inserted column
+    follower_id: the full url id of a follower. eg: 127.0.0.1:8000/author/d7a387df-2b46-43ed-90f1-51c7e02c51d6
+    followee_id: the full url id of an author whom the follower follows. eg: 127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
+
+    Schema
+    -------
+    CREATE TABLE IF NOT EXISTS "friendship_follow" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "follower_id" varchar(500) NOT NULL, "followee_id" varchar(500) NOT NULL);
+CREATE UNIQUE INDEX "friendship_follow_follower_id_followee_id_75264015_uniq" ON "friendship_follow" ("follower_id", "followee_id");
+    
+    Note
+    -------
+    my intention was to make author_id and friend_id together acts as primary key, the order does matter. 
+    i.e author_id = 1, friend_id = 2 identifies a different row from author_id = 2, friend_id = 1 
+    However, each row identifies mutual relationship. i.e: if a row with author_id = 1, friend_id = 2 then author 1 already friended with 2 and vice versa 
+
+    """
+# Author: Ida Hou
+
+
+class Follow(models.Model):
+
+    follower_id = models.CharField(max_length=500)
+    followee_id = models.CharField(max_length=500)
+
+    class Meta:
+        unique_together = (("follower_id", "followee_id"),)

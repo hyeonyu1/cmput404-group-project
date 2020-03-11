@@ -29,7 +29,11 @@
                         </button>
                         <div class="dropdown-menu">
                           <a class="dropdown-item" href="{% url 'edit_or_delete_post' post.id %}">Edit</a>
-                          <a class="dropdown-item" href="{% url 'edit_or_delete_post' post.id %}">Delete</a>
+                            <!--
+                            Deleting a post doesn't require a page at this time. So instead we use javascript to call
+                            the delete endpoint and the we redirect to the stream
+                            -->
+                          <a class="dropdown-item" onclick="delete_post()">Delete</a>
                         </div>
                      </div>
 
@@ -51,7 +55,7 @@
              <div class="form-inline">
                  <i class="far fa-clock mr-2"></i>
                  <p class="mt-3 mr-2">Post by</p>
-                 <a class="mr-2" href="{% url 'profile' %}">
+                 <a class="mr-2" href="{% url 'profile' post.author.id.hex %}">
                       {{post.author}}
                  </a>
                  <small>{{post.published}}</small>
@@ -98,29 +102,30 @@
                 </div>
 
              </div>
-
-
          </div>
 
-         <div class="col-sm-2">
-
-        </div>
+         <div class="col-sm-2"></div>
     </div>
-
-
-
-
-
-
 </div>
 
-
-
-
-
-
-
-
-
-
+<script>
+    function delete_post() {
+        fetch("{% url 'edit_or_delete_post' post.id%}", {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                post_id: "{{ post.id }}"
+            })
+        })
+        .then(response=>{
+            if (response.status == 200){
+                window.location.href = "{% url "stream" %}"
+            } else {
+                alert("Unable to delete post")
+            }
+        })
+    }
+</script>
 {% endblock %}
