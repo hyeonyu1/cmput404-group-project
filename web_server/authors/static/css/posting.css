@@ -6,6 +6,10 @@
   font-size: 14pt;
 }
 
+#postPage label{
+  display: block;
+}
+
 #title {
   text-align: left;
   justify-content: top;
