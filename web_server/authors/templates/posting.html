@@ -9,16 +9,15 @@
    		{% csrf_token %}
    		<input type="hidden" name="author" value={{author}}>
    		<label for="title">Title</label> <br>
-		<textarea type="textarea" id="title" name="title"></textarea><br><br>
+		<textarea type="textarea" id="title" name="title" required></textarea><br>
 		<label for="description">Description</label> <br>
-       	<textarea type="textarea" id="description" name="description"></textarea><br><br>
+       	<textarea type="textarea" id="description" name="description" required></textarea><br>
     	<label for="content">Content</label> <br>
-       	<textarea type="textarea" id="content" name="content"></textarea> <br>
+       	<textarea type="textarea" id="content" name="content" required></textarea> <br>
        	<label for="categories">Categories</label> <br>
-       	<textarea type="textarea" id="categories" name="categories"></textarea> <br>
+       	<textarea type="textarea" id="categories" name="categories"></textarea>
     </form>
 
-    <br>
 
     <label for="contentType">Choose your content type:</label> <br>
    	<select id="contentType" form="postForm" name="contentType">
