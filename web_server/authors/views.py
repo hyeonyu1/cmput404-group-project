@@ -80,7 +80,7 @@ def unfriend(request):
             Friend.objects.filter(author_id=author_id).filter(
                 friend_id=friend_id).delete()
         else:
-            return HttpResponse("Friendship does not exist!", status=200)
+            return HttpResponse("Friendship does not exist!", status=404)
         if Friend.objects.filter(author_id=friend_id).filter(friend_id=author_id).exists():
             Friend.objects.filter(author_id=friend_id).filter(
                 friend_id=author_id).delete()
@@ -109,31 +109,31 @@ def update_author_profile(request, author_id):
     body = json.loads(body)
     delete = body.get('delete', None)
     if delete is None:
-        return HttpResponse("Post body missing fields: delete", status=404)
+        return HttpResponse("Post body missing fields: delete", status=422)
 
     first_name = body.get('first_name', None)
     if first_name is None:
-        return HttpResponse("Post body missing fields: first_name", status=404)
+        return HttpResponse("Post body missing fields: first_name", status=422)
 
     last_name = body.get('last_name', None)
     if last_name is None:
-        return HttpResponse("Post body missing fields: last_name", status=404)
+        return HttpResponse("Post body missing fields: last_name", status=422)
 
     email = body.get('email', None)
     if email is None:
-        return HttpResponse("Post body missing fields: email", status=404)
+        return HttpResponse("Post body missing fields: email", status=422)
 
     bio = body.get('bio', None)
     if bio is None:
-        return HttpResponse("Post body missing fields: bio", status=404)
+        return HttpResponse("Post body missing fields: bio", status=422)
 
     github = body.get('github', None)
     if github is None:
-        return HttpResponse("Post body missing fields: github", status=404)
+        return HttpResponse("Post body missing fields: github", status=422)
 
     display_name = body.get('display_name', None)
     if display_name is None:
-        return HttpResponse("Post body missing fields: display_name", status=404)
+        return HttpResponse("Post body missing fields: display_name", status=422)
 
     if delete:
 
@@ -278,7 +278,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC")
 
-
         # visibility = FRIENDS
         users_friends = []
         friends = Friend.objects.filter(author_id=request.user.uid)
@@ -353,7 +352,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 host = "https://" + host
             else:
                 host = "http://" + host
-
 
             next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
@@ -570,17 +568,18 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         author_uid = host + "/author/" + str(id_of_author)
 
         if author_uid == request.user.uid:
-            visible_post = Post.objects.filter(author= author_uid)
+            visible_post = Post.objects.filter(author=author_uid)
 
         else:
 
             # visibility =  PUBLIC
-            public_post = Post.objects.filter(author=author, visibility="PUBLIC")
+            public_post = Post.objects.filter(
+                author=author, visibility="PUBLIC")
 
             # visibility = FRIENDS
             if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
                 friend_post = Post.objects.filter(
-                    author=author, visibility__in=["FRIENDS","FOAF"])
+                    author=author, visibility__in=["FRIENDS", "FOAF"])
             else:
                 friend_post = Post.objects.none()
 
@@ -596,11 +595,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                         break
 
             if foaf:
-                foaf_post = Post.objects.filter(author=author, visibility="FOAF")
+                foaf_post = Post.objects.filter(
+                    author=author, visibility="FOAF")
             else:
                 foaf_post = Post.objects.none()
-
-
 
             # visibility = PRIVATE
             private_post = Post.objects.filter(
@@ -724,7 +722,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         return JsonResponse(response_data)
 
     return Endpoint(request, None,
-                    [ Handler("GET", "text/html", retrieve_stream_posts),
+                    [Handler("GET", "text/html", retrieve_stream_posts),
                      Handler("GET", "application/json", retrieve_api_posts)]
                     ).resolve()
 
@@ -745,7 +743,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
 
         potential_friends = body.get("authors", None)
         if not potential_friends:
-            return HttpResponse("Post body missing fields", status=404)
+            return HttpResponse("Post body missing fields", status=422)
 
         response_data = {}
         response_data["query"] = "friends"
