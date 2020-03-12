@@ -2,7 +2,7 @@
 {% block navigation_content %}
 {% load static %}
 
-<div class="container-fluid">
+<div id="app" class="container-fluid">
     <div class="row">
         <div class="col-sm-1">
 
@@ -16,20 +16,10 @@
             <div class="mt-5">
                 <!-- show post-->
                 <div class="list-group">
-
-                    {% for post in posts %}
-                  <a href="{% url 'post' post.id %}" class="list-group-item list-group-item-action flex-column align-items-start">
-                    <div class="d-flex w-100 justify-content-between">
-                      <h5 class="mb-1">{{post.title}}</h5>
-                      <small>{{post.published}}</small>
-                    </div>
-                    <p class="mb-1">{{post.content}}</p>
-                    <small>{{post.author}}</small>
-                  </a>
-                    <div>
-
-                    </div>
-                    {% endfor %}
+                    <post-list
+                    v-for="post in posts"
+                    v-bind:post="post">
+                    </post-list>
                 </div>
             </div>
             <div class="pagination_urls">
@@ -53,7 +43,62 @@
 </div>
 
 
+<template id="list-post">
 
+    <a :href="[[ post.id]]" class="list-group-item list-group-item-action flex-column align-items-start">
+        <div class="d-flex w-100 justify-content-between">
+          <h5 class="mb-1">[[post.title]]</h5>
+          <small>[[post.published]]</small>
+        </div>
+        <p class="mb-1">[[post.content]]</p>
+        <small>[[post.author.firstName]] [[post.author.lastName]]</small>
+    </a>
+        <div>
+
+        </div>
+</template>
+
+
+<script>
+
+    Vue.component('post-list', {
+        delimiters: ['[[', ']]'],
+        props: ['post'],
+        template: '#list-post'
+    });
+
+
+    var app = new Vue({
+        el: '#app',
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                'posts': []
+            }
+        },
+
+        methods:{
+
+            //retrieve posts visible to currently authenticated user
+            get_post() {
+
+                window.axios.get("/author/posts").then((response) => {
+                    console.log(response.data["posts"]);
+                    this.posts = response.data["posts"];
+
+                })
+            },
+
+        },
+
+        created() {
+            this.get_post();
+        }
+    })
+
+
+
+</script>
 
 
 {% endblock %}
