@@ -374,6 +374,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
             })
+
         pager = Paginator(array_of_posts, size)
 
         uri = request.build_absolute_uri()
@@ -570,7 +571,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "message": "User does not exist"
             }, status=404)
 
-        # author = get_object_or_404(Author, id=id_of_author)
         host = request.get_host()
 
         author_uid = host + "/author/" + str(id_of_author)
@@ -579,7 +579,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             visible_post = Post.objects.filter(author= author_uid)
 
         else:
-
             # visibility =  PUBLIC
             public_post = Post.objects.filter(author=author, visibility="PUBLIC")
 
@@ -605,8 +604,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 foaf_post = Post.objects.filter(author=author, visibility="FOAF")
             else:
                 foaf_post = Post.objects.none()
-
-
 
             # visibility = PRIVATE
             private_post = Post.objects.filter(
@@ -676,11 +673,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
         pager = Paginator(array_of_posts, size)
 
-
         uri = request.build_absolute_uri()
 
         if page_num > pager.num_pages:
-            # print("here")
             response_data = {
                 "query": "posts",
                 "count": int(count),
@@ -727,7 +722,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             }
 
         return JsonResponse(response_data)
-
 
     return Endpoint(request, None,[
                      Handler("GET", "application/json", retrieve_author_posts)]
