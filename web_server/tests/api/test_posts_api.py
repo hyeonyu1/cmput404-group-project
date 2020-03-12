@@ -11,13 +11,13 @@ class TestPostsAPI(TestCase):
 
     def setUp(self):
         self.fixture_authors = [
-            # Super User
-            Author(username="admin", email="admin@admin.com", password="admin", first_name="admin", last_name="."),
-
             # Authors
             Author(username="test_user_A", email="test_a@a.com", password="pass_a", first_name="A", last_name="A"),
             Author(username="test_user_B", email="test_b@b.com", password="pass_b", first_name="B", last_name="B"),
-            Author(username="test_user_C", email="test_c@c.com", password="pass_c", first_name="C", last_name="C")
+            Author(username="test_user_C", email="test_c@c.com", password="pass_c", first_name="C", last_name="C"),
+
+            # Super User
+            Author(username="admin", email="admin@admin.com", password="admin", first_name="admin", last_name="."),
         ]
         for author in self.fixture_authors:
             author.is_active = 1
@@ -40,6 +40,8 @@ class TestPostsAPI(TestCase):
             post.size = 0
             post.visibility = Post.PUBLIC
             post.contentType = "text/plain"
+        print(self.fixture_posts_public)
+        for post in self.fixture_posts_public:
             post.save()
 
         self.fixture_posts_other = [
@@ -71,6 +73,14 @@ class TestPostsAPI(TestCase):
 
         self.client = Client(HTTP_ACCEPT="application/json")
 
+    def tearDown(self):
+        for post in self.fixture_posts_other:
+            post.delete()
+        for post in self.fixture_posts_public:
+            post.delete()
+        for author in self.fixture_authors:
+            author.delete()
+
     # Needed tests
     # service/posts
     # service/posts/{post_id}
@@ -90,22 +100,24 @@ class TestPostsAPI(TestCase):
         }, follow=True)
         assert(response.status_code == 200)
         response = response.json()
-        assert(response['query'] == 'posts')
-        assert(response['count'] == len(self.fixture_posts_public))
-        assert(response['size'] == len(self.fixture_posts_public) - 1)
-        assert("page=2" in response['next'])
-        assert('prev' not in response)
-        posts = Post.objects.filter(id__in=[r['id'] for r in response['posts']])
-        for post in posts:
-            assert(post in self.fixture_posts_public)
+        assert response['query'] == 'posts'
+        assert response['count'] == len(self.fixture_posts_public)
+        assert response['size'] == len(self.fixture_posts_public) - 1
+        assert "page=2" in response['next']
+        assert 'prev' not in response
+        first_page_posts = Post.objects.filter(id__in=[r['id'] for r in response['posts']])
+        for post in first_page_posts:
+            assert post in self.fixture_posts_public
 
         # Then follow the url to the next page and see if all posts have been shown and no extras exist
         response = self.client.get(response['next'], follow=True).json()
-        posts = [p for p in posts] + [p for p in Post.objects.filter(id__in=[r['id'] for r in response['posts']])]
-        assert(posts == self.fixture_posts_public)
+        all_posts = [p for p in first_page_posts] + \
+                    [p for p in Post.objects.filter(id__in=[r['id'] for r in response['posts']])]
+        for post in self.fixture_posts_public:
+            assert post in all_posts
 
         # Check for the prev page matching the spec
-        assert('page=1' in response['prev'])
+        assert 'page=1' in response['prev']
 
 
     ################
@@ -113,9 +125,9 @@ class TestPostsAPI(TestCase):
     ################
     def test_get_single_post(self):
         for post in self.fixture_posts_public:
-            response = self.client.get(self.url_get_post(post['id']))
+            response = self.client.get(self.url_get_post(post.id), follow=True)
             assert response.status_code == 200
             json = response.json()
-            assert Post.objects.get(pk=post['id']) == post
+            assert Post.objects.get(pk=json['post'][0]['id']) == post
 
 
