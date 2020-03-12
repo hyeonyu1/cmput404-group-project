@@ -23,6 +23,9 @@ urlpatterns = [
     path('<str:author_id>/addfriend/', views.view_list_of_available_authors_to_befriend,
          name="view_list_of_available_authors_to_befriend"),
 
+    # Internal Use API's
+    path('', views.get_all_authors, name='all_authors'),
+
     # Webpage URLS
     path('create_post', views.post_creation_page, name='post_create_form')
 ]

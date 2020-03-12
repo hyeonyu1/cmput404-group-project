@@ -210,19 +210,13 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # Create a post to the currently authenticated user
 
         # First get the information out of the request body
-        body = request.body.decode('utf-8')
-
-        size = len(body.encode('utf-8'))
+        size = len(request.body)
 
         #body = json.load(body)
         # body = dict(x.split("=") for x in body.split("&"))
 
         #post = body['post']
         post = request.POST
-        author = post['author']
-        #comments = post['comments']
-        #categories = post['categories']
-        visible_to = post['visibleTo']
 
         new_post = Post()
 
@@ -252,10 +246,14 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         # new_post.unlisted = post['unlisted']       #: true
-        # @todo allow setting visibility of new post
-        # new_post.visibleTo = post['visibleTo']  #: LIST,
 
         new_post.save()
+
+        # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
+        uids = post['visibleTo'].split(",")
+        visible_authors = Author.objects.filter(uid__in=uids)
+        for author in visible_authors:
+            new_post.visibleTo.add(author)
 
         # Categories is commented out because it's not yet in the post data, uncomment once available
         # for category in categories:
@@ -810,4 +808,22 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
 
 
 def post_creation_page(request):
+    """
+    Provide page that will allow a user to create a new post
+    :param request:
+    :return:
+    """
     return render(request, 'posting.html')
+
+def get_all_authors(request):
+    """
+    API to get a JSON of all authors in the system. To save space it will only provide:
+    First, last and display names
+    uid
+    :param request:
+    :return:
+    """
+    return JsonResponse({
+        'success': True,
+        'data': [author for author in Author.objects.values('first_name', 'last_name', 'display_name', 'uid')]
+    })
