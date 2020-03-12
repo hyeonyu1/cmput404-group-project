@@ -3,6 +3,8 @@ from users.models import Author
 
 from uuid import uuid4
 
+from markdownx.utils import markdownify
+from markdownx.models import MarkdownxField
 
 class Category(models.Model):
     """

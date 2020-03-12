@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'friendship.apps.FriendshipConfig',
     'users.apps.UsersConfig',
     'crispy_forms',
-    'markdown_deux'
+    'markdownx',
 ]
 
 MIDDLEWARE = [
