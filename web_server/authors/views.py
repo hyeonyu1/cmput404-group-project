@@ -96,6 +96,13 @@ def unfriend(request):
 # username, uid, id, url, host of author can't be changed
 
 
+def check_missing_post_body_field_and_return_422(body, fields_to_check):
+    for each in fields_to_check:
+        if body.get(each, None) is None:
+            return HttpResponse("Post body missing fields: {}".format(each), status=422)
+    return None
+
+
 def update_author_profile(request, author_id):
     if request.method != 'POST':
         return HttpResponse("Method Not Allowed", status=405)
@@ -108,33 +115,11 @@ def update_author_profile(request, author_id):
     body = request.body.decode('utf-8')
     body = json.loads(body)
     delete = body.get('delete', None)
-    if delete is None:
-        return HttpResponse("Post body missing fields: delete", status=422)
-
-    first_name = body.get('first_name', None)
-    if first_name is None:
-        return HttpResponse("Post body missing fields: first_name", status=422)
-
-    last_name = body.get('last_name', None)
-    if last_name is None:
-        return HttpResponse("Post body missing fields: last_name", status=422)
-
-    email = body.get('email', None)
-    if email is None:
-        return HttpResponse("Post body missing fields: email", status=422)
-
-    bio = body.get('bio', None)
-    if bio is None:
-        return HttpResponse("Post body missing fields: bio", status=422)
-
-    github = body.get('github', None)
-    if github is None:
-        return HttpResponse("Post body missing fields: github", status=422)
-
-    display_name = body.get('display_name', None)
-    if display_name is None:
-        return HttpResponse("Post body missing fields: display_name", status=422)
-
+    response = check_missing_post_body_field_and_return_422(
+        body, ['delete', 'first_name', 'last_name', 'email', 'bio', 'github', 'display_name'])
+    # check entries in post request body
+    if response:
+        return response
     if delete:
 
         author_to_be_deleted = Author.objects.get(
@@ -143,9 +128,10 @@ def update_author_profile(request, author_id):
     else:
         obj, created = Author.objects.update_or_create(
             uid=author_id,
-            defaults={'first_name': first_name, 'last_name': last_name,
-                      'email': email, 'bio': bio, 'github': github,
-                      'display_name': display_name},
+            defaults={'first_name': body.get('first_name'), 'last_name': body.get(
+                'last_name'),
+                'email': body.get('email'), 'bio': body.get('bio'), 'github': body.get('github'),
+                'display_name': body.get('display_name')},
         )
 
     return HttpResponse("Author successfully updated", status=200)
@@ -231,10 +217,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.title = post['title']
         # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
         # new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
-        new_post.description = post['description']  # : "This post discusses stuff -- brief",
+        # : "This post discusses stuff -- brief",
+        new_post.description = post['description']
         new_post.contentType = post['contentType']  # : "text/plain",
-        new_post.content     = post['content']      #: "stuffs",
-        new_post.author      = request.user         # the authenticated user
+        new_post.content = post['content']      #: "stuffs",
+        new_post.author = request.user         # the authenticated user
 
         # Categories added after new post is saved
         #: 1023, initially the number of comments is zero
@@ -261,9 +248,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         for category in categories:
             cat_object = None
             try:
-                cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
+                # Try connecting to existing categories
+                cat_object = Category.objects.get(name=category)
             except Category.DoesNotExist as e:
-                cat_object = Category.objects.create(name=category)  # Create one if not
+                cat_object = Category.objects.create(
+                    name=category)  # Create one if not
             new_post.categories.add(cat_object)    #: LIST,
 
         # for key in body.keys():
