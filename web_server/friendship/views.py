@@ -80,9 +80,15 @@ def send_friend_request(request):
         from_id = url_regex.sub('', from_id)
         to_id = url_regex.sub('', to_id)
         # check duplication
+        # could be friend request already existed
+        # could be to_id already be followed by from_id
+        # could be to_id already friended with from_id
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
-            return HttpResponse("Friend Request Already exists", status=200)
-
+            return HttpResponse("Friend Request Already exists", status=409)
+        if Follow.objects.filter(follower_id=from_id).filter(followee_id=to_id).exists():
+            return HttpResponse("{} Already Followed {}".format(from_id, to_id), status=409)
+        if Friend.objects.filter(author_id=from_id).filter(friend_id=to_id).exists():
+            return HttpResponse("{} Already Friended with {}".format(from_id, to_id), status=409)
         new_request = FriendRequest(from_id=from_id, to_id=to_id)
         new_request.save()
 
