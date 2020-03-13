@@ -22,12 +22,18 @@
                     </post-list>
                 </div>
             </div>
-            <div class="pagination_urls">
+
+            <div class="row justify-content-between">
                 {% if prev_uri is not None %}
-                    <a href="{{ prev_uri }}">PREVIOUS</a>
+                    <a class="ml-3" href="{{ prev_uri }}">PREVIOUS</a>
+                {% else %}
+                    <p class="ml-3">PREVIOUS</p>
                 {% endif %}
+
                 {% if next_uri is not None %}
-                    <a href="{{ next_uri }}">NEXT</a>
+                    <a class="mr-3" href="{{ next_uri }}">NEXT</a>
+                {% else %}
+                    <p class="mr-3">NEXT</p>
                 {% endif %}
             </div>
         </div>
