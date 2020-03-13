@@ -24,19 +24,16 @@
                 </div>
             </div>
 
+            <!--
             <div class="row justify-content-between">
-                {% if prev_uri is not None %}
-                    <a class="ml-3" href="{{ prev_uri }}">PREVIOUS</a>
-                {% else %}
-                    <p class="ml-3">PREVIOUS</p>
-                {% endif %}
+                <a class="ml-3" :href="previous" v-if="previous">PREVIOUS</a>
+                <p class="ml-3" v-else>PREVIOUS</p>
 
-                {% if next_uri is not None %}
-                    <a class="mr-3" href="{{ next_uri }}">NEXT</a>
-                {% else %}
-                    <p class="mr-3">NEXT</p>
-                {% endif %}
+                <a class="mr-3" :href="next" v-if="next">NEXT</a>
+                <p class="mr-3" v-else>NEXT</p>
             </div>
+            -->
+            <button class="btn btn-primary" @click="app.get_more_posts()">Load More</button>
         </div>
         <div class="col-sm-3">
 
@@ -80,7 +77,8 @@
         delimiters: ['[[', ']]'],
         data() {
             return {
-                'posts': []
+                'posts': [],
+                'next': undefined
             }
         },
 
@@ -92,9 +90,25 @@
                 window.axios.get("/author/posts").then((response) => {
                     console.log(response.data["posts"]);
                     this.posts = response.data["posts"];
-
+                    console.log(response.data["next"]);
+                    this.next = response.data["next"];
+                    console.log(response.data["previous"]);
+                    this.previous = response.data["previous"];
                 })
             },
+            get_more_posts(){
+                if(this.next != undefined){
+                    window.axios.get(this.next).then((response) => {
+                        const data = response.data["posts"];
+                        this.next = response.data["next"];
+                        data.forEach((post) => {
+                            this.posts.push(post);
+                        })
+                    })
+                } else {
+                    alert("There are no more posts here");
+                }
+            }
 
         },
 
