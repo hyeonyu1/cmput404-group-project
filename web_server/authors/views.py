@@ -814,7 +814,6 @@ def post_creation_page(request):
     """
     return render(request, 'posting.html')
 
-
 def get_all_authors(request):
     """
     API to get a JSON of all authors in the system. To save space it will only provide:

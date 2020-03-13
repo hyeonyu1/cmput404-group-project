@@ -346,7 +346,9 @@
                 }).then((response) =>{
                     alert(response.data);
 
-                });
+                }).catch((err => {
+                    alert("You already followed this user/ You already sent the friend request.");
+                }));
             },
 
             check_already_friend(user_id, author_id){
