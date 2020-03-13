@@ -28,6 +28,7 @@ urlpatterns = [
     path('posts/', include('posts.urls')),
     path('friendrequest/', include('friendship.urls')),
     path('user/', include('users.urls')),
+    path('github/', views.github, name='github'),
 
 
 
