@@ -3,7 +3,6 @@ from users.models import Author
 
 from uuid import uuid4
 
-
 class Category(models.Model):
     """
     Categories are strings that users can mark their post as belonging to. Many to many with posts
