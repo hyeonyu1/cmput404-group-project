@@ -1,6 +1,7 @@
 {% extends "navigation.html" %}
 {% block navigation_content %}
 {% load static %}
+{% load show_markdown %}
 
 <div class="container-fluid">
     <div class="row">
@@ -20,10 +21,18 @@
                     {% for post in posts %}
                   <a href="{% url 'post' post.id %}" class="list-group-item list-group-item-action flex-column align-items-start">
                     <div class="d-flex w-100 justify-content-between">
-                      <h5 class="mb-1">{{post.title}}</h5>
+                      {% if post.contentType == "TYPE_MARKDOWN" %}
+                        <h5 class="mb-1">{{post.title|show_markdown|safe}}</h5>
+                      {% else %}
+                        <h5 class="mb-1">{{post.title}}</h5>
+                      {% endif %}
                       <small>{{post.published}}</small>
                     </div>
-                    <p class="mb-1">{{post.content}}</p>
+                    {% if post.contentType == "TYPE_MARKDOWN" %}
+                        <p class="mb-1">{{post.content|show_markdown|safe}}</p>
+                    {% else %}
+                        <p class="mb-1">{{post.content}}</p>
+                    {% endif %}
                     <small>{{post.author}}</small>
                   </a>
                     <div>
