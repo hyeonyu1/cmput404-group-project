@@ -369,7 +369,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str(post.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
+                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
