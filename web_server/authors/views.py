@@ -196,19 +196,13 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # Create a post to the currently authenticated user
 
         # First get the information out of the request body
-        body = request.body.decode('utf-8')
-
-        size = len(body.encode('utf-8'))
+        size = len(request.body)
 
         #body = json.load(body)
         # body = dict(x.split("=") for x in body.split("&"))
 
         #post = body['post']
         post = request.POST
-        author = post['author']
-        #comments = post['comments']
-        categories = post['categories'].split('\n')
-        visible_to = post['visibleTo']
 
         new_post = Post()
 
@@ -239,14 +233,17 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         # new_post.unlisted = post['unlisted']       #: true
-        # @todo allow setting visibility of new post
-        # new_post.visibleTo = post['visibleTo']  #: LIST,
 
         new_post.save()
 
+        # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
+        uids = post['visibleTo'].split(",")
+        visible_authors = Author.objects.filter(uid__in=uids)
+        for author in visible_authors:
+            new_post.visibleTo.add(author)
+
         # Categories is commented out because it's not yet in the post data, uncomment once available
-        for category in categories:
-            cat_object = None
+        for category in post['categories'].split('\r\n'):
             try:
                 # Try connecting to existing categories
                 cat_object = Category.objects.get(name=category)
@@ -358,21 +355,29 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str(post.published),
+                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
             })
+
         pager = Paginator(array_of_posts, size)
 
+        uri = request.build_absolute_uri()
+
         if page_num > pager.num_pages:
-            return JsonResponse({
-                "success": False,
-                "message": "Empty"
-            }, status=200)
+            # print("here")
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "previous": str(get_page_url(uri, pager.num_pages)),
+                "posts": []
+
+            }
+            return JsonResponse(response_data)
 
         current_page = pager.page(page_num)
-        uri = request.build_absolute_uri()
 
         if current_page.has_previous() and current_page.has_next():
             response_data = {
@@ -383,6 +388,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "previous": str(get_page_url(uri, current_page.previous_page_number())),
                 "posts": current_page.object_list
             }
+
         elif not current_page.has_next() and not current_page.has_previous():
             response_data = {
                 "query": "posts",
@@ -407,26 +413,15 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "posts": current_page.object_list
             }
 
-        return response_data
-
-    def retrieve_stream_posts(request):
-        response_data = retrieve_posts(request)
-        print(response_data)
-        return render(request, 'posts/stream.html', response_data)
-
-    def retrieve_api_posts(request):
-        response_data = retrieve_posts(request)
         return JsonResponse(response_data)
 
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
-        Handler("GET", "text/html", retrieve_stream_posts),
-        Handler("GET", "application/json", retrieve_api_posts)
+        Handler("GET", "application/json", retrieve_posts)
     ]).resolve()
 
+
 # Returns 5 newest comment on the post
-
-
 def get_comments(post_id):
     comments_list = []
     comments = Comment.objects.filter(
@@ -439,7 +434,7 @@ def get_comments(post_id):
             "id": str(comment.id),
             "contentType": str(comment.contentType),
             "comment": str(comment.content),
-            "published": str(comment.published),
+            "published": str(comment.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
             "author": {
                 "id": str(author.uid),
                 "email": str(author.email),
@@ -483,12 +478,10 @@ def post_edit_and_delete(request, post_id):
 
         # Query the database for a list of ALL categories currently stored.
         # Place the list in our context_dict dictionary which will be passed to the template engine.
-        post_list = Post.objects.all()
-        context_dict = {}
-        for post in post_list:
-            if str(post.id) == str(post_id):
-                context_dict = {'post': post}
-                break
+        # @todo the above is not done, but if we implement a search or autocomplete it is unnecessary
+
+        # Fill the context with the post in the request
+        context_dict = {'post': post}
 
         # @todo THIS IS A HACK
         # The navigation template now requires the user object to be passed in to every view, but for some reason it
@@ -509,9 +502,23 @@ def post_edit_and_delete(request, post_id):
             if hasattr(post, key):
                 if len(vars.getlist(key)) <= 1:  # Simple value or empty
                     try:
-                        setattr(post, key, vars.get(key))
+                        # Special fields
+                        if key == 'categories':
+                            post.categories.clear()
+                            # Look up the categories or create them if they are new
+                            categories = vars.get(key).split("\r\n")
+                            for category in categories:
+                                c, created = Category.objects.get_or_create(
+                                    name=category)
+                                post.categories.add(c)
+                        else:
+                            # All other fields
+                            setattr(post, key, vars.get(key))
                     except Exception as e:
-                        # @todo remove this try/except block. This should ACTUALLY throw an error if we hit a problem here
+                        # @todo remove this try/except block.
+                        #  This should ACTUALLY throw an error if we hit a problem here
+                        print(
+                            f"Unable to process key: {key}, it has value {vars.get(key)}")
                         pass
                 elif len(vars.getlist(key)) > 1:  # Multiple values
                     # @todo implement handling multiple values for key
@@ -545,13 +552,21 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
     def retrieve_author_posts(request):
         try:
             valid_uuid = UUID(id_of_author, version=4)
+
         except ValueError:
             return JsonResponse({
                 "success": False,
                 "message": "Not a valid uuid"
-            }, status=200)
+            }, status=404)
 
-        author = get_object_or_404(Author, id=id_of_author)
+        try:
+            author = Author.objects.get(id=id_of_author)
+        except Author.DoesNotExist:
+            return JsonResponse({
+                "success": False,
+                "message": "User does not exist"
+            }, status=404)
+
         host = request.get_host()
 
         author_uid = host + "/author/" + str(id_of_author)
@@ -560,7 +575,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             visible_post = Post.objects.filter(author=author_uid)
 
         else:
-
             # visibility =  PUBLIC
             public_post = Post.objects.filter(
                 author=author, visibility="PUBLIC")
@@ -649,7 +663,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str(post.published),
+                "published": str(post.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -657,15 +671,20 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
         pager = Paginator(array_of_posts, size)
 
+        uri = request.build_absolute_uri()
+
         if page_num > pager.num_pages:
-            return JsonResponse({
-                "success": False,
-                "message": "Empty"
-            }, status=200)
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "previous": str(get_page_url(uri, pager.num_pages)),
+                "posts": []
+
+            }
+            return JsonResponse(response_data)
 
         current_page = pager.page(page_num)
-
-        uri = request.build_absolute_uri()
 
         if current_page.has_previous() and current_page.has_next():
             response_data = {
@@ -700,20 +719,11 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "posts": current_page.object_list
             }
 
-        return response_data
-
-    def retrieve_stream_posts(request):
-        response_data = retrieve_author_posts(request)
-        return render(request, 'posts/stream.html', response_data)
-
-    def retrieve_api_posts(request):
-        response_data = retrieve_author_posts(request)
         return JsonResponse(response_data)
 
-    return Endpoint(request, None,
-                    [Handler("GET", "text/html", retrieve_stream_posts),
-                     Handler("GET", "application/json", retrieve_api_posts)]
-                    ).resolve()
+    return Endpoint(request, None, [
+        Handler("GET", "application/json", retrieve_author_posts)]
+    ).resolve()
 
 
 # Ida Hou
@@ -797,4 +807,23 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
 
 
 def post_creation_page(request):
+    """
+    Provide page that will allow a user to create a new post
+    :param request:
+    :return:
+    """
     return render(request, 'posting.html')
+
+
+def get_all_authors(request):
+    """
+    API to get a JSON of all authors in the system. To save space it will only provide:
+    First, last and display names
+    uid
+    :param request:
+    :return:
+    """
+    return JsonResponse({
+        'success': True,
+        'data': [author for author in Author.objects.values('first_name', 'last_name', 'display_name', 'uid')]
+    })

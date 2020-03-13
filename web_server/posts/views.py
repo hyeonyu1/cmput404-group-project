@@ -65,11 +65,7 @@ def retrieve_all_public_posts_on_local_server(request):
     def html_handler(request, posts, pager, pagination_uris):
         (prev_uri, next_uri) = pagination_uris
 
-        return render(request, 'posts/stream.html', {
-            'posts': posts,
-            'prev_uri': prev_uri,
-            'next_uri': next_uri
-        })
+        return render(request, 'posts/stream.html')
 
 
     endpoint = Endpoint(request,
