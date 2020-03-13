@@ -169,11 +169,11 @@ class Handler:
         :param request:
         :return:
         """
-        #if self.requires_authentication and not request.user.is_authenticated:
-         #   return JsonResponse({
-          #      "success": False,
-           #     "message": "You must be logged in to access this Endpoint"
-            #}, status=403)
+        if self.requires_authentication and not request.user.is_authenticated:
+            return JsonResponse({
+                "success": False,
+                "message": "You must be logged in to access this Endpoint"
+            }, status=403)
         return self.handler(request)
 
 
