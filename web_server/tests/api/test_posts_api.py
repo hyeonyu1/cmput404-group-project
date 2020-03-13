@@ -70,7 +70,7 @@ class TestPostsAPI(TestCase):
 
         self.url_public_posts = "/posts"
         self.url_get_post = lambda post_id: f"/posts/{post_id}"
-
+        self.url_get_visible_posts = "author/posts"
         self.client = Client(HTTP_ACCEPT="application/json")
 
     def tearDown(self):
@@ -129,5 +129,6 @@ class TestPostsAPI(TestCase):
             assert response.status_code == 200
             json = response.json()
             assert Post.objects.get(pk=json['post'][0]['id']) == post
+
 
 
