@@ -15,10 +15,10 @@
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-                <a class="nav-link" href="{% url 'post_index' %}">Stream</a>
+                <a class="nav-link" href="{% url 'stream' %}">Stream</a>
             </li>
             <li class="nav-item active">
-                <a class="nav-link" href="{% url 'profile' %}">Profile</a>
+                <a class="nav-link" href="{% url 'profile' user.id.hex %}">Profile</a>
             </li>
             <li class="nav-item active">
                 <a class="nav-link" href="/">Request</a>
@@ -28,7 +28,7 @@
         <div class="form-inline my-2 my-lg-0">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'profile' %}"><img src="{% static '/users/images/logo.jpg' %}"
+                    <a class="nav-link" href="{% url 'profile' user.id.hex %}"><img src="{% static '/users/images/logo.jpg' %}"
                             width="30" height="30" class="d-inline-block align-top" alt=""></a>
                 </li>
                 <li class="nav-item">
