@@ -210,19 +210,13 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # Create a post to the currently authenticated user
 
         # First get the information out of the request body
-        body = request.body.decode('utf-8')
-
-        size = len(body.encode('utf-8'))
+        size = len(request.body)
 
         #body = json.load(body)
         # body = dict(x.split("=") for x in body.split("&"))
 
         #post = body['post']
         post = request.POST
-        author = post['author']
-        #comments = post['comments']
-        categories = post['categories'].split('\n')
-        visible_to = post['visibleTo']
 
         new_post = Post()
 
@@ -252,14 +246,17 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         # new_post.unlisted = post['unlisted']       #: true
-        # @todo allow setting visibility of new post
-        # new_post.visibleTo = post['visibleTo']  #: LIST,
 
         new_post.save()
 
+        # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
+        uids = post['visibleTo'].split(",")
+        visible_authors = Author.objects.filter(uid__in=uids)
+        for author in visible_authors:
+            new_post.visibleTo.add(author)
+
         # Categories is commented out because it's not yet in the post data, uncomment once available
-        for category in categories:
-            cat_object = None
+        for category in post['categories'].split('\r\n'):
             try:
                 cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
             except Category.DoesNotExist as e:
@@ -496,12 +493,10 @@ def post_edit_and_delete(request, post_id):
 
         # Query the database for a list of ALL categories currently stored.
         # Place the list in our context_dict dictionary which will be passed to the template engine.
-        post_list = Post.objects.all()
-        context_dict = {}
-        for post in post_list:
-            if str(post.id) == str(post_id):
-                context_dict = {'post': post}
-                break
+        # @todo the above is not done, but if we implement a search or autocomplete it is unnecessary
+
+        # Fill the context with the post in the request
+        context_dict = {'post': post}
 
         # @todo THIS IS A HACK
         # The navigation template now requires the user object to be passed in to every view, but for some reason it
@@ -522,9 +517,21 @@ def post_edit_and_delete(request, post_id):
             if hasattr(post, key):
                 if len(vars.getlist(key)) <= 1:  # Simple value or empty
                     try:
-                        setattr(post, key, vars.get(key))
+                        # Special fields
+                        if key == 'categories':
+                            post.categories.clear()
+                            # Look up the categories or create them if they are new
+                            categories = vars.get(key).split("\r\n")
+                            for category in categories:
+                                c, created = Category.objects.get_or_create(name=category)
+                                post.categories.add(c)
+                        else:
+                            # All other fields
+                            setattr(post, key, vars.get(key))
                     except Exception as e:
-                        # @todo remove this try/except block. This should ACTUALLY throw an error if we hit a problem here
+                        # @todo remove this try/except block.
+                        #  This should ACTUALLY throw an error if we hit a problem here
+                        print(f"Unable to process key: {key}, it has value {vars.get(key)}")
                         pass
                 elif len(vars.getlist(key)) > 1:  # Multiple values
                     # @todo implement handling multiple values for key
@@ -810,4 +817,22 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
 
 
 def post_creation_page(request):
+    """
+    Provide page that will allow a user to create a new post
+    :param request:
+    :return:
+    """
     return render(request, 'posting.html')
+
+def get_all_authors(request):
+    """
+    API to get a JSON of all authors in the system. To save space it will only provide:
+    First, last and display names
+    uid
+    :param request:
+    :return:
+    """
+    return JsonResponse({
+        'success': True,
+        'data': [author for author in Author.objects.values('first_name', 'last_name', 'display_name', 'uid')]
+    })
