@@ -1,64 +1,74 @@
 {% extends "navigation.html" %}
 {% block navigation_content %}
-{% load static %}
-<link rel="stylesheet" href="{% static '/css/posting.css' %}">
+    {% load static %}
+    <link rel="stylesheet" href="{% static '/css/posting.css' %}">
 
-<div id="postPage">
-    <!-- Form content -->
-    {% if post %}
-        <form action="{{post.id}}" method="POST" id="postForm">
-            {% csrf_token %}
-            <input type="hidden" name="author" value={{post.author}}>
-            <label for="title">Title</label>
-            <textarea id="title" name="title">{{post.title}}</textarea>
+    <div id="postPage">
+        <!-- Form content -->
+        {% if post %}
+            <form action="{{ post.id }}" method="POST" id="postForm">
+                {% csrf_token %}
+                <input type="hidden" name="author" value={{ post.author }}>
 
-            <label for="description">Description</label>
-            <textarea id="description" name="description">{{post.description}}</textarea>
+                <label for="title">Title</label>
+                <textarea id="title" name="title" required>{{ post.title }}</textarea>
 
-            <label for="content">Content</label>
-            <textarea id="content" name="content">{{post.content}}</textarea>
-        </form>
-    {% endif %}
+                <label for="description">Description</label>
+                <textarea id="description" name="description" required>{{ post.description }}</textarea>
 
-    <!-- Select for choosing visibility of post -->
-    <label for="visi">Choose the Visibility of your post:</label>
-    <select id="visi" form="postForm" name="visibility" onclick="visibilityChanged()" value={{post.visibility}}>
-        <option value="PUBLIC">Public</option>
-        <option value="FRIENDS">Friends</option>
-        <option value="FOAF">Friends of A Friend</option>
-        <option value="PRIVATE">Private</option>
-        <option value="SERVERONLY">Server Only</option>
-    </select>
+                <label for="content">Content</label>
+                <textarea id="content" name="content" required>{{ post.content }}</textarea>
 
-    <!-- Only appears when visibility is set to private.
-        this will have to be implemented later when we know all the users on
-        the server and can specify certain people -->
-    <div id="visibleTo" style="visibility: hidden;">
-        <label for="visibleFor">Who can view your post:</label>
-        <select id="visibleFor" form="postForm" name="visibleTo" value={{post.visibleTo}} multiple>
-            <option>No users available to choose from</option>
+                <label for="categories">Categories</label>
+                <textarea id="categories" name="categories" placeholder="Separate on different lines">{% for category in post.categories.all %}{{ category }}&#10;{% endfor %}</textarea>
+            </form>
+        {% endif %}
+
+        <label for="contentType">Choose your content type:</label>
+        <select id="contentType" form="postForm" name="contentType">
+            <option value="TYPE_PLAIN">Plain Text</option>
+            <option value="TYPE_MARKDOWN">Markdown</option>
         </select>
+
+        <!-- Select for choosing visibility of post -->
+        <label for="visi">Choose the Visibility of your post:</label>
+        <select id="visi" form="postForm" name="visibility" onchange="visibilityChanged()">
+            <option value="PUBLIC">Public</option>
+            <option value="FRIENDS">Friends</option>
+            <option value="FOAF">Friends of A Friend</option>
+            <option value="PRIVATE">Private</option>
+            <option value="SERVERONLY">Server Only</option>
+        </select>
+
+        <!-- Only appears when visibility is set to private.
+            this will have to be implemented later when we know all the users on
+            the server and can specify certain people -->
+        <div id="visibleTo" style="visibility: hidden;">
+            <label for="visibleFor">Who can view your post:</label>
+            <select id="visibleFor" form="postForm" name="visibleTo" value={{ post.visibleTo }}>
+                <option>No users available to choose from</option>
+            </select>
+        </div>
+
+        <!-- type="submit" form="postForm" -->
+        <button id="editButton" onclick="editPost()">Edit</button>
+
+        <script type="text/javascript">
+            function editPost() {
+                var formData = new FormData(document.querySelector('#postForm'));
+
+                fetch("{% url 'edit_or_delete_post' post.id%}", {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    if (response.status == 200) {
+                        window.location.href = "/"
+                    } else {
+                        alert("Unable to edit post")
+                    }
+                })
+            }
+        </script>
+        <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
     </div>
-
-    <!-- type="submit" form="postForm" -->
-    <button id="editButton" onclick="editPost()">Edit</button>
-
-    <script type="text/javascript">
-        function editPost() {
-            var formData = new FormData(document.querySelector('#postForm'));
-
-            fetch("{% url 'edit_or_delete_post' post.id%}", {
-                method: 'POST',
-                body: formData
-            }).then(response => {
-                if (response.status == 200) {
-                    window.location.href = "/"
-                } else {
-                    alert("Unable to edit post")
-                }
-            })
-        }
-    </script>
-    <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
-</div>
 {% endblock %}
