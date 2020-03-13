@@ -491,7 +491,7 @@ class TestViews(TestCase):
                                               'bio': '',
                                               'github': '',
                                               'delete': False}, content_type="application/json")
-        self.assertEquals(response.status_code, 404)
+        self.assertEquals(response.status_code, 422)
 
 
     def tearDown(self):
