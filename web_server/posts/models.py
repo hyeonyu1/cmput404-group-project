@@ -3,7 +3,6 @@ from users.models import Author
 
 from uuid import uuid4
 
-
 class Category(models.Model):
     """
     Categories are strings that users can mark their post as belonging to. Many to many with posts
@@ -38,8 +37,7 @@ class Post(models.Model):
         )),
         (TYPE_BASE64, "base64 encoded")
     )
-    contentType = models.CharField(
-        max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
+    contentType = models.CharField(max_length=32, choices=CONTENT_TYPE_CHOICES, default=TYPE_MARKDOWN)
 
     content = models.TextField()
     # @todo Should deleting an author delete their posts? I feel like a good user experience is to say the
@@ -76,12 +74,10 @@ class Post(models.Model):
         (PRIVATE, "Private"),
         (SERVERONLY, "Server Admins Only")
     )
-    visibility = models.CharField(
-        max_length=16, choices=VISIBILITY_CHOICES, default=FRIENDS)
+    visibility = models.CharField(max_length=16, choices=VISIBILITY_CHOICES, default=FRIENDS)
 
     # List of user URI's who can read this message
-    visibleTo = models.ManyToManyField(
-        Author, related_name="posts_granted_access_to", blank=True)
+    visibleTo = models.ManyToManyField(Author, related_name="posts_granted_access_to", blank=True)
 
     # Unlisted posts are hidden from users. By default posts should show to users.
     unlisted = models.BooleanField(default=False)

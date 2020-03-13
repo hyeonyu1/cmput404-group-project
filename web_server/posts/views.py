@@ -12,7 +12,7 @@ from django.core import serializers
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 
 
-@login_required
+# @login_required
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
@@ -125,7 +125,7 @@ def retrieve_single_post_with_id(request, post_id):
 
     def html_handler(request, posts, pager, pagination_uris):
         post = Post.objects.get(id=post_id)
-        print(post.categories.all())
+        #print(post.categories.all())
         # post = get_object_or_404(Post, pk=post_id)
         # for c in post.categories:
         #     print(c)
