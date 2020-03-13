@@ -83,7 +83,7 @@
                  <div class="form-group">
                      <textarea class="form-control" rows="3" required></textarea>
                  </div>
-                 <button type="submit" class="btn btn-light">Submit</button>
+                 <button type="submit"  @click="app.add_comments('{{ post.id }}')" class="btn btn-light">Submit</button>
              </form>
 
              <p>Comments:</p>
@@ -163,19 +163,24 @@
         },
         methods:{
             // Retrieve all comments under the current post.
-            get_comments(){
-
-                let url ='comments/';
+            get_comments(post_id){
+                let url = 'comments/';
                 window.axios.get(url).then((response) =>{
                     for(let item of response.data['comments']){
                         let comment = new Comment(item);
                         console.log(comment);
                         this.comments.push(comment);
                     }
-
                 });
+            },
 
-            }
+            /**add_comments(post_id){
+                let url = post_id+'comments/';
+                window.axios.post(url).then((response)=>){
+
+                }
+
+            }**/
 
         },
          created() {
