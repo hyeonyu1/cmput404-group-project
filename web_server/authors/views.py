@@ -275,7 +275,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC")
 
-
         # visibility = FRIENDS
         users_friends = []
         friends = Friend.objects.filter(author_id=request.user.uid)
@@ -351,7 +350,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             else:
                 host = "http://" + host
 
-
             next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
             array_of_posts.append({
@@ -368,21 +366,29 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str(post.published),
+                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
             })
+
         pager = Paginator(array_of_posts, size)
 
+        uri = request.build_absolute_uri()
+
         if page_num > pager.num_pages:
-            return JsonResponse({
-                "success": False,
-                "message": "Empty"
-            }, status=200)
+            # print("here")
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "previous": str(get_page_url(uri, pager.num_pages)),
+                "posts": []
+
+            }
+            return JsonResponse(response_data)
 
         current_page = pager.page(page_num)
-        uri = request.build_absolute_uri()
 
         if current_page.has_previous() and current_page.has_next():
             response_data = {
@@ -393,6 +399,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "previous": str(get_page_url(uri, current_page.previous_page_number())),
                 "posts": current_page.object_list
             }
+
         elif not current_page.has_next() and not current_page.has_previous():
             response_data = {
                 "query": "posts",
@@ -417,26 +424,17 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "posts": current_page.object_list
             }
 
-        return response_data
-
-    def retrieve_stream_posts(request):
-        response_data = retrieve_posts(request)
-        print(response_data)
-        return render(request, 'posts/stream.html', response_data)
-
-    def retrieve_api_posts(request):
-        response_data = retrieve_posts(request)
         return JsonResponse(response_data)
+
+
 
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
-        Handler("GET", "text/html", retrieve_stream_posts),
-        Handler("GET", "application/json", retrieve_api_posts)
+        Handler("GET", "application/json", retrieve_posts)
     ]).resolve()
 
+
 # Returns 5 newest comment on the post
-
-
 def get_comments(post_id):
     comments_list = []
     comments = Comment.objects.filter(
@@ -449,7 +447,7 @@ def get_comments(post_id):
             "id": str(comment.id),
             "contentType": str(comment.contentType),
             "comment": str(comment.content),
-            "published": str(comment.published),
+            "published": str(comment.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
             "author": {
                 "id": str(author.uid),
                 "email": str(author.email),
@@ -565,13 +563,21 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
     def retrieve_author_posts(request):
         try:
             valid_uuid = UUID(id_of_author, version=4)
+
         except ValueError:
             return JsonResponse({
                 "success": False,
                 "message": "Not a valid uuid"
-            }, status=200)
+            }, status=404)
 
-        author = get_object_or_404(Author, id=id_of_author)
+        try:
+            author = Author.objects.get(id=id_of_author)
+        except Author.DoesNotExist:
+            return JsonResponse({
+                "success": False,
+                "message": "User does not exist"
+            }, status=404)
+
         host = request.get_host()
 
         author_uid = host + "/author/" + str(id_of_author)
@@ -580,14 +586,13 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             visible_post = Post.objects.filter(author= author_uid)
 
         else:
-
             # visibility =  PUBLIC
             public_post = Post.objects.filter(author=author, visibility="PUBLIC")
 
             # visibility = FRIENDS
             if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
                 friend_post = Post.objects.filter(
-                    author=author, visibility__in=["FRIENDS","FOAF"])
+                    author=author, visibility__in=["FRIENDS", "FOAF"])
             else:
                 friend_post = Post.objects.none()
 
@@ -606,8 +611,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 foaf_post = Post.objects.filter(author=author, visibility="FOAF")
             else:
                 foaf_post = Post.objects.none()
-
-
 
             # visibility = PRIVATE
             private_post = Post.objects.filter(
@@ -669,7 +672,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str(post.published),
+                "published": str(post.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -677,15 +680,20 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
         pager = Paginator(array_of_posts, size)
 
+        uri = request.build_absolute_uri()
+
         if page_num > pager.num_pages:
-            return JsonResponse({
-                "success": False,
-                "message": "Empty"
-            }, status=200)
+            response_data = {
+                "query": "posts",
+                "count": int(count),
+                "size": int(size),
+                "previous": str(get_page_url(uri,pager.num_pages )),
+                "posts": []
+
+            }
+            return JsonResponse(response_data)
 
         current_page = pager.page(page_num)
-
-        uri = request.build_absolute_uri()
 
         if current_page.has_previous() and current_page.has_next():
             response_data = {
@@ -720,19 +728,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "posts": current_page.object_list
             }
 
-        return response_data
-
-    def retrieve_stream_posts(request):
-        response_data = retrieve_author_posts(request)
-        return render(request, 'posts/stream.html', response_data)
-
-    def retrieve_api_posts(request):
-        response_data = retrieve_author_posts(request)
         return JsonResponse(response_data)
 
-    return Endpoint(request, None,
-                    [ Handler("GET", "text/html", retrieve_stream_posts),
-                     Handler("GET", "application/json", retrieve_api_posts)]
+    return Endpoint(request, None,[
+                     Handler("GET", "application/json", retrieve_author_posts)]
                     ).resolve()
 
 
