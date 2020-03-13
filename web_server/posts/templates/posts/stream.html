@@ -54,6 +54,10 @@
                 github(data['github']);
             }).catch(function(ex) {
                 console.log("Could not get github name");
+                let p = document.createElement("p");
+                p.innerText = "We couldn't load your github activity. Make sure your github URL is set " +
+                        "correctly in your profile. It should look like \"https://github.com/{your user name}\"";
+                document.querySelector("#feed").appendChild(p);
             });
         }
 
