@@ -2,6 +2,7 @@
 {% extends "navigation.html" %}
 {% block navigation_content %}
 {% load static %}
+{% load show_markdown %}
 
 
 
@@ -16,7 +17,13 @@
 
              <div class="form-inline">
                  <div class="d-flex w-100 justify-content-between">
-                     <h2>{{post.title}}</h2>
+                 	
+                 	{% if post.contentType == "TYPE_MARKDOWN" %}
+                        <h2>{{post.title|show_markdown|safe}}</h2>
+                    {% else %}
+                        <h2>{{post.title}}</h2>
+                    {% endif %}
+          
                      {% if post.author.id == user.id %}
                      <!-- direct to edit page which is as same as create page-->
                      <div class="btn-group">
@@ -40,7 +47,11 @@
              </div>
 
             <div class="form-inline">
-                <h3>{{post.description}}</h3>
+            	{% if post.contentType == "TYPE_MARKDOWN" %}
+                	<h3>{{post.description|show_markdown|safe}}</h3>
+                {% else %}
+                	<h3>{{post.description}}</h3>
+                {% endif %}
             </div>
 
              <div class="form-inline">
@@ -62,10 +73,13 @@
              </div>
 
              <br>
-
-             <p>{{post.content}}</p>
+			 	
              <div>
-
+                {% if post.contentType == "TYPE_MARKDOWN" %}
+                    <p>{{post.content|show_markdown|safe}}</p>
+                {% else %}
+                    <p>{{post.content}}</p>
+                {% endif %}
              </div>
 
              <hr>
