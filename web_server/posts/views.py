@@ -12,7 +12,7 @@ from django.core import serializers
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 
 
-@login_required
+# @login_required
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
