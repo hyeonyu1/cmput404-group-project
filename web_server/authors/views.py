@@ -80,7 +80,7 @@ def unfriend(request):
             Friend.objects.filter(author_id=author_id).filter(
                 friend_id=friend_id).delete()
         else:
-            return HttpResponse("Friendship does not exist!", status=200)
+            return HttpResponse("Friendship does not exist!", status=404)
         if Friend.objects.filter(author_id=friend_id).filter(friend_id=author_id).exists():
             Friend.objects.filter(author_id=friend_id).filter(
                 friend_id=author_id).delete()
@@ -96,6 +96,13 @@ def unfriend(request):
 # username, uid, id, url, host of author can't be changed
 
 
+def check_missing_post_body_field_and_return_422(body, fields_to_check):
+    for each in fields_to_check:
+        if body.get(each, None) is None:
+            return HttpResponse("Post body missing fields: {}".format(each), status=422)
+    return None
+
+
 def update_author_profile(request, author_id):
     if request.method != 'POST':
         return HttpResponse("Method Not Allowed", status=405)
@@ -108,33 +115,11 @@ def update_author_profile(request, author_id):
     body = request.body.decode('utf-8')
     body = json.loads(body)
     delete = body.get('delete', None)
-    if delete is None:
-        return HttpResponse("Post body missing fields: delete", status=404)
-
-    first_name = body.get('first_name', None)
-    if first_name is None:
-        return HttpResponse("Post body missing fields: first_name", status=404)
-
-    last_name = body.get('last_name', None)
-    if last_name is None:
-        return HttpResponse("Post body missing fields: last_name", status=404)
-
-    email = body.get('email', None)
-    if email is None:
-        return HttpResponse("Post body missing fields: email", status=404)
-
-    bio = body.get('bio', None)
-    if bio is None:
-        return HttpResponse("Post body missing fields: bio", status=404)
-
-    github = body.get('github', None)
-    if github is None:
-        return HttpResponse("Post body missing fields: github", status=404)
-
-    display_name = body.get('display_name', None)
-    if display_name is None:
-        return HttpResponse("Post body missing fields: display_name", status=404)
-
+    response = check_missing_post_body_field_and_return_422(
+        body, ['delete', 'first_name', 'last_name', 'email', 'bio', 'github', 'display_name'])
+    # check entries in post request body
+    if response:
+        return response
     if delete:
 
         author_to_be_deleted = Author.objects.get(
@@ -143,9 +128,10 @@ def update_author_profile(request, author_id):
     else:
         obj, created = Author.objects.update_or_create(
             uid=author_id,
-            defaults={'first_name': first_name, 'last_name': last_name,
-                      'email': email, 'bio': bio, 'github': github,
-                      'display_name': display_name},
+            defaults={'first_name': body.get('first_name'), 'last_name': body.get(
+                'last_name'),
+                'email': body.get('email'), 'bio': body.get('bio'), 'github': body.get('github'),
+                'display_name': body.get('display_name')},
         )
 
     return HttpResponse("Author successfully updated", status=200)
@@ -225,10 +211,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.title = post['title']
         # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
         # new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
-        new_post.description = post['description']  # : "This post discusses stuff -- brief",
+        # : "This post discusses stuff -- brief",
+        new_post.description = post['description']
         new_post.contentType = post['contentType']  # : "text/plain",
-        new_post.content     = post['content']      #: "stuffs",
-        new_post.author      = request.user         # the authenticated user
+        new_post.content = post['content']      #: "stuffs",
+        new_post.author = request.user         # the authenticated user
 
         # Categories added after new post is saved
         #: 1023, initially the number of comments is zero
@@ -258,9 +245,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # Categories is commented out because it's not yet in the post data, uncomment once available
         for category in post['categories'].split('\r\n'):
             try:
-                cat_object = Category.objects.get(name=category)  # Try connecting to existing categories
+                # Try connecting to existing categories
+                cat_object = Category.objects.get(name=category)
             except Category.DoesNotExist as e:
-                cat_object = Category.objects.create(name=category)  # Create one if not
+                cat_object = Category.objects.create(
+                    name=category)  # Create one if not
             new_post.categories.add(cat_object)    #: LIST,
 
         # for key in body.keys():
@@ -426,8 +415,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         return JsonResponse(response_data)
 
-
-
     return Endpoint(request, None, [
         Handler("POST", "application/json", create_new_post),
         Handler("GET", "application/json", retrieve_posts)
@@ -447,7 +434,7 @@ def get_comments(post_id):
             "id": str(comment.id),
             "contentType": str(comment.contentType),
             "comment": str(comment.content),
-            "published": str(comment.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
+            "published": str((comment.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
             "author": {
                 "id": str(author.uid),
                 "email": str(author.email),
@@ -521,7 +508,8 @@ def post_edit_and_delete(request, post_id):
                             # Look up the categories or create them if they are new
                             categories = vars.get(key).split("\r\n")
                             for category in categories:
-                                c, created = Category.objects.get_or_create(name=category)
+                                c, created = Category.objects.get_or_create(
+                                    name=category)
                                 post.categories.add(c)
                         else:
                             # All other fields
@@ -529,7 +517,8 @@ def post_edit_and_delete(request, post_id):
                     except Exception as e:
                         # @todo remove this try/except block.
                         #  This should ACTUALLY throw an error if we hit a problem here
-                        print(f"Unable to process key: {key}, it has value {vars.get(key)}")
+                        print(
+                            f"Unable to process key: {key}, it has value {vars.get(key)}")
                         pass
                 elif len(vars.getlist(key)) > 1:  # Multiple values
                     # @todo implement handling multiple values for key
@@ -583,11 +572,12 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         author_uid = host + "/author/" + str(id_of_author)
 
         if author_uid == request.user.uid:
-            visible_post = Post.objects.filter(author= author_uid)
+            visible_post = Post.objects.filter(author=author_uid)
 
         else:
             # visibility =  PUBLIC
-            public_post = Post.objects.filter(author=author, visibility="PUBLIC")
+            public_post = Post.objects.filter(
+                author=author, visibility="PUBLIC")
 
             # visibility = FRIENDS
             if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
@@ -608,7 +598,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                         break
 
             if foaf:
-                foaf_post = Post.objects.filter(author=author, visibility="FOAF")
+                foaf_post = Post.objects.filter(
+                    author=author, visibility="FOAF")
             else:
                 foaf_post = Post.objects.none()
 
@@ -672,7 +663,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str(post.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
+                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -687,7 +678,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "query": "posts",
                 "count": int(count),
                 "size": int(size),
-                "previous": str(get_page_url(uri,pager.num_pages )),
+                "previous": str(get_page_url(uri, pager.num_pages)),
                 "posts": []
 
             }
@@ -730,9 +721,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
         return JsonResponse(response_data)
 
-    return Endpoint(request, None,[
-                     Handler("GET", "application/json", retrieve_author_posts)]
-                    ).resolve()
+    return Endpoint(request, None, [
+        Handler("GET", "application/json", retrieve_author_posts)]
+    ).resolve()
 
 
 # Ida Hou
@@ -751,7 +742,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
 
         potential_friends = body.get("authors", None)
         if not potential_friends:
-            return HttpResponse("Post body missing fields", status=404)
+            return HttpResponse("Post body missing fields", status=422)
 
         response_data = {}
         response_data["query"] = "friends"
