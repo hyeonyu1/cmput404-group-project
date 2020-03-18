@@ -174,14 +174,20 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
         output = {
-            "query": "addComment"
+            "query": "addComment",
         }
+        # change body = request.POST to body = request.body.decode('utf-8'),
+        # because request.POST only accepts form, but here is json format.
+        # change new_comment.comment to new_comment.content,
+        # because that's how it defined in comment model.
+        
         try:
-            body = request.POST
-            comment_info = loads(body['comment'])
+            body = request.body.decode('utf-8')
+            comment_info = loads(body)
+            comment_info = comment_info['comment']
             new_comment = Comment()
             new_comment.contentType = comment_info['contentType']
-            new_comment.comment = comment_info['comment']
+            new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
             new_comment.author = Author.objects.filter(id=comment_info['author']['id']).first()
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
@@ -194,6 +200,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             output['error'] = str(e)
         finally:
             return JsonResponse(output)
+
 
     return Endpoint(request, Post.objects.filter(id=post_id), [
                         Handler("POST", "application/json", post_handler),

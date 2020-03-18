@@ -79,12 +79,12 @@
 
              <h4>Leave a Comment:</h4>
 
-             <form role="form" method="POST" action="{% url 'get_or_add_comment' post.id %}">
+             <div class="form-group">
                  <div class="form-group">
-                     <textarea class="form-control" rows="3" required></textarea>
+                     <textarea class="form-control" rows="3" required v-model="content"></textarea>
                  </div>
                  <button type="submit"  @click="app.add_comments('{{ post.id }}')" class="btn btn-light">Submit</button>
-             </form>
+             </div>
 
              <p>Comments:</p>
              <div class="row">
@@ -98,8 +98,6 @@
 
                      </comment-list>
 
-
-
                 </div>
 
              </div>
@@ -110,14 +108,17 @@
 
 <template id="list-comment">
     <div>
-        <!--<a href="'/user/profile/' + comment.author.">[[sender.firstName + ' ' + sender.lastName]]</a>-->
-        <h4>[[comment.author.first_name]]</h4><small>[[comment.published]]</small>
+        <div>
+            <a v-bind:href="'/user/profile/' + comment.author.id.replace(/[-]/g,'')">[[comment.author.first_name + ' ' + comment.author.last_name]]</a>
+            <small>[[comment.published]]</small>
+        </div>
         <p>[[comment.content]]</p>
         <br>
     </div>
 </template>
 
 <script>
+
     function delete_post() {
         fetch("{% url 'edit_or_delete_post' post.id%}", {
             method: 'DELETE',
@@ -150,6 +151,7 @@
             this.published = comment['published'];
             this.author = comment['author'];
             this.commentId = comment['id'];
+            this.uid = comment['uid'];
         }
 
     }
@@ -158,7 +160,8 @@
         delimiters: ['[[', ']]'],
         data() {
            return {
-               'comments': []
+               'comments': [],
+               'content':''
            }
         },
         methods:{
@@ -168,20 +171,44 @@
                 window.axios.get(url).then((response) =>{
                     for(let item of response.data['comments']){
                         let comment = new Comment(item);
-                        console.log(comment);
                         this.comments.push(comment);
                     }
                 });
             },
 
-            /**add_comments(post_id){
-                let url = post_id+'comments/';
-                window.axios.post(url).then((response)=>){
+            add_comments(post_id){
+                //Add comments, if status code is 200, push this comment into comments(list)
+                let url = 'comments/';
+                let comment = new Comment({
+                        'content':this.content,
+                        'published':new Date(),
+                        'author':{
+                            'id':'{{user.id}}',
+                            'first_name': '{{user.first_name}}',
+                            'last_name':'{{user.last_name}}',
+                            'uid': '{{user.id.hex}}'
+                        },
+                        'contentType':'text/plain',
+                        'commentId': undefined
+                    });
 
-                }
-
-            }**/
-
+                window.axios.post(url,{
+                    'comment':{
+                        'comment': comment.content,
+                        'published': comment.published,
+                        'author': { "id": comment.author.id },
+                        'contentType': comment.contentType
+                    }
+                }).then((response) => {
+                    if( response.data['type']){
+                        alert(response.data['message']);
+                        comment.published = comment.published.toLocaleString().split('GTM-0600')[0];
+                        this.comments.push(comment);
+                    }else{
+                        console.log(response.data);
+                    }
+                })
+            }
         },
          created() {
             this.get_comments("{{ post.id }}")
@@ -190,9 +217,6 @@
     });
 
 
-
 </script>
-
-
 
 {% endblock %}
