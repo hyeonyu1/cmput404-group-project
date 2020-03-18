@@ -54,6 +54,14 @@ class Endpoint:
         # Find out which response content types we can support on this method
         supported_content_types = [handler.produces for handler in method_handlers]
 
+
+        # Protect the user if they forget to pass in an Accept header
+        if 'Accept' not in self.request.headers:
+            return HttpResponse(f"No Accept header specified. "
+                                f"Available content types one of {supported_content_types}.",
+                                status=406)
+
+
         # Find out which content type should be served to the user agent
         accepted_content_types = self.request.headers['Accept'].split(',')
         accepted_type = None

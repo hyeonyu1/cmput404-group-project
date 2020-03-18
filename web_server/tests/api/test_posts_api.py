@@ -40,8 +40,6 @@ class TestPostsAPI(TestCase):
             post.size = 0
             post.visibility = Post.PUBLIC
             post.contentType = "text/plain"
-        print(self.fixture_posts_public)
-        for post in self.fixture_posts_public:
             post.save()
 
         self.fixture_posts_other = [
