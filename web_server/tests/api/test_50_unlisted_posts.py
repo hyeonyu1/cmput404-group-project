@@ -28,11 +28,11 @@ class TestUnlistedPosts(TestCase):
 
         """
         self.fixture_authors = [
-            Author(username="test_user_A", email="a@gmail.com", first_name="A", last_name="A"),
-            Author(username="test_user_B", email="b@gmail.com", first_name="B", last_name="B"),
-            Author(username="test_user_C", email="c@gmail.com", first_name="C", last_name="C"),
-            Author(username="test_user_D", email="d@gmail.com", first_name="D", last_name="D"),
-            Author(username="test_user_E", email="e@gmail.com", first_name="E", last_name="E"),
+            Author(username="test_user_A", email="a@gmail.com", first_name="A", last_name="A", host="127.0.0.1:8000"),
+            Author(username="test_user_B", email="b@gmail.com", first_name="B", last_name="B", host="127.0.0.1:8000"),
+            Author(username="test_user_C", email="c@gmail.com", first_name="C", last_name="C", host="127.0.0.1:8000"),
+            Author(username="test_user_D", email="d@gmail.com", first_name="D", last_name="D", host="127.0.0.1:8000"),
+            Author(username="test_user_E", email="e@gmail.com", first_name="E", last_name="E", host="example.com"),
 
             # Super User
             Author(username="admin", email="admin@admin.com", first_name="admin", last_name="."),
@@ -50,6 +50,17 @@ class TestUnlistedPosts(TestCase):
             self.request_headers[author.first_name] = {
                 "HTTP_AUTHORIZATION": "Basic " + str(b64encode(bytes(author.username + ':password', 'UTF-8')), 'UTF-8')
             }
+
+        # Create one client for each user so that they can talk to the application simultaneously
+        self.a_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['A'])
+        self.b_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['B'])
+        self.c_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['C'])
+        self.d_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['D'])
+        self.e_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['E'])
+
+        # Set up relationships between the authors
+        self.fixture_authors[0].friends.add(self.fixture_authors[1])  # A and B are friends
+        self.fixture_authors[1].friends.add(self.fixture_authors[2])  # B and C are friends
 
         self.fixture_posts = [
             Post(content="Unlisted private content", visibility=Post.PRIVATE, title='Unlisted post private'),
@@ -69,10 +80,8 @@ class TestUnlistedPosts(TestCase):
         # Instead we should hardcode the URI's such that we ensure we are always spec compliant
 
         self.url_public_posts = "/posts"
-        self.url_get_visible_posts = "author/posts"
+        self.url_get_visible_posts = "/author/posts"
         self.url_get_post = lambda post_id: f"/posts/{post_id}"
-
-        self.client = Client(HTTP_ACCEPT="application/json")
 
     def tearDown(self):
         for post in self.fixture_posts:
@@ -94,11 +103,13 @@ class TestUnlistedPosts(TestCase):
         """
         Tests the private unlisted post to see that only the author (A) can access it
         """
-        a_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['A'])
-        b_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['B'])
-        c_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['C'])
-        d_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['D'])
-        e_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['E'])
+        post_id = self.fixture_posts[0].id # the private post
+
+        a_response = self.a_client.get(self.url_get_post(post_id), follow=True)
+        b_response = self.b_client.get(self.url_get_post(post_id), follow=True)
+        c_response = self.c_client.get(self.url_get_post(post_id), follow=True)
+        d_response = self.d_client.get(self.url_get_post(post_id), follow=True)
+        e_response = self.e_client.get(self.url_get_post(post_id), follow=True)
 
         # A can view their own unlisted private post
         assert a_response.status_code == 200
@@ -113,59 +124,150 @@ class TestUnlistedPosts(TestCase):
             assert resp_json['count'] == 0
             assert len(resp_json['posts']) == 0
 
-    # def test_post_direct_friend(self):
-    #     """
-    #     Tests the private unlisted post to see that only the author (A) can access it
-    #     """
-    #     a_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['A']).json()
-    #     b_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['B']).json()
-    #     c_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['C']).json()
-    #     d_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['D']).json()
-    #     e_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['E']).json()
-    #
-    #     # A can view their own unlisted private post
-    #     assert a_response['size'] == 1
-    #     assert a_response['posts'][0].id
-    #
-    #     for response in [b_response, c_response, d_response, e_response]:
-    #         # And no one else can
-    #         assert response['size'] == 0
-    #         assert len(response['posts']) == 0
+    def test_post_direct_friend(self):
+        """
+        Tests the friend unlisted post to see that it is only accessible by the author and friends
+        """
+        post_id = self.fixture_posts[1].id  # The friend post
+
+        a_response = self.a_client.get(self.url_get_post(post_id), follow=True)
+        b_response = self.b_client.get(self.url_get_post(post_id), follow=True)
+        c_response = self.c_client.get(self.url_get_post(post_id), follow=True)
+        d_response = self.d_client.get(self.url_get_post(post_id), follow=True)
+        e_response = self.e_client.get(self.url_get_post(post_id), follow=True)
+
+        # Check that these people can see the post
+        for response in [a_response, b_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 1
+            assert resp_json['posts'][0]['id'] == str(post_id)
+
+        # And no one else can
+        for response in [c_response, d_response, e_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 0
+            assert len(resp_json['posts']) == 0
+
+    def test_post_direct_foaf(self):
+        """
+        Tests the foaf unlisted post to see that it is only accessible by the author and foaf
+        """
+        post_id = self.fixture_posts[2].id  # The foaf post
+
+        a_response = self.a_client.get(self.url_get_post(post_id), follow=True)
+        b_response = self.b_client.get(self.url_get_post(post_id), follow=True)
+        c_response = self.c_client.get(self.url_get_post(post_id), follow=True)
+        d_response = self.d_client.get(self.url_get_post(post_id), follow=True)
+        e_response = self.e_client.get(self.url_get_post(post_id), follow=True)
+
+        # Check that these people can see the post
+        for response in [a_response, b_response, c_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 1
+            assert resp_json['posts'][0]['id'] == str(post_id)
+
+        # And no one else can
+        for response in [d_response, e_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 0
+            assert len(resp_json['posts']) == 0
+
+    def test_post_direct_server(self):
+        """
+        Tests the server only unlisted post to see that it is only accessible by everyone on the server
+        """
+        post_id = self.fixture_posts[3].id  # The server only post
+
+        a_response = self.a_client.get(self.url_get_post(post_id), follow=True)
+        b_response = self.b_client.get(self.url_get_post(post_id), follow=True)
+        c_response = self.c_client.get(self.url_get_post(post_id), follow=True)
+        d_response = self.d_client.get(self.url_get_post(post_id), follow=True)
+        e_response = self.e_client.get(self.url_get_post(post_id), follow=True)
+
+        # Check that these people can see the post
+        for response in [a_response, b_response, c_response, d_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 1
+            assert resp_json['posts'][0]['id'] == str(post_id)
+
+        # And no one else can
+        for response in [e_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 0
+            assert len(resp_json['posts']) == 0
+
+    def test_post_direct_public(self):
+        """
+        Tests the public unlisted post to see that it is accessible by everyone
+        """
+        post_id = self.fixture_posts[4].id  # The public post
+
+        a_response = self.a_client.get(self.url_get_post(post_id), follow=True)
+        b_response = self.b_client.get(self.url_get_post(post_id), follow=True)
+        c_response = self.c_client.get(self.url_get_post(post_id), follow=True)
+        d_response = self.d_client.get(self.url_get_post(post_id), follow=True)
+        e_response = self.e_client.get(self.url_get_post(post_id), follow=True)
+
+        # Check that these people can see the post
+        for response in [a_response, b_response, c_response, d_response, e_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 1
+            assert resp_json['posts'][0]['id'] == str(post_id)
 
 
     ################
-    # Tests for service/posts
+    # Public Posts API tests
+    # Attempts to access the post through the public posts api should fail, even if the post is public. Regardless of
+    # who you are, or what your relation to the author is.
     ################
 
-    # def test_posts_get_all_public_posts(self):
-    #     """
-    #     Test if service/posts will return all public posts and only public posts
-    #     """
-    #     # Get all posts from the first page - 1 and check if everything matches with the spec
-    #     response = self.client.get(self.url_public_posts, {
-    #         "page": 1,
-    #         "size": len(self.fixture_posts_public) - 1
-    #     }, follow=True)
-    #     assert(response.status_code == 200)
-    #     response = response.json()
-    #     assert response['query'] == 'posts'
-    #     assert response['count'] == len(self.fixture_posts_public)
-    #     assert response['size'] == len(self.fixture_posts_public) - 1
-    #     assert "page=2" in response['next']
-    #     assert 'prev' not in response
-    #     first_page_posts = Post.objects.filter(id__in=[r['id'] for r in response['posts']])
-    #     for post in first_page_posts:
-    #         assert post in self.fixture_posts_public
-    #
-    #     # Then follow the url to the next page and see if all posts have been shown and no extras exist
-    #     response = self.client.get(response['next'], follow=True).json()
-    #     all_posts = [p for p in first_page_posts] + \
-    #                 [p for p in Post.objects.filter(id__in=[r['id'] for r in response['posts']])]
-    #     for post in self.fixture_posts_public:
-    #         assert post in all_posts
-    #
-    #     # Check for the prev page matching the spec
-    #     assert 'page=1' in response['prev']
+    def test_post_public_api(self):
+        """
+        Tests the public post api to see that no one can access the unlisted posts
+        """
+        a_response = self.a_client.get(self.url_public_posts, follow=True)
+        b_response = self.b_client.get(self.url_public_posts, follow=True)
+        c_response = self.c_client.get(self.url_public_posts, follow=True)
+        d_response = self.d_client.get(self.url_public_posts, follow=True)
+        e_response = self.e_client.get(self.url_public_posts, follow=True)
+
+        # Check that no one can see the post
+        for response in [a_response, b_response, c_response, d_response, e_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 0
+            assert len(resp_json['posts']) == 0
+
+
+    ################
+    # Author Posts API tests
+    # Attempts to access the post through the author posts api should fail, even if the post is public. Regardless of
+    # who you are, or what your relation to the author is.
+    ################
+
+    def test_post_author_post_api(self):
+        """
+        Tests the author post api to see that no one can access the unlisted posts
+        """
+        a_response = self.a_client.get(self.url_get_visible_posts, follow=True)
+        b_response = self.b_client.get(self.url_get_visible_posts, follow=True)
+        c_response = self.c_client.get(self.url_get_visible_posts, follow=True)
+        d_response = self.d_client.get(self.url_get_visible_posts, follow=True)
+        e_response = self.e_client.get(self.url_get_visible_posts, follow=True)
+
+        # Check that no one can see the post
+        for response in [a_response, b_response, c_response, d_response, e_response]:
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 0
+            assert len(resp_json['posts']) == 0
 
 
 

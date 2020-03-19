@@ -82,10 +82,7 @@ def retrieve_all_public_posts_on_local_server(request):
 # http://service/posts/{POST_ID}
 @logged_in_or_basicauth()
 def retrieve_single_post_with_id(request, post_id):
-    try:
-        post = Post.objects.get(id=post_id)
-    except Post.DoesNotExist as e:
-        # We cant check if the user has authority to access this post if the post didn't exist
+    def no_access():
         return JsonResponse({
             "query": "getPost",
             "size": 1,
@@ -93,8 +90,15 @@ def retrieve_single_post_with_id(request, post_id):
             "posts": []
         })
 
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist as e:
+        # We cant check if the user has authority to access this post if the post didn't exist
+        return no_access()
 
-    # @todo We need to check if the authenticated user can access this post
+    # Check permissions, we allow access to unlisted posts here
+    if not post.is_visible_to(request.user, include_unlisted=True):
+        return no_access()
 
     def json_handler(request):
         nonlocal post

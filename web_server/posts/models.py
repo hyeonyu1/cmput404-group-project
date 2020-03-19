@@ -91,3 +91,35 @@ class Post(models.Model):
         result = f'{self.visibility} post by {self.author}: '
         result += f'"{self.content[:post_snippet_length]}{"..." if len(self.content) >= post_snippet_length else ""}"'
         return result
+
+    def is_visible_to(self, author, include_unlisted=False):
+        # If the post is unlisted, and we aren't including unlisted, then no one can access it
+        if self.unlisted and not include_unlisted:
+            return False
+
+        # Regardless of visibility, an author may always see their own posts
+        if author == self.author:
+            return True
+
+        if self.visibility == self.PRIVATE and author == self.author:
+            return True
+
+        elif self.visibility == self.FRIENDS and author in self.author.friends.all():
+            return True
+
+        elif self.visibility == self.FOAF:
+            for friend in self.author.friends.all():
+                if friend == author:
+                    return True
+                for foaf in friend.friends.all():
+                    if foaf == author:
+                        return True
+
+        elif self.visibility == self.SERVERONLY and self.author.host == author.host:
+            return True
+
+        elif self.visibility == self.PUBLIC:
+            return True
+
+        else:
+            return False

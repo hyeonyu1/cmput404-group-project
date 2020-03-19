@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from uuid import uuid4
 from django.contrib.auth.models import AbstractUser
+
+from django.core.validators import URLValidator
 # Create your models here.
 
 """Author Model: This model is used to store all Author related information. This model is an extension of 
@@ -42,12 +44,18 @@ from django.contrib.auth.models import AbstractUser
 class Author(AbstractUser):
     # Author ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
     id = models.UUIDField(default=uuid4, editable=False, unique=True)
-    uid = models.CharField(primary_key=True, max_length=500)  # without protocol
+    uid = models.URLField(primary_key=True, max_length=500, validators=[URLValidator(schemes=['http'])])  # without protocol
     bio = models.TextField(blank=True)
     host = models.URLField(max_length=500)
     display_name = models.CharField(max_length=256, blank=True)
     url = models.URLField(max_length=500)
     github = models.URLField(blank=True)
+
+    # If I am your friend you are my friend.
+    friends = models.ManyToManyField('self', symmetrical=True)
+
+    # If I follow you that doesn't mean you follow me.
+    followed_authors = models.ManyToManyField('self', symmetrical=False, related_name='followers')
 
     def save(self, *args, **kwargs):
 
@@ -55,8 +63,8 @@ class Author(AbstractUser):
             self.uid = settings.HOSTNAME + "/author/" + str(self.id.hex)
         super(Author, self).save(*args, **kwargs)
 
-    def calculate_uid(self, host=settings.HOSTNAME):
-        url = host + "/author/" + str(self.id.hex)
+    def calculate_uid(self):
+        url = self.host + "/author/" + str(self.id.hex)
         # set user url
         self.url = url
         # set user id

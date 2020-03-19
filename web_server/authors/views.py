@@ -21,6 +21,9 @@ import json
 import datetime
 import sys
 import re
+
+from social_distribution.utils.basic_auth import logged_in_or_basicauth
+
 # used for stripping url protocol
 url_regex = re.compile(r"(http(s?))?://")
 
@@ -182,7 +185,7 @@ def retrieve_author_profile(request, author_id):
 
     return HttpResponse("You can only GET the URL", status=405)
 
-
+@logged_in_or_basicauth()
 def post_creation_and_retrieval_to_curr_auth_user(request):
     """
     Endpoint handler for service/author/posts
