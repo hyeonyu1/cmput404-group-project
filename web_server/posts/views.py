@@ -12,7 +12,6 @@ from django.core import serializers
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import logged_in_or_basicauth
 
-
 # @login_required
 @logged_in_or_basicauth()
 def retrieve_all_public_posts_on_local_server(request):
@@ -80,9 +79,26 @@ def retrieve_all_public_posts_on_local_server(request):
     return endpoint.resolve()
 
 # access to a single post with id = {POST_ID}
-# http://service/posts/{POST_ID} 
+# http://service/posts/{POST_ID}
+@logged_in_or_basicauth()
 def retrieve_single_post_with_id(request, post_id):
-    def json_handler(request, posts, pager, pagination_uris):
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist as e:
+        # We cant check if the user has authority to access this post if the post didn't exist
+        return JsonResponse({
+            "query": "getPost",
+            "size": 1,
+            "count": 0,
+            "posts": []
+        })
+
+
+    # @todo We need to check if the authenticated user can access this post
+
+    def json_handler(request):
+        nonlocal post
+        posts = [post]
         # Use Django's serializers to encode the posts as a python object
         json_posts = loads(serializers.serialize('json', posts))
 
@@ -109,32 +125,25 @@ def retrieve_single_post_with_id(request, post_id):
             post['fields']['id'] = post['pk']
         json_posts = [post['fields'] for post in json_posts]
 
+        # We only expect one post, so we can construct the json response directly instead of using the pagers
         output = {
             "query": "getPost",
-            "post": json_posts
+            "size": 1,
+            "count": len(json_posts),
+            "posts": json_posts
         }
-        (prev_uri, next_uri) = pagination_uris
-        if prev_uri:
-            output['prev'] = prev_uri
-        if next_uri:
-            output['next'] = next_uri
 
         return JsonResponse(output)
 
-    def html_handler(request, posts, pager, pagination_uris):
-        post = Post.objects.get(id=post_id)
-        #print(post.categories.all())
-        # post = get_object_or_404(Post, pk=post_id)
-        # for c in post.categories:
-        #     print(c)
+    def html_handler(request):
         return render(request, 'posts/post.html', {'post': post})
 
     # Get a single post
     endpoint = Endpoint(request,
-                        Post.objects.filter(id=post_id),
+                        None,
                         [
-                            PagingHandler("GET", "text/html", html_handler),
-                            PagingHandler("GET", "application/json", json_handler)
+                            Handler("GET", "text/html", html_handler),
+                            Handler("GET", "application/json", json_handler)
                         ])
 
     return endpoint.resolve()

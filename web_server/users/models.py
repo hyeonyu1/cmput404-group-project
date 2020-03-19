@@ -41,10 +41,8 @@ from django.contrib.auth.models import AbstractUser
 
 class Author(AbstractUser):
     # Author ID's must be unique, we use privacy respecting uuid4 to get random 128bit ids.
-    id = models.UUIDField(primary_key=False, default=uuid4,
-                          editable=False, unique=True)
-    uid = models.CharField(
-        primary_key=True, max_length=500)  # without protocol
+    id = models.UUIDField(default=uuid4, editable=False, unique=True)
+    uid = models.CharField(primary_key=True, max_length=500)  # without protocol
     bio = models.TextField(blank=True)
     host = models.URLField(max_length=500)
     display_name = models.CharField(max_length=256, blank=True)
@@ -56,3 +54,11 @@ class Author(AbstractUser):
         if self.is_superuser:
             self.uid = settings.HOSTNAME + "/author/" + str(self.id.hex)
         super(Author, self).save(*args, **kwargs)
+
+    def calculate_uid(self, host=settings.HOSTNAME):
+        url = host + "/author/" + str(self.id.hex)
+        # set user url
+        self.url = url
+        # set user id
+        # format: 127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013
+        self.uid = url

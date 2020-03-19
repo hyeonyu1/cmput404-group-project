@@ -28,7 +28,7 @@ class TestUnlistedPosts(TestCase):
 
         """
         self.fixture_authors = [
-            # Authors A will have the unlisted post,
+            Author(username="test_user_A", email="a@gmail.com", first_name="A", last_name="A"),
             Author(username="test_user_B", email="b@gmail.com", first_name="B", last_name="B"),
             Author(username="test_user_C", email="c@gmail.com", first_name="C", last_name="C"),
             Author(username="test_user_D", email="d@gmail.com", first_name="D", last_name="D"),
@@ -36,13 +36,14 @@ class TestUnlistedPosts(TestCase):
 
             # Super User
             Author(username="admin", email="admin@admin.com", first_name="admin", last_name="."),
-            Author(username="test_user_A", email="a@gmail.com", first_name="A", last_name="A"),
+
         ]
         self.request_headers = dict()
 
         for author in self.fixture_authors:
             author.is_active = 1
-            author.set_password('password')  # the password must be hashed or checks against the password will fail
+            author.calculate_uid()  # Ensures we have unique uuids for the authors
+            author.set_password("password")  # the password must be hashed or checks against the password will fail
             author.save()
 
             # Create authorization headers so that we can request as a specific individuals during the testing
@@ -51,11 +52,11 @@ class TestUnlistedPosts(TestCase):
             }
 
         self.fixture_posts = [
-            Post(content="Unlisted public content", visibility=Post.PUBLIC, title='Unlisted post foaf'),
-            Post(content="Unlisted foaf content", visibility=Post.FOAF, title='Unlisted post foaf'),
-            Post(content="Unlisted friend content", visibility=Post.FRIENDS, title='Unlisted post friends'),
             Post(content="Unlisted private content", visibility=Post.PRIVATE, title='Unlisted post private'),
+            Post(content="Unlisted friend content", visibility=Post.FRIENDS, title='Unlisted post friends'),
+            Post(content="Unlisted foaf content", visibility=Post.FOAF, title='Unlisted post foaf'),
             Post(content="Unlisted server content", visibility=Post.SERVERONLY, title='Unlisted post server'),
+            Post(content="Unlisted public content", visibility=Post.PUBLIC, title='Unlisted post foaf'),
         ]
         for post in self.fixture_posts:
             post.author = self.fixture_authors[0]
@@ -93,13 +94,43 @@ class TestUnlistedPosts(TestCase):
         """
         Tests the private unlisted post to see that only the author (A) can access it
         """
-        a_response = self.client.get(self.url_public_posts, follow=True, **self.request_headers['A'])
-        # b_response = self.client.get(self.url_public_posts, follow=True, **self.request_headers['B'])
-        # c_response = self.client.get(self.url_public_posts, follow=True, **self.request_headers['C'])
-        # d_response = self.client.get(self.url_public_posts, follow=True, **self.request_headers['D'])
-        # e_response = self.client.get(self.url_public_posts, follow=True, **self.request_headers['E'])
+        a_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['A'])
+        b_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['B'])
+        c_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['C'])
+        d_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['D'])
+        e_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), follow=True, **self.request_headers['E'])
 
-        assert False
+        # A can view their own unlisted private post
+        assert a_response.status_code == 200
+        a_json = a_response.json()
+        assert a_json['count'] == 1
+        assert a_json['posts'][0]['id'] == str(self.fixture_posts[0].id)
+
+        for response in [b_response, c_response, d_response, e_response]:
+            # And no one else can
+            assert response.status_code == 200
+            resp_json = response.json()
+            assert resp_json['count'] == 0
+            assert len(resp_json['posts']) == 0
+
+    # def test_post_direct_friend(self):
+    #     """
+    #     Tests the private unlisted post to see that only the author (A) can access it
+    #     """
+    #     a_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['A']).json()
+    #     b_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['B']).json()
+    #     c_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['C']).json()
+    #     d_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['D']).json()
+    #     e_response = self.client.get(self.url_get_post(self.fixture_posts[0].id), **self.request_headers['E']).json()
+    #
+    #     # A can view their own unlisted private post
+    #     assert a_response['size'] == 1
+    #     assert a_response['posts'][0].id
+    #
+    #     for response in [b_response, c_response, d_response, e_response]:
+    #         # And no one else can
+    #         assert response['size'] == 0
+    #         assert len(response['posts']) == 0
 
 
     ################
