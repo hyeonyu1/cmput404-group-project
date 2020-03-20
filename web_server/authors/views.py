@@ -237,7 +237,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.save()
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
-        uids = post['visibleTo'].split(",")
+        uids = post.getlist('visibleTo')
         visible_authors = Author.objects.filter(uid__in=uids)
         for author in visible_authors:
             new_post.visibleTo.add(author)

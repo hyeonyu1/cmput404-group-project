@@ -2,7 +2,7 @@ var visibility = document.getElementById("visi");
 
 var visibleTo = document.getElementById("checkPrivate");
 
-
+//Check when changing visibility if its set to private show a list of users
 function visibilityChanged(){
 	if (visibility.value === 'PRIVATE') {
 		get_all_users();
@@ -37,4 +37,6 @@ function get_all_users(){
 			}
 		})
 }
+
+
 
