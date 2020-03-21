@@ -7,12 +7,12 @@ from django.contrib.auth.hashers import make_password
 # As a server admin, I want to be able to add node to share with #44
 class Node(models.Model):
     # the credentials this foreign server use to log into our server
-    foreign_server_hostname = models.URLField(
+    foreign_server_hostname = models.CharField(
         primary_key=True, max_length=500, unique=True)
     foreign_server_password = models.CharField(max_length=30, null=False)
 
     # the credentials our server use to log into this foreign server
-    hostname_registered_on_foreign_server = models.URLField(
+    hostname_registered_on_foreign_server = models.CharField(
         max_length=500)
     password_registered_on_foreign_server = models.CharField(
         max_length=30)

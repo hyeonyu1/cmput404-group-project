@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.template import RequestContext
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
-from social_distribution.utils.basic_auth import validate_remote_server_authentication
+#from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
 
 import json
@@ -140,7 +140,7 @@ def update_author_profile(request, author_id):
 
 # Ida Hou
 # service/author/{author_id} endpoint handler
-
+# @validate_remote_server_authentication()
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
