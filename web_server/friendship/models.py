@@ -1,6 +1,8 @@
 from django.db import models
 from uuid import uuid4
 
+from users.models import Author
+
 
 # Create your models here.
 """Friend Model: This model is used to store friendship information. There are
@@ -26,11 +28,35 @@ from uuid import uuid4
     """
 # Author: Ida Hou
 
+class FriendManager(models.Manager):
+    """
+    A custom manager to allow easily adding friendships programmatically
+    """
+    def create_friendship_from_authors(self, author_1, author_2):
+        """
+        Get the relevant information from the two authors and add them twice into the table
+        A -> B
+        and
+        B -> A
+        """
+        friendship = self.create(author_id=author_1.uid, friend_id=author_2.uid)
+        reverse = self.create(author_id=author_2.uid, friend_id=author_1.uid)
+        return [friendship, reverse]
+
+    def create_friendship_with_foreign_author(self, author, foreign_author_uid):
+        """
+        Foreign authors must be provided by uid directly
+        """
+        friendship = self.create(author_id=author.uid, friend_id=foreign_author_uid)
+        reverse = self.create(author_id=foreign_author_uid, friend_id=author.uid)
+        return [friendship, reverse]
 
 class Friend(models.Model):
 
     author_id = models.CharField(max_length=500)
     friend_id = models.CharField(max_length=500)
+
+    objects = FriendManager()
 
     class Meta:
         unique_together = (("author_id", "friend_id"),)

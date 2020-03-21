@@ -8,6 +8,7 @@ from django.urls import reverse, resolve
 
 from users.models import Author
 from posts.models import Post
+from friendship.models import Friend
 
 from base64 import b64encode
 
@@ -32,7 +33,9 @@ class TestUnlistedPosts(TestCase):
             Author(username="test_user_B", email="b@gmail.com", first_name="B", last_name="B", host="127.0.0.1:8000"),
             Author(username="test_user_C", email="c@gmail.com", first_name="C", last_name="C", host="127.0.0.1:8000"),
             Author(username="test_user_D", email="d@gmail.com", first_name="D", last_name="D", host="127.0.0.1:8000"),
-            Author(username="test_user_E", email="e@gmail.com", first_name="E", last_name="E", host="example.com"),
+
+            # Unsure how to test external authors now, so I'm disabling until it is clearer
+            # Author(username="test_user_E", email="e@gmail.com", first_name="E", last_name="E", host="example.com"),
 
             # Super User
             Author(username="admin", email="admin@admin.com", first_name="admin", last_name="."),
@@ -56,9 +59,10 @@ class TestUnlistedPosts(TestCase):
         self.b_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['B'])
         self.c_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['C'])
         self.d_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['D'])
-        self.e_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['E'])
+        # self.e_client = Client(HTTP_ACCEPT="application/json", **self.request_headers['E'])
 
         # Set up relationships between the authors
+        Friends
         self.fixture_authors[0].friends.add(self.fixture_authors[1])  # A and B are friends
         self.fixture_authors[1].friends.add(self.fixture_authors[2])  # B and C are friends
 

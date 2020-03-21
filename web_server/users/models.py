@@ -51,12 +51,6 @@ class Author(AbstractUser):
     url = models.URLField(max_length=500)
     github = models.URLField(blank=True)
 
-    # If I am your friend you are my friend.
-    friends = models.ManyToManyField('self', symmetrical=True)
-
-    # If I follow you that doesn't mean you follow me.
-    followed_authors = models.ManyToManyField('self', symmetrical=False, related_name='followers')
-
     def save(self, *args, **kwargs):
 
         if self.is_superuser:

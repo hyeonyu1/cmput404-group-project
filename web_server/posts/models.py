@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import Author
+from friendship.models import Friend
 
 from uuid import uuid4
 
@@ -104,16 +105,19 @@ class Post(models.Model):
         if self.visibility == self.PRIVATE and author == self.author:
             return True
 
-        elif self.visibility == self.FRIENDS and author in self.author.friends.all():
+        elif self.visibility == self.FRIENDS and author.uid in [
+            friendship.friend_id for friendship in Friend.objects.filter(author_id=author.uid)
+        ]:
             return True
 
         elif self.visibility == self.FOAF:
-            for friend in self.author.friends.all():
-                if friend == author:
-                    return True
-                for foaf in friend.friends.all():
-                    if foaf == author:
-                        return True
+            # Check if this author is a direct friend
+            direct_friend_ids = [friendship.friend_id for friendship in Friend.objects.filter(author_id=author.uid)]
+            if author.uid in direct_friend_ids:
+                return True
+            indirect_friend_ids = [friendship.friend_id for friendship in Friend.objects.filter(author_id__in=direct_friend_ids)]
+            if author.uid in indirect_friend_ids:
+                return True
 
         elif self.visibility == self.SERVERONLY and self.author.host == author.host:
             return True
