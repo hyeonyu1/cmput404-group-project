@@ -4,7 +4,7 @@
 {% load static %}
 {% load show_markdown %}
 
-
+<script src="{% static 'js/vue-markdown.js' %}"></script>
 
 <div id="app" class="container-fluid">
      <div class="row">
@@ -99,6 +99,7 @@
 
                  <div class="form-group">
                      <textarea class="form-control" rows="3" required v-model="content"></textarea>
+
                  </div>
                  <button type="submit"  @click="app.add_comments('{{ post.id }}')" class="btn btn-light">Submit</button>
 
@@ -120,8 +121,11 @@
                 </div>
 
              </div>
+
+
          </div>
-         <div class="col-sm-2"></div>
+         <div class="col-sm-2">
+         </div>
     </div>
 </div>
 
@@ -131,14 +135,13 @@
             <a v-bind:href="'/user/profile/' + comment.author.id.replace(/[-]/g,'')">[[comment.author.first_name + ' ' + comment.author.last_name]]</a>
             <small>[[comment.published]]</small>
         </div>
-        <p v-if="comment.contentType === 'text/markdown'"></p>
-        <p>[[comment.content]]</p>
+        <vue-markdown v-if="comment.contentType === 'text/markdown'">[[comment.content]]</vue-markdown>
+        <p v-else>[[comment.content]]</p>
         <br>
     </div>
 </template>
 
 <script>
-
     function delete_post() {
         fetch("{% url 'edit_or_delete_post' post.id%}", {
             method: 'DELETE',
@@ -175,6 +178,8 @@
         }
 
     }
+    Vue.use(VueMarkdown);
+
     var app = new Vue({
         el: '#app',
         delimiters: ['[[', ']]'],
