@@ -146,9 +146,14 @@
             get_post() {
 
                 window.axios.get("/author/posts").then((response) => {
-                    this.posts = response.data["posts"];
+                    const posts_list = response.data['posts'];
+                    posts_list.forEach((post)=>{
+                        post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        this.posts.push(post);
+                    })
                     this.next = response.data["next"];
                     this.previous = response.data["previous"];
+
                 })
             },
             get_more_posts(){
@@ -157,6 +162,7 @@
                         const data = response.data["posts"];
                         this.next = response.data["next"];
                         data.forEach((post) => {
+                            post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
                             this.posts.push(post);
                         })
                     })
@@ -168,9 +174,12 @@
             //Retrieve all foreign posts
             get_foreign_posts(){
                 let url = "/posts/fetch_public_posts";
-                console.log(url);
                 window.axios.get(url).then((response) =>{
-                    this.foreign_posts = response.data['posts'];
+                    const posts_list = response.data['posts'];
+                    posts_list.forEach((post)=>{
+                        post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        this.foreign_posts.push(post);
+                    })
 
                 })
             }
