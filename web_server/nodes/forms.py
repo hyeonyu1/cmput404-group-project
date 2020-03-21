@@ -7,12 +7,15 @@ class ForeignServerRegisterForm(forms.ModelForm):
 
     foreign_server_hostname = forms.CharField(
         label="foreign_server_hostname", required=True, max_length=500)
-
+    foreign_server_username = forms.CharField(
+        label="foreign_server_username", required=True, max_length=500)
     foreign_server_password = forms.CharField(
         label="foreign_server_password", max_length=30, required=True, widget=forms.PasswordInput, validators=[validate_password])
+    foreign_server_api_location = forms.CharField(
+        label="foreign_server_api_location", max_length=500, required=True)
 
-    hostname_registered_on_foreign_server = forms.CharField(
-        label="hostname_registered_on_foreign_server", max_length=500, required=False, help_text="optional"
+    username_registered_on_foreign_server = forms.CharField(
+        label="username_registered_on_foreign_server", max_length=500, required=False, help_text="optional"
     )
     password_registered_on_foreign_server = forms.CharField(
         label="password_registered_on_foreign_server", max_length=30, required=False, help_text="optional", widget=forms.PasswordInput)
@@ -25,5 +28,5 @@ class ForeignServerRegisterForm(forms.ModelForm):
 
     class Meta:
         model = Node
-        fields = ['foreign_server_hostname', 'foreign_server_password', 'hostname_registered_on_foreign_server',
+        fields = ['foreign_server_hostname', 'foreign_server_username', 'foreign_server_password',  'foreign_server_api_location', 'username_registered_on_foreign_server',
                   'password_registered_on_foreign_server', 'image_share', 'post_share']

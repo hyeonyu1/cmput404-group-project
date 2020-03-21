@@ -10,7 +10,7 @@ class NodeAdmin(admin.ModelAdmin):
     # fields that will be displayed on Register Form
     add_fieldsets = (
         (None, {
-            'fields': ('foreign_server_hostname', 'foreign_server_password', 'hostname_registered_on_foreign_server', 'password_registered_on_foreign_server', 'image_share', 'post_share'),
+            'fields': ('foreign_server_hostname', 'foreign_server_username', 'foreign_server_password', 'foreign_server_api_location',  'hostname_registered_on_foreign_server', 'password_registered_on_foreign_server', 'image_share', 'post_share'),
             'classes': ('extrapretty',)
         }),
 
@@ -21,7 +21,7 @@ class NodeAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ['foreign_server_hostname', 'foreign_server_password']
+            return ['foreign_server_hostname', 'foreign_server_api_location', 'foreign_server_username', 'foreign_server_password']
         else:
             return []
 

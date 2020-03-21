@@ -3,16 +3,31 @@ from django.contrib.auth.hashers import make_password
 
 
 # Create your models here.
+#
+
+# http://dsnfof.herokuapp.com/
+# from hostname ->  Authentication: basic server_username:server_password
+# hostname = "dsnfof.herokuapp.com"
+# server_username = "their username"
+# server_password = "password"
+# we send -> to api_location Authentication: api_username:api_password
+# api_location = "dsnfof.herokuapp.com/api"
+# api_username = "our username"
+# api_password = "some password"
 
 # As a server admin, I want to be able to add node to share with #44
 class Node(models.Model):
-    # the credentials this foreign server use to log into our server
+
     foreign_server_hostname = models.CharField(
         primary_key=True, max_length=500, unique=True)
+
+    # the credentials this foreign server use to log into our server
+    foreign_server_username = models.CharField(max_length=500, null=False)
     foreign_server_password = models.CharField(max_length=30, null=False)
 
+    foreign_server_api_location = models.CharField(max_length=500, null=False)
     # the credentials our server use to log into this foreign server
-    hostname_registered_on_foreign_server = models.CharField(
+    username_registered_on_foreign_server = models.CharField(
         max_length=500)
     password_registered_on_foreign_server = models.CharField(
         max_length=30)

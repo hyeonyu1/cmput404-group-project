@@ -74,9 +74,11 @@ def handle_incoming_request_or_request(view, request, realm="", *args, **kwargs)
             if auth[0].lower() == "basic":
                 uname, passwd = base64.b64decode(
                     auth[1]).decode('utf-8').rsplit(':', 1)
-                print(uname, passwd)
-                if Node.objects.all().filter(foreign_server_hostname=uname).exists():
-                    entry = Node.objects.all().get(pk=uname)
+                #print(uname, passwd)
+                foreign_server_hostname = request.get_host()
+
+                if Node.objects.all().filter(foreign_server_hostname=foreign_server_hostname).filter(foreign_server_username=uname).exists():
+                    entry = Node.objects.all().get(pk=foreign_server_hostname)
                     if check_password(passwd, entry.foreign_server_password):
                         return view(request, *args, **kwargs)
 
