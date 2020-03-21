@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'crispy_forms',
     'markdownx',
+    'nodes.apps.NodesConfig',
 ]
 
 MIDDLEWARE = [
