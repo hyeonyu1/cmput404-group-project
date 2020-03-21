@@ -77,11 +77,6 @@
 
              <hr>
 
-
-
-
-
-
              <div class="form-group">
 
                  <div class="d-flex w-100 justify-content-between">
@@ -197,6 +192,7 @@
                 window.axios.get(url).then((response) =>{
                     for(let item of response.data['comments']){
                         let comment = new Comment(item);
+                        comment.published=moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
                         this.comments.push(comment);
                     }
                 });
@@ -228,7 +224,7 @@
                 }).then((response) => {
                     if( response.data['type']){
                         alert(response.data['message']);
-                        comment.published = comment.published.toLocaleString().split('GTM-0600')[0];
+                        comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
                         this.comments.push(comment);
                     }else{
                         console.log(response.data);
