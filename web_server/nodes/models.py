@@ -8,7 +8,7 @@ from django.contrib.auth.hashers import make_password
 class Node(models.Model):
     # the credentials this foreign server use to log into our server
     foreign_server_hostname = models.URLField(
-        primary_key=False, max_length=500, unique=True)
+        primary_key=True, max_length=500, unique=True)
     foreign_server_password = models.CharField(max_length=30, null=False)
 
     # the credentials our server use to log into this foreign server

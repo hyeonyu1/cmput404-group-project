@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.template import RequestContext
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
+from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
 
 import json
@@ -139,6 +140,7 @@ def update_author_profile(request, author_id):
 
 # Ida Hou
 # service/author/{author_id} endpoint handler
+
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
@@ -259,7 +261,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     def retrieve_posts(request):
         # own post
-        own_post = Post.objects.filter(author_id=request.user.uid, unlisted=False)
+        own_post = Post.objects.filter(
+            author_id=request.user.uid, unlisted=False)
 
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC", unlisted=False)
@@ -291,7 +294,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             author__in=visible_FOAF_author, visibility="FOAF", unlisted=False)
 
         # visibility = PRIVATE
-        private_post = Post.objects.filter(visibleTo=request.user.uid, unlisted=False)
+        private_post = Post.objects.filter(
+            visibleTo=request.user.uid, unlisted=False)
 
         # visibility = SERVERONLY
         local_host = request.user.host
@@ -572,7 +576,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         author_uid = host + "/author/" + str(id_of_author)
 
         if author_uid == request.user.uid:
-            visible_post = Post.objects.filter(author=author_uid, unlisted=False)
+            visible_post = Post.objects.filter(
+                author=author_uid, unlisted=False)
 
         else:
             # visibility =  PUBLIC
@@ -813,6 +818,7 @@ def post_creation_page(request):
     :return:
     """
     return render(request, 'posting.html')
+
 
 def get_all_authors(request):
     """
