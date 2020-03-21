@@ -100,7 +100,7 @@
 
 <template id="foreign_posts-list">
 
-    <a :href="[[ post.id]]" class="list-group-item list-group-item-action flex-column align-items-start">
+    <a :href="[[ post.origin ]]" class="list-group-item list-group-item-action flex-column align-items-start">
         <div class="d-flex w-100 justify-content-between">
           <h5 class="mb-1">[[post.title]]</h5>
           <small>[[post.published]]</small>
@@ -150,7 +150,7 @@
                     posts_list.forEach((post)=>{
                         post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
                         this.posts.push(post);
-                    })
+                    });
                     this.next = response.data["next"];
                     this.previous = response.data["previous"];
 
@@ -175,6 +175,7 @@
             get_foreign_posts(){
                 let url = "/posts/fetch_public_posts";
                 window.axios.get(url).then((response) =>{
+                    console.log(response.data);
                     const posts_list = response.data['posts'];
                     posts_list.forEach((post)=>{
                         post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
