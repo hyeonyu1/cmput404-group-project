@@ -23,14 +23,14 @@ class Node(models.Model):
 
     # the credentials this foreign server use to log into our server
     foreign_server_username = models.CharField(max_length=500, null=False)
-    foreign_server_password = models.CharField(max_length=30, null=False)
+    foreign_server_password = models.CharField(max_length=500, null=False)
 
     foreign_server_api_location = models.CharField(max_length=500, null=False)
     # the credentials our server use to log into this foreign server
     username_registered_on_foreign_server = models.CharField(
         max_length=500)
     password_registered_on_foreign_server = models.CharField(
-        max_length=30)
+        max_length=500)
 
     # As a server admin, I want to share or not share images with users on other servers. #5
     image_share = models.BooleanField(default=True)
