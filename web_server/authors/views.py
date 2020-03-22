@@ -32,7 +32,7 @@ DEFAULT_PAGE_SIZE = 10
 # Ida Hou
 # return a list of author id that are currently stored in database and
 # are not friend with current author
-
+# internal endpoint -  not used
 def view_list_of_available_authors_to_befriend(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method Not Allowed", status=405)
@@ -66,6 +66,8 @@ def view_list_of_available_authors_to_befriend(request, author_id):
 #  friend_id : http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
 #
 # }
+# internal endpoints
+@validate_remote_server_authentication()
 def unfriend(request):
     if request.method == 'POST':
         body = request.body.decode('utf-8')
@@ -102,6 +104,8 @@ def check_missing_post_body_field_and_return_422(body, fields_to_check):
         if body.get(each, None) is None:
             return HttpResponse("Post body missing fields: {}".format(each), status=422)
     return None
+
+# internal endpoint - not used
 
 
 def update_author_profile(request, author_id):
@@ -140,7 +144,7 @@ def update_author_profile(request, author_id):
 
 # Ida Hou
 # service/author/{author_id} endpoint handler
-# @validate_remote_server_authentication()
+@validate_remote_server_authentication()
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
@@ -735,7 +739,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
 # author_id : (http://)localhost:8000/author/<UUID>
 
-
+@validate_remote_server_authentication()
 def friend_checking_and_retrieval_of_author_id(request, author_id):
     if request.method == 'POST':
         # ask a service if anyone in the list is a friend
@@ -786,6 +790,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
 # authorid2: https://127.0.0.1%3A5454%2Fauthor%2Fae345d54-75b4-431b-adb2-fb6b9e547891 (url-encoded)
 
 
+@validate_remote_server_authentication()
 def check_if_two_authors_are_friends(request, author1_id, author2_id):
     if request.method == 'GET':
         # compose author id from author uid

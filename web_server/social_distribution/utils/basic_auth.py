@@ -21,6 +21,7 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
     that does the nitty of determining if foreign servers are pre-authenticated. 
     Return the view if all goes well, otherwise respond with a 401.
     """
+    print(request)
     # for request from local server, test if the Authhor is logged in
     if test_func(request.user):
         # Already logged in, just return the view.
