@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.template import RequestContext
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
+from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
 
 import json
@@ -139,6 +140,7 @@ def update_author_profile(request, author_id):
 
 # Ida Hou
 # service/author/{author_id} endpoint handler
+@validate_remote_server_authentication()
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
@@ -259,10 +261,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     def retrieve_posts(request):
         # own post
-        own_post = Post.objects.filter(author_id=request.user.uid)
+        own_post = Post.objects.filter(
+            author_id=request.user.uid, unlisted=False)
 
         # visibility =  PUBLIC
-        public_post = Post.objects.filter(visibility="PUBLIC")
+        public_post = Post.objects.filter(visibility="PUBLIC", unlisted=False)
 
         # visibility = FRIENDS
         users_friends = []
@@ -270,7 +273,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         for friend in friends:
             users_friends.append(friend.friend_id)
         friend_post = Post.objects.filter(
-            author__in=users_friends, visibility="FRIENDS")
+            author__in=users_friends, visibility="FRIENDS", unlisted=False)
 
         # visibility = FOAF
         FOAF_post_authors = []
@@ -288,15 +291,16 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # private to FOAF is jus to FOAF and friends
         visible_FOAF_author = visible_FOAF_author + users_friends
         foaf_post = Post.objects.filter(
-            author__in=visible_FOAF_author, visibility="FOAF")
+            author__in=visible_FOAF_author, visibility="FOAF", unlisted=False)
 
         # visibility = PRIVATE
-        private_post = Post.objects.filter(visibleTo=request.user.uid)
+        private_post = Post.objects.filter(
+            visibleTo=request.user.uid, unlisted=False)
 
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
-            author__host=local_host, visibility="SERVERONLY")
+            author__host=local_host, visibility="SERVERONLY", unlisted=False)
 
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
@@ -572,17 +576,18 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         author_uid = host + "/author/" + str(id_of_author)
 
         if author_uid == request.user.uid:
-            visible_post = Post.objects.filter(author=author_uid)
+            visible_post = Post.objects.filter(
+                author=author_uid, unlisted=False)
 
         else:
             # visibility =  PUBLIC
             public_post = Post.objects.filter(
-                author=author, visibility="PUBLIC")
+                author=author, visibility="PUBLIC", unlisted=False)
 
             # visibility = FRIENDS
             if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
                 friend_post = Post.objects.filter(
-                    author=author, visibility__in=["FRIENDS", "FOAF"])
+                    author=author, visibility__in=["FRIENDS", "FOAF"], unlisted=False)
             else:
                 friend_post = Post.objects.none()
 
@@ -599,18 +604,18 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             if foaf:
                 foaf_post = Post.objects.filter(
-                    author=author, visibility="FOAF")
+                    author=author, visibility="FOAF", unlisted=False)
             else:
                 foaf_post = Post.objects.none()
 
             # visibility = PRIVATE
             private_post = Post.objects.filter(
-                author=author, visibleTo=request.user.uid)
+                author=author, visibleTo=request.user.uid, unlisted=False)
 
             # visibility = SERVERONLY
             if request.user.host == author.host:
                 server_only_post = Post.objects.filter(
-                    author=author, visibility="SERVERONLY")
+                    author=author, visibility="SERVERONLY", unlisted=False)
             else:
                 server_only_post = Post.objects.none()
 
@@ -813,6 +818,7 @@ def post_creation_page(request):
     :return:
     """
     return render(request, 'posting.html')
+
 
 def get_all_authors(request):
     """

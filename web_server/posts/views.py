@@ -5,14 +5,19 @@ from django.http import HttpResponse, JsonResponse
 from .models import Post
 from comments.models import Comment
 from users.models import Author
+from nodes.models import Node
 
 from json import loads
 from django.core import serializers
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
+from social_distribution.utils.basic_auth import validate_remote_server_authentication
+
+import requests
 
 
 # @login_required
+@validate_remote_server_authentication()
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
@@ -206,3 +211,47 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         Handler("POST", "application/json", post_handler),
                         PagingHandler("GET", "application/json", get_handler)
                     ]).resolve()
+
+
+@login_required  # Local server usage only
+def fetch_public_posts_from_nodes(request):
+    """
+    Fetches public posts from all the nodes available to the server
+    :param request:
+    :return:
+    """
+    output = {
+        'query': "getPosts",
+        'size': 10,
+        'count': 0,
+        'posts': []
+    }
+    for node in Node.objects.all():
+        # Get the url of the api
+        api_url = 'http://' + node.foreign_server_api_location
+        if api_url[-1] == '/':
+            # Remove trailing slash if there is one
+            api_url = api_url[:-1]
+        api_url += "/posts"
+
+        response = requests.get(api_url,
+                                auth=(node.foreign_server_username, node.foreign_server_password),
+                                headers={'Accept': 'application/json'})
+        if response.status_code != 200:
+            print(f"Failure to get posts from {node.foreign_server_hostname}, "
+                  f"received response code {response.status_code} at api endpoint: {api_url}")
+            continue
+
+        json = response.json()
+        for post in json['posts']:
+            output['count'] += 1
+            output['posts'].append(post)
+            if output['count'] >= output['size']:
+                break
+
+        if output['count'] >= output['size']:
+            break
+
+    return JsonResponse(output, status=200)
+
+
