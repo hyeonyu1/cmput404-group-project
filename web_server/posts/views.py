@@ -10,9 +10,11 @@ from json import loads
 from django.core import serializers
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
+from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
 
 # @login_required
+@validate_remote_server_authentication()
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
