@@ -13,86 +13,70 @@ from nodes.models import Node
 from django.contrib.auth.hashers import check_password
 
 #############################################################################
-#
 
 
-def view_or_basicauth(view, request, test_func, realm="", *args, **kwargs):
-    """
-    This is a helper function used by both 'logged_in_or_basicauth' and
-    'has_perm_or_basicauth' that does the nitty of determining if they
-    are already logged in or if they have provided proper http-authorization
-    and returning the view if all goes well, otherwise responding with a 401.
-    """
-    if test_func(request.user):
-        # Already logged in, just return the view.
-        #
-        return view(request, *args, **kwargs)
-
-    # They are not logged in. See if they provided login credentials
-    #
-    if 'HTTP_AUTHORIZATION' in request.META:
-        auth = request.META['HTTP_AUTHORIZATION'].split()
-        if len(auth) == 2:
-            # NOTE: We are only support basic authentication for now.
-            #
-            if auth[0].lower() == "basic":
-                uname, passwd = base64.b64decode(
-                    auth[1]).decode('utf-8').split(':', 1)
-                user = authenticate(username=uname, password=passwd)
-                if user is not None:
-                    if user.is_active:
-                        login(request, user)
-                        request.user = user
-                        if test_func(request.user):
-                            return view(request, *args, **kwargs)
-
-    # Either they did not provide an authorization header or
-    # something in the authorization attempt failed. Send a 401
-    # back to them to ask them to authenticate.
-    #
-    response = HttpResponse()
-    response.status_code = 401
-    response['WWW-Authenticate'] = 'Basic realm="%s"' % realm
-    return response
-
-
-def handle_incoming_request_or_request(view, request, realm="", *args, **kwargs):
+def handle_incoming_request_or_request(view, request, test_func, realm="", *args, **kwargs):
     """
     This is a helper function used by both 'validate_remote_server_authentication' and
     that does the nitty of determining if foreign servers are pre-authenticated. 
     Return the view if all goes well, otherwise respond with a 401.
     """
+    deny_response = ""
 
-    # return view only when foreign servers are pre-authorized and the provided credentials match
+    # If the user is already authenticated on the local server, then we are fine, and we let them proceed
+    if test_func(request.user):
+        # Already logged in, just return the view.
+        return view(request, *args, **kwargs)
+    else:
+        deny_response += "You were not logged in to the local server."
+
+    # Otherwise, return view only when foreign servers are pre-authorized and the provided credentials match
     # what's on record in Node table
     if 'HTTP_AUTHORIZATION' in request.META:
         auth = request.META['HTTP_AUTHORIZATION'].split()
-        print(auth)
         if len(auth) == 2:
-            # NOTE: We are only support basic authentication for now.
-            #
+            # NOTE: We only support basic authentication for now.
             if auth[0].lower() == "basic":
                 uname, passwd = base64.b64decode(
                     auth[1]).decode('utf-8').rsplit(':', 1)
-                #print(uname, passwd)
-                foreign_server_hostname = request.get_host()
 
-                if Node.objects.all().filter(foreign_server_hostname=foreign_server_hostname).filter(foreign_server_username=uname).exists():
-                    entry = Node.objects.all().get(pk=foreign_server_hostname)
+                # This code would allow credentials of local authors to remotely authorize,
+                # This use case is not supported for now
+
+                # # for internal request, try to authenticate local Author
+                # user = authenticate(username=uname, password=passwd)
+                # if user is not None:
+                #     if user.is_active:
+                #         login(request, user)
+                #         request.user = user
+                #         if test_func(request.user):
+                #             return view(request, *args, **kwargs)
+
+                # Check if the credentials are valid for the host requesting them
+                if Node.objects.all().filter(foreign_server_username=uname).exists():
+                    entry = Node.objects.get(foreign_server_username=uname)
                     if check_password(passwd, entry.foreign_server_password):
                         return view(request, *args, **kwargs)
+                    else:
+                        deny_response += " The provided password for your server authentication was invalid"
+                else:
+                    deny_response += f" There was no registered node with username '{uname}'"
+            else:
+                deny_response += f" You sent authorization headers for type {auth[0].lower()}, the only supported type is 'basic'."
+        else:
+            deny_response += " You sent authorization headers that were improperly formatted."
+    else:
+        deny_response += " You did not send any other authorization headers."
 
     # Either they did not provide an authorization header or
     # credential provided is invalid. Send a 401
     # back to them to ask them to authenticate.
-    #
-    response = HttpResponse()
+    response = HttpResponse(deny_response)
     response.status_code = 401
     response['WWW-Authenticate'] = 'Basic realm="%s"' % realm
     return response
 
 #############################################################################
-#
 
 
 def validate_remote_server_authentication(realm=""):
@@ -116,44 +100,7 @@ def validate_remote_server_authentication(realm=""):
     def view_decorator(func):
         def wrapper(request, *args, **kwargs):
             return handle_incoming_request_or_request(func, request,
+                                                      lambda u: u.is_authenticated,
                                                       realm, *args, **kwargs)
-        return wrapper
-    return view_decorator
-
-
-def logged_in_or_basicauth(realm=""):
-    """
-    A simple decorator that requires a user to be logged in. If they are not
-    logged in the request is examined for a 'authorization' header.
-
-    If the header is present it is tested for basic authentication and
-    the user is logged in with the provided credentials.
-
-    If the header is not present a http 401 is sent back to the
-    requestor to provide credentials.
-
-    The purpose of this is that in several django projects I have needed
-    several specific views that need to support basic authentication, yet the
-    web site as a whole used django's provided authentication.
-
-    The uses for this are for urls that are access programmatically such as
-    by rss feed readers, yet the view requires a user to be logged in. Many rss
-    readers support supplying the authentication credentials via http basic
-    auth (and they do NOT support a redirect to a form where they post a
-    username/password.)
-
-    Use is simple:
-
-    @logged_in_or_basicauth()
-    def your_view:
-        ...
-
-    You can provide the name of the realm to ask for authentication within.
-    """
-    def view_decorator(func):
-        def wrapper(request, *args, **kwargs):
-            return view_or_basicauth(func, request,
-                                     lambda u: u.is_authenticated,
-                                     realm, *args, **kwargs)
         return wrapper
     return view_decorator
