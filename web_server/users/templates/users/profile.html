@@ -50,7 +50,8 @@
                 :friends="friends"
                 :request_senders="request_senders"
                 :user="user"
-                :is_visitor="is_visitor">
+                :is_visitor="is_visitor"
+                :myposts="myposts">
 
                 </nav-content>
             </div>
@@ -84,6 +85,13 @@
                 </friend-list>
             </ul>
 
+            <div class="list-group" v-if="show['post']">
+                <user-posts
+                    v-for="post in myposts"
+                    v-bind:post="post">
+                </user-posts>
+            </div>
+
             <user-info
                 v-bind:user="user"
                 v-if="show['info']"
@@ -94,6 +102,21 @@
     </div>
 </template>
 
+<template id="user-posts">
+
+    <a :href="'/posts/'+ [[ post.id]]" class="list-group-item list-group-item-action flex-column align-items-start">
+        <div class="d-flex w-100 justify-content-between">
+        <h5 class="mb-1">[[post.title]]</h5>
+        <small>[[post.published]]</small>
+        </div>
+        <p class="mb-1">[[post.content]]</p>
+        <small>[[post.author.firstName]] [[post.author.lastName]]</small>
+    </a>
+
+    <div>
+
+    </div>
+</template>
 
 <template id="list-friend">
     <div v-if="!friend.isDeleted">
@@ -158,7 +181,7 @@
     });
 
     Vue.component('nav-content',{
-        props: ['show', 'friends', 'user', 'request_senders','is_visitor'],
+        props: ['show', 'friends', 'user', 'request_senders','is_visitor','myposts'],
         template: '#nav'
     });
 
@@ -174,6 +197,12 @@
         template: '#user-info'
     });
 
+    Vue.component('user-posts',{
+        delimiters: ['[[', ']]'],
+        props: ['post','myposts'],
+        template: '#user-posts'
+    });
+
     var app = new Vue({
         el: '#app',
         delimiters: ['[[', ']]'],
@@ -182,6 +211,7 @@
                 request_senders: [],
                 user: {},
                 friends: [],
+                myposts:[],
                 show: {
                     'info':true,
                     'friend':false,
@@ -227,7 +257,6 @@
 
                         let from_id = idlist[idlist.length - 1];
                         window.axios.get('/author/' + from_id).then((response) => {
-                            console.log(response.data);
                             //let username = response.data['firstName'] +' '+ response.data['lastName'];
                             response.data['uid'] = idlist[idlist.length - 1];
                             response.data['isDeleted'] = false;
@@ -358,12 +387,27 @@
 
             },
 
+            //Retrieve all posts made by the current authenticated user
+            get_mypost(user_id){
+                let url = "/author/"+user_id+"/posts";
+                window.axios.get(url).then((response)=>{
+
+                    for (let post of response.data["posts"]){
+                        console.log(post);
+                        this.myposts.push(post);
+                    }
+
+                });
+
+            },
+
         },
 
         created() {
             this.get_user("{{user_id}}");
             this.get_request('/friendrequest/{{user_id}}');
             this.check_already_friend("{{user_id}}","{{user.uid}}");
+            this.get_mypost("{{user_id}}");
         }
     });
 
