@@ -251,6 +251,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # Now we can set source and origin
         new_post.source = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
         new_post.origin = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
+        new_post.save()
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
         uids = post['visibleTo'].split(",")
