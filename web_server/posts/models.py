@@ -101,8 +101,8 @@ class Post(models.Model):
         """
         return {
             "title": self.title,
-            "source": settings.HOSTNAME + "/posts/" + str(self.id.hex), # All posts we store are from our server, so these things are the same
-            "origin": settings.HOSTNAME + "/posts/" + str(self.id.hex),
+            "source": self.source,
+            "origin": self.origin,
             "description": self.description,
             "contentType": self.contentType,
             "content": self.content,

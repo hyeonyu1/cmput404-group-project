@@ -17,6 +17,8 @@ from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
+from django.conf import settings
+
 
 import json
 import datetime
@@ -245,6 +247,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # new_post.unlisted = post['unlisted']       #: true
 
         new_post.save()
+
+        # Now we can set source and origin
+        new_post.source = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
+        new_post.origin = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
         uids = post['visibleTo'].split(",")
