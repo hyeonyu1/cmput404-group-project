@@ -47,7 +47,7 @@ class Author(AbstractUser):
         primary_key=True, max_length=500)  # without protocol
     bio = models.TextField(blank=True)
     host = models.URLField(max_length=500)
-    display_name = models.CharField(max_length=256, blank=True)
+    display_name = models.CharField(max_length=256, blank=False)
     url = models.URLField(max_length=500)
     github = models.URLField(blank=True)
 
@@ -55,4 +55,19 @@ class Author(AbstractUser):
 
         if self.is_superuser:
             self.uid = settings.HOSTNAME + "/author/" + str(self.id.hex)
+            self.display_name = self.username
+            self.first_name = self.username
+            self.last_name = self.username
         super(Author, self).save(*args, **kwargs)
+
+    def to_api_object(self):
+        """
+
+        """
+        return {
+                "id": self.uid,
+                "host": self.host,
+                "displayName": self.display_name,
+                "url": self.uid,
+                "github": self.github
+            }

@@ -12,7 +12,7 @@ class UserRegisterForm(UserCreationForm):
     last_name = forms.CharField(
         label="lastname", max_length=150, required=True)
     display_name = forms.CharField(
-        label="displayname", max_length=256, required=False, help_text="optional"
+        label="displayname", max_length=256, required=True
     )
     email = forms.EmailField(label="email", required=True)
 
