@@ -3,6 +3,8 @@ from uuid import uuid4
 from django.db import models
 from users.models import Author
 
+from django.conf import settings
+
 
 class Category(models.Model):
     """
@@ -92,3 +94,28 @@ class Post(models.Model):
         result = f'{self.visibility} post by {self.author}: '
         result += f'"{self.content[:post_snippet_length]}{"..." if len(self.content) >= post_snippet_length else ""}"'
         return result
+
+    def to_api_object(self):
+        """
+        Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
+        """
+        return {
+            "title": self.title,
+            "source": self.source,
+            "origin": self.origin,
+            "description": self.description,
+            "contentType": self.contentType,
+            "content": self.content,
+            "author": self.author.to_api_object(),
+            "categories": [category.name for category in self.categories.all()],
+            "count": self.comment_set.count(),
+            "size": self.size,
+            "next": settings.HOSTNAME + "/posts/" + str(self.id.hex) + "/comments",
+            # We only get the first 5 comments
+            "comments": [comment.to_api_object() for comment in self.comment_set.all()[:5]],
+            "published": self.published,
+            "id": str(self.id.hex),
+            "visibility": self.visibility,
+            "visibleTo": [],  # @todo figure out how to specify visibility
+            "unlisted": self.unlisted
+        }
