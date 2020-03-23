@@ -235,7 +235,7 @@ def fetch_public_posts_from_nodes(request):
         api_url += "/posts"
 
         response = requests.get(api_url,
-                                auth=(node.foreign_server_username, node.foreign_server_password),
+                                auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
                                 headers={'Accept': 'application/json'})
         if response.status_code != 200:
             print(f"Failure to get posts from {node.foreign_server_hostname}, "
