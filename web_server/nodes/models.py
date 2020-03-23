@@ -22,7 +22,8 @@ class Node(models.Model):
         primary_key=True, max_length=500, unique=True)
 
     # the credentials this foreign server use to log into our server
-    foreign_server_username = models.CharField(max_length=500, null=False)
+    foreign_server_username = models.CharField(
+        max_length=500, null=False, unique=True)
     foreign_server_password = models.CharField(max_length=500, null=False)
 
     foreign_server_api_location = models.CharField(max_length=500, null=False)

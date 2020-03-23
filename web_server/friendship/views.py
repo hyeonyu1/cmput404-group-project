@@ -114,6 +114,7 @@ def send_friend_request(request):
 
         # if friend request already existed
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
+
             return HttpResponse("Friend Request Already exists", status=409)
         # strip protocol for hostname
         from_host = url_regex.sub('', from_host).rstrip("/")

@@ -52,10 +52,10 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
                 #         if test_func(request.user):
                 #             return view(request, *args, **kwargs)
 
-                foreign_server_hostname = request.get_host()
                 # Check if the credentials are valid for the host requesting them
-                if Node.objects.all().filter(foreign_server_hostname=foreign_server_hostname).filter(foreign_server_username=uname).exists():
-                    entry = Node.objects.all().get(pk=foreign_server_hostname)
+                if Node.objects.all().filter(foreign_server_username=uname).exists():
+                    entry = Node.objects.all().get(foreign_server_username=uname)
+
                     if check_password(passwd, entry.foreign_server_password):
                         return view(request, *args, **kwargs)
                     else:
