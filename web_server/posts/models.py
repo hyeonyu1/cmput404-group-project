@@ -101,8 +101,8 @@ class Post(models.Model):
         """
         return {
             "title": self.title,
-            "source": settings.HOSTNAME + "/posts/" + str(self.id), # All posts we store are from our server, so these things are the same
-            "origin": settings.HOSTNAME + "/posts/" + str(self.id),
+            "source": settings.HOSTNAME + "/posts/" + str(self.id.hex), # All posts we store are from our server, so these things are the same
+            "origin": settings.HOSTNAME + "/posts/" + str(self.id.hex),
             "description": self.description,
             "contentType": self.contentType,
             "content": self.content,
@@ -110,11 +110,11 @@ class Post(models.Model):
             "categories": [category.name for category in self.categories.all()],
             "count": self.comment_set.count(),
             "size": self.size,
-            "next": settings.HOSTNAME + "/posts/" + str(self.id) + "/comments",
+            "next": settings.HOSTNAME + "/posts/" + str(self.id.hex) + "/comments",
             # We only get the first 5 comments
             "comments": [comment.to_api_object() for comment in self.comment_set.all()[:5]],
             "published": self.published,
-            "id": str(self.id),
+            "id": str(self.id.hex),
             "visibility": self.visibility,
             "visibleTo": [],  # @todo figure out how to specify visibility
             "unlisted": self.unlisted

@@ -65,7 +65,7 @@ class Author(AbstractUser):
 
         """
         return {
-                "id": self.uid.hex,
+                "id": self.uid,
                 "host": self.host,
                 "displayName": self.display_name,
                 "url": self.uid,

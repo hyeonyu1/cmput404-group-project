@@ -47,5 +47,5 @@ class Comment(models.Model):
                     "comment": self.content,
                     "contentType": self.contentType,
                     "published": self.published,
-                    "id": str(self.id)
+                    "id": str(self.id.hex)
                 }
