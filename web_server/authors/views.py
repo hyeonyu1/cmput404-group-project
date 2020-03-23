@@ -16,6 +16,7 @@ from django.template import RequestContext
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
+from friendship.views import FOAF_verification
 
 
 import json
@@ -316,7 +317,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             author_id = Author.objects.get(uid=post.author_id)
 
             author_info = {
-                "id": str(author_id.uid),
+                "id": "http://" + str(author_id.uid),
                 "email": str(author_id.email),
                 "bio": str(author_id.bio),
                 "host": str(author_id.host),
@@ -440,7 +441,7 @@ def get_comments(post_id):
             "comment": str(comment.content),
             "published": str((comment.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
             "author": {
-                "id": str(author.uid),
+                "id": "http://" + str(author.uid),
                 "email": str(author.email),
                 "bio": str(author.bio),
                 "host": str(author.host),
@@ -554,6 +555,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
     id_of_author = author_id
 
     def retrieve_author_posts(request):
+        print(request.user.uid)
+
+
         try:
             valid_uuid = UUID(id_of_author, version=4)
 
@@ -574,6 +578,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         host = request.get_host()
 
         author_uid = host + "/author/" + str(id_of_author)
+
+        FOAF_verification(request, id_of_author)
+
 
         if author_uid == request.user.uid:
             visible_post = Post.objects.filter(
@@ -630,7 +637,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             print(post.author_id)
             author_id = Author.objects.get(uid=post.author_id)
             author_info = {
-                "id": str(author_id.uid),
+                "id": "http://" + str(author_id.uid),
                 "email": str(author_id.email),
                 "bio": str(author_id.bio),
                 "host": str(author_id.host),

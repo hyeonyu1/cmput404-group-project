@@ -3,8 +3,9 @@ from django.http import HttpResponse, JsonResponse
 from friendship.models import FriendRequest, Friend, Follow
 import json
 import re
+from nodes.models import Node
 url_regex = re.compile(r"(http(s?))?://")
-
+import requests
 # author: Ida Hou
 # http://service/friendrequest/handle endpoint handler
 # POST requests accepts the friend request
@@ -120,3 +121,93 @@ def retrieve_friend_request_of_author_id(request, author_id):
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
+
+
+
+
+# FOAF verification involves the 3 hosts of the 3 friends A->B->C
+# assuming A B C reside on different hosts.
+# and in the same server
+def FOAF_verification(request, author_id):
+
+    auth_user = request.user.uid
+
+    # nodes = [request.get_host()]
+    nodes = []
+    for node in Node.objects.all():
+        nodes.append(node.foreign_server_hostname)
+    print("nodes = ", nodes)
+
+    response = requests.get(
+        "http://{}/author/{}/posts".format("127.0.0.1:5000", "39345efe95024a8bbe688dc904d906e5"),
+        auth=("user@user.com", "user_password")
+    )
+    print(response.text)
+
+    response = requests.get(
+            "http://{}/author/{}/friends".format("127.0.0.1:5000", "127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5"),
+            auth=("user@user.com", "user_password")
+        )
+        # this should be json of all friend relationship
+    print(response.text)
+    # friends = Friend.objects.all()
+    # for i in friends:
+    #     print(i.friend_id)
+    #
+    # response = requests.get(
+    #     "http://127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5/friends",
+    #     auth=("user@user.com", "user_password")
+    # )
+    # # this should be json of all friend relationship
+    # print(response.text)
+    #
+    # for node in nodes:
+    #
+    #     #deals with friendship
+    #     if Friend.objects.filter(author_id=auth_user).filter(friend_id=node + "/author/" + author_id).exists():
+    #         return True
+    #
+    #     # deals with FOAF
+    #     print(node)
+    #     response = requests.get(
+    #         "http://{}/author/{}/friends".format(node, "127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5"),
+    #         auth=("user@user.com", "user_password")
+    #     )
+    #     # this should be json of all friend relationship
+    #     print(response.text)
+    #     # gets all of author's friend
+    #     author_friends = Friend.objects.filter(author_id=auth_user)
+    #     # for friend_of_author in author_friends:
+    #     #     # getting friends of authors friend
+    #     #     friend_of_authors_friend = Friend.objects.filter(
+    #     #         author_id=friend_of_author.friend_id).values('friend_id')
+    #     #     for friend in friend_of_authors_friend:
+    #     #         print(friend)
+    #     #         if request.user.uid == friend['friend_id']:
+    #     #             print("friends of friends")
+    #     #             return True
+    #     #         else:
+    #     #             print("here")
+    #     #             friends_uuid = friend['friend_id']
+    #     #             if friends_uuid[-1] == "/":
+    #     #                 friends_uuid = friends_uuid[:-1]
+    #     #             friends_uuid = friends_uuid.split("/")[-1]
+    #     #             print("friends_uuid", friends_uuid)
+    #     #             print(node)
+    #     #             response = requests.get(
+    #     #                 "http://{}/author/{}/friends".format(node, friends_uuid),
+    #     #                 auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
+    #     #             )
+    #     #             # this should be json of all friend relationship
+    #     #             print(response)
+    #     #             for remote_friend in response:
+    #     #                 print(remote_friend)
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+
+    return False
