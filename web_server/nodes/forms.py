@@ -6,13 +6,13 @@ from django.contrib.auth.password_validation import validate_password
 class ForeignServerRegisterForm(forms.ModelForm):
 
     foreign_server_hostname = forms.CharField(
-        label="foreign_server_hostname", required=True, max_length=500)
+        label="foreign_server_hostname", required=True, max_length=500, help_text="protocol should be stripped in this field")
     foreign_server_username = forms.CharField(
         label="foreign_server_username", required=True, max_length=500)
     foreign_server_password = forms.CharField(
         label="foreign_server_password", max_length=500, required=True, widget=forms.PasswordInput, validators=[validate_password])
-    foreign_server_api_location = forms.CharField(
-        label="foreign_server_api_location", max_length=500, required=True)
+    foreign_server_api_location = forms.URLField(
+        label="foreign_server_api_location", max_length=500, required=True, help_text="protocol is required for this field ")
 
     username_registered_on_foreign_server = forms.CharField(
         label="username_registered_on_foreign_server", max_length=500, required=False, help_text="optional"

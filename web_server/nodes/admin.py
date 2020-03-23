@@ -21,7 +21,7 @@ class NodeAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ['foreign_server_hostname', 'foreign_server_api_location', 'foreign_server_username', 'foreign_server_password']
+            return ['foreign_server_hostname', 'foreign_server_api_location']
         else:
             return []
 

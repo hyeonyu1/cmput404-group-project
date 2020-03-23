@@ -87,7 +87,6 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
     data["friend"] = friend_info
     json_data = json.dumps(data)
     headers = {'content-type': 'application/json'}
-
     response = requests.post(
         "{}/friendrequest".format(node.foreign_server_api_location.rstrip("/")), headers=headers, auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server), data=json_data)
     return HttpResponse(response.text, status=response.status_code)
@@ -99,7 +98,6 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
 def send_friend_request(request):
     # Make a friend request
     if request.method == 'POST':
-        print(request.get_host())
         # parse request body
         body = request.body.decode('utf-8')
         body = json.loads(body)
@@ -130,7 +128,6 @@ def send_friend_request(request):
             new_request.save()
             # friend request from local author to local author
             if to_host != request.get_host():
-                # TODO: send http request to remote server ()
                 # retrieve basic auth credential from Node table
                 return send_friend_request_to_foreign_friend(body.get("friend"), body.get("author"), to_host)
             return HttpResponse("Friend Request Successfully sent", status=200)
