@@ -43,14 +43,14 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
                 # This code would allow credentials of local authors to remotely authorize,
                 # This use case is not supported for now
 
-                # # for internal request, try to authenticate local Author
-                # user = authenticate(username=uname, password=passwd)
-                # if user is not None:
-                #     if user.is_active:
-                #         login(request, user)
-                #         request.user = user
-                #         if test_func(request.user):
-                #             return view(request, *args, **kwargs)
+                # for internal request, try to authenticate local Author
+                user = authenticate(username=uname, password=passwd)
+                if user is not None:
+                    if user.is_active:
+                        login(request, user)
+                        request.user = user
+                        if test_func(request.user):
+                            return view(request, *args, **kwargs)
 
                 # Check if the credentials are valid for the host requesting them
                 if Node.objects.all().filter(foreign_server_username=uname).exists():
@@ -59,7 +59,7 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
                     if check_password(passwd, entry.foreign_server_password):
                         return view(request, *args, **kwargs)
                     else:
-                        deny_response += " The provided password for yours server authentication was invalid"
+                        deny_response += " The provided password for your server authentication was invalid"
                 else:
                     deny_response += f" There was no registered node with username '{uname}'"
             else:

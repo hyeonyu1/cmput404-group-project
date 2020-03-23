@@ -80,14 +80,16 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
     if not Node.objects.filter(foreign_server_hostname=foreign_server).exists():
         return HttpResponse("Not Authenticated with Remote Server", status=401)
     node = Node.objects.get(foreign_server_hostname=foreign_server)
+
     data = {}
     data["query"] = "friendrequest"
     data["author"] = author_info
     data["friend"] = friend_info
     json_data = json.dumps(data)
+    headers = {'content-type': 'application/json'}
 
     response = requests.post(
-        "http://{}/friendrequest/".format(foreign_server), auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server), data=json_data)
+        "{}/friendrequest".format(node.foreign_server_api_location.rstrip("/")), headers=headers, auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server), data=json_data)
     return HttpResponse(response.text, status=response.status_code)
 
 
