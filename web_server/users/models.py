@@ -65,8 +65,8 @@ class Author(AbstractUser):
 
         """
         return {
-                "id": self.uid,
-                "host": settings.HOSTNAME,
+                "id": self.uid.hex,
+                "host": self.host,
                 "displayName": self.display_name,
                 "url": self.uid,
                 "github": self.github
