@@ -106,14 +106,7 @@ class Post(models.Model):
             "description": self.description,
             "contentType": self.contentType,
             "content": self.content,
-            # @todo this should call whatever serializer exists for authors to be consistent
-            "author": {
-                "id": settings.HOSTNAME + "/author/" + str(self.author.id),
-                "host": settings.HOSTNAME,
-                "displayName": self.author.display_name,
-                "url": settings.HOSTNAME + "/author/" + str(self.author.id),
-                "github": self.author.github
-            },
+            "author": self.author.to_api_object(),
             "categories": [category.name for category in self.categories.all()],
             "count": self.comment_set.count(),
             "size": self.size,

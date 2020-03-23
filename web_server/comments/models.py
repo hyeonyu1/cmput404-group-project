@@ -43,14 +43,7 @@ class Comment(models.Model):
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
         return {
-                    # @todo this should call whatever serializer exists for authors to be consistent
-                    "author": {
-                        "id": settings.HOSTNAME + "/author/" + str(self.author.id),
-                        "host": settings.HOSTNAME,
-                        "displayName": self.author.display_name,
-                        "url": settings.HOSTNAME + "/author/" + str(self.author.id),
-                        "github": self.author.github
-                    },
+                    "author": self.author.to_api_object(),
                     "comment": self.content,
                     "contentType": self.contentType,
                     "published": self.published,

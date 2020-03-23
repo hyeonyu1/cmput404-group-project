@@ -59,3 +59,15 @@ class Author(AbstractUser):
             self.first_name = self.username
             self.last_name = self.username
         super(Author, self).save(*args, **kwargs)
+
+    def to_api_object(self):
+        """
+
+        """
+        return {
+                "id": self.uid,
+                "host": settings.HOSTNAME,
+                "displayName": self.display_name,
+                "url": self.uid,
+                "github": self.github
+            }
