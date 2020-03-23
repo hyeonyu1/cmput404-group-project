@@ -27,37 +27,11 @@ def retrieve_all_public_posts_on_local_server(request):
     :returns: application/json | text/html
     """
     def json_handler(request, posts, pager, pagination_uris):
-        # Use Django's serializers to encode the posts as a python object
-        json_posts = loads(serializers.serialize('json', posts))
-
-        # Explicitly add authors to the serialization
-        author_exclude_fields = ('password',"is_superuser", "is_staff", "groups", "user_permissions")
-        json_authors = loads(serializers.serialize('json_e', [post.author for post in posts], exclude_fields=author_exclude_fields))
-        for i in range(0, len(json_posts)):
-            json_posts[i]['fields']['author'] = json_authors[i]['fields']  # avoid inserting the meta data
-
-            # As per the specification, get the 5 most recent comments
-            comments = Comment.objects.filter(parentPost=posts[i])[:5]
-            comments_json = loads(serializers.serialize('json', comments))
-            comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
-            # Explicitly add authors to the comments
-            for j in range(0, len(comments_json)):
-                comments_json[j]['fields']['author'] = comments_author_json[i]['fields']  # avoid inserting meta data
-            # Strip meta data from each comment
-            comments_json = [comment['fields'] for comment in comments_json]
-            json_posts[i]['fields']['comments'] = comments_json
-
-
-        # And filter out the meta data from the top level object
-        for post in json_posts:
-            post['fields']['id'] = post['pk']
-        json_posts = [post['fields'] for post in json_posts]
-
         output = {
             "query": "posts",
             "count": pager.count,
             "size": len(posts),
-            "posts": json_posts
+            "posts": [post.to_api_object() for post in posts]
         }
         (prev_uri, next_uri) = pagination_uris
         if prev_uri:
