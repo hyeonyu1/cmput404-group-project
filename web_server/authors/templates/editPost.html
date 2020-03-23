@@ -39,7 +39,7 @@
 
             <!-- Select for choosing visibility of post -->
             <label for="visi">Choose the Visibility of your post:</label>
-            <select id="visi" form="postForm" name="visibility" onchange="visibilityChanged()" onload="visibilityChanged()">
+            <select id="visi" form="postForm" name="visibility" onchange="visibilityChanged()">
                 {% if post.visibility == "PUBLIC" %}
                     <option value="PUBLIC" selected>Public</option>
                     <option value="FRIENDS">Friends</option>
@@ -78,7 +78,7 @@
                 the server and can specify certain people -->
             <div id="visibleTo" style="visibility: hidden;">
                 <label for="visibleFor">Who can view your post:(ctrl+click to select multiple)</label>
-                <select id="visibleFor" form="postForm" name="visibleTo" value={{ post.visibleTo }}>
+                <select id="visibleFor" form="postForm" name="visibleTo">
                     <option>No users available to choose from</option>
                 </select>
             </div>
@@ -86,6 +86,8 @@
             <!-- type="submit" form="postForm" -->
             <button id="editButton" onclick="editPost()">Edit</button>
         </div>
+        
+            
         <script type="text/javascript">
             function editPost() {
                 var formData = new FormData(document.querySelector('#postForm'));
@@ -103,5 +105,13 @@
             }
         </script>
         <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
+        <script type="text/javascript">
+            //creates list of uids of selected users the post is visibleTo
+            var people = []
+            {% for person in post.visibleTo.all %}
+                people.push("{{ person.uid }}")
+            {% endfor %} 
+            window.onload = visibilityChanged(people);
+        </script>
     </div>
 {% endblock %}

@@ -23,17 +23,19 @@ function get_all_users(selectedUsers){
 		})
 		.then(data => {
 			let select = document.querySelector('#visibleFor');
-			
-			console.log(selectedUsers);
 			select.multiple = true;
 			select.innerHTML = ''; // Clear out the current options
 			for(let author of data.data){
 				if(!author.uid) continue;
-				console.log("AUTHOR ID", author.uid)
+				//console.log("AUTHOR ID", author.uid, author)
 				let opt = document.createElement('option');
 				opt.value = author.uid;
 				opt.innerText = (author.display_name || author.first_name + author.last_name || "NO NAME")
 					+ " [" + author.uid.replace(/http[s]+:\/\//,'').slice(0, 10) + '...' + author.uid.slice(-5) + "]";
+				
+				if (selectedUsers.includes(author.uid)){
+					opt.selected = 'selected';
+				}
 				select.appendChild(opt)
 			}
 		})
