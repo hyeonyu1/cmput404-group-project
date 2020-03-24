@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.urls import reverse
 from django.template import RequestContext
+from django.conf import settings
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
@@ -209,8 +210,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
         #: "A post title about a post about web dev",
         new_post.title = post['title']
-        # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
-        # new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
+        #new_post.source      = settings.HOSTNAME+"/posts/"       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
+        #new_post.origin      = settings.HOSTNAME+"/posts/"      #: "http://whereitcamefrom.com/posts/zzzzz"
         # : "This post discusses stuff -- brief",
         new_post.description = post['description']
         new_post.contentType = post['contentType']  # : "text/plain",
@@ -813,6 +814,14 @@ def post_creation_page(request):
     :return:
     """
     return render(request, 'posting.html')
+
+def image_upload_page(request):
+    """
+    Provide page that will allow a user to upload an image
+    :param request:
+    :return:
+    """
+    return render(request, 'imageUpload.html')
 
 def get_all_authors(request):
     """
