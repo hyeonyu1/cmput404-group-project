@@ -207,6 +207,8 @@ def fetch_public_posts_from_nodes(request):
             # Remove trailing slash if there is one
             api_url = api_url[:-1]
         api_url += "/posts"
+        if node.append_slash:
+            api_url += "/"
 
         response = requests.get(api_url,
                                 auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
@@ -216,7 +218,15 @@ def fetch_public_posts_from_nodes(request):
                   f"received response code {response.status_code} at api endpoint: {api_url}")
             continue
 
-        json = response.json()
+        try:
+            json = response.json()
+        except Exception as e:
+            print("Encountered error while decoding json: " + str(e))
+            print("Response was: ")
+            print(response.content)
+            print("Ignoring...")
+            continue
+
         for post in json['posts']:
             output['count'] += 1
             output['posts'].append(post)

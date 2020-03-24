@@ -38,6 +38,8 @@ class Node(models.Model):
     # As a server admin, I want to share or not share posts with users on other servers. #6
     post_share = models.BooleanField(default=True)
 
+    append_slash = models.BooleanField(default=False)
+
     def save(self, *args, **kwargs):
         # make_password hashes the password
         self.foreign_server_password = make_password(
