@@ -46,40 +46,46 @@ def retrieve_all_public_posts_on_local_server(request):
 
         return render(request, 'posts/stream.html')
 
-
     endpoint = Endpoint(request,
                         Post.objects.filter(visibility="PUBLIC"),
                         [
                             PagingHandler("GET", "text/html", html_handler),
-                            PagingHandler("GET", "application/json", json_handler)
+                            PagingHandler(
+                                "GET", "application/json", json_handler)
                         ])
 
     return endpoint.resolve()
 
 # access to a single post with id = {POST_ID}
-# http://service/posts/{POST_ID} 
+# http://service/posts/{POST_ID}
+
+
 def retrieve_single_post_with_id(request, post_id):
     def json_handler(request, posts, pager, pagination_uris):
         # Use Django's serializers to encode the posts as a python object
         json_posts = loads(serializers.serialize('json', posts))
 
         # Explicitly add authors to the serialization
-        author_exclude_fields = ('password',"is_superuser", "is_staff", "groups", "user_permissions")
-        json_authors = loads(serializers.serialize('json_e', [post.author for post in posts], exclude_fields=author_exclude_fields))
+        author_exclude_fields = (
+            'password', "is_superuser", "is_staff", "groups", "user_permissions")
+        json_authors = loads(serializers.serialize(
+            'json_e', [post.author for post in posts], exclude_fields=author_exclude_fields))
         for i in range(0, len(json_posts)):
-            json_posts[i]['fields']['author'] = json_authors[i]['fields']  # avoid inserting the meta data
+            # avoid inserting the meta data
+            json_posts[i]['fields']['author'] = json_authors[i]['fields']
 
             # As per the specification, get the 5 most recent comments
             comments = Comment.objects.filter(parentPost=posts[i])[:5]
             comments_json = loads(serializers.serialize('json', comments))
-            comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
+            comments_author_json = loads(serializers.serialize('json_e', [
+                                         comment.author for comment in comments], exclude_fields=author_exclude_fields))
             # Explicitly add authors to the comments
             for j in range(0, len(comments_json)):
-                comments_json[j]['fields']['author'] = comments_author_json[i]['fields']  # avoid inserting meta data
+                # avoid inserting meta data
+                comments_json[j]['fields']['author'] = comments_author_json[i]['fields']
             # Strip meta data from each comment
             comments_json = [comment['fields'] for comment in comments_json]
             json_posts[i]['fields']['comments'] = comments_json
-
 
         # And filter out the meta data from the top level object
         for post in json_posts:
@@ -100,7 +106,7 @@ def retrieve_single_post_with_id(request, post_id):
 
     def html_handler(request, posts, pager, pagination_uris):
         post = Post.objects.get(id=post_id)
-        #print(post.categories.all())
+        # print(post.categories.all())
         # post = get_object_or_404(Post, pk=post_id)
         # for c in post.categories:
         #     print(c)
@@ -111,7 +117,8 @@ def retrieve_single_post_with_id(request, post_id):
                         Post.objects.filter(id=post_id),
                         [
                             PagingHandler("GET", "text/html", html_handler),
-                            PagingHandler("GET", "application/json", json_handler)
+                            PagingHandler(
+                                "GET", "application/json", json_handler)
                         ])
 
     return endpoint.resolve()
@@ -120,15 +127,18 @@ def retrieve_single_post_with_id(request, post_id):
 def comments_retrieval_and_creation_to_post_id(request, post_id):
     def get_handler(request, posts, pager, pagination_uris):
         # Explicitly add authors to the serialization
-        author_exclude_fields = ('password',"is_superuser", "is_staff", "groups", "user_permissions")
+        author_exclude_fields = (
+            'password', "is_superuser", "is_staff", "groups", "user_permissions")
 
         # Get the comments
         comments = Comment.objects.filter(parentPost=posts[0])
         comments_json = loads(serializers.serialize('json', comments))
-        comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
+        comments_author_json = loads(serializers.serialize('json_e', [
+                                     comment.author for comment in comments], exclude_fields=author_exclude_fields))
         # Explicitly add authors to the comments
         for j in range(0, len(comments_json)):
-            comments_json[j]['fields']['author'] = comments_author_json[j]['fields']  # avoid inserting meta data
+            # avoid inserting meta data
+            comments_json[j]['fields']['author'] = comments_author_json[j]['fields']
         # Strip meta data from each comment
         for comment in comments_json:
             comment['fields']['id'] = comment['pk']
@@ -159,7 +169,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # because request.POST only accepts form, but here is json format.
         # change new_comment.comment to new_comment.content,
         # because that's how it defined in comment model.
-        
+
         try:
             body = request.body.decode('utf-8')
             comment_info = loads(body)
@@ -168,7 +178,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
-            new_comment.author = Author.objects.filter(id=comment_info['author']['id']).first()
+            new_comment.author = Author.objects.filter(
+                id=comment_info['author']['id']).first()
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['type'] = True
@@ -180,11 +191,10 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         finally:
             return JsonResponse(output)
 
-
     return Endpoint(request, Post.objects.filter(id=post_id), [
-                        Handler("POST", "application/json", post_handler),
-                        PagingHandler("GET", "application/json", get_handler)
-                    ]).resolve()
+        Handler("POST", "application/json", post_handler),
+        PagingHandler("GET", "application/json", get_handler)
+    ]).resolve()
 
 
 @login_required  # Local server usage only
@@ -211,7 +221,8 @@ def fetch_public_posts_from_nodes(request):
             api_url += "/"
 
         response = requests.get(api_url,
-                                auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
+                                auth=(node.username_registered_on_foreign_server,
+                                      node.password_registered_on_foreign_server),
                                 headers={'Accept': 'application/json'})
         if response.status_code != 200:
             print(f"Failure to get posts from {node.foreign_server_hostname}, "
@@ -237,5 +248,4 @@ def fetch_public_posts_from_nodes(request):
             break
 
     return JsonResponse(output, status=200)
-
 

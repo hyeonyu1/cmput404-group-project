@@ -11,7 +11,7 @@ class ForeignServerRegisterForm(forms.ModelForm):
         label="foreign_server_username", required=True, max_length=500)
     foreign_server_password = forms.CharField(
         label="foreign_server_password", max_length=500, required=True, widget=forms.PasswordInput, validators=[validate_password])
-    foreign_server_api_location = forms.URLField(
+    foreign_server_api_location = forms.CharField(
         label="foreign_server_api_location", max_length=500, required=True, help_text="protocol is required for this field ")
 
     username_registered_on_foreign_server = forms.CharField(
