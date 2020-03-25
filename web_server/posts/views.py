@@ -14,6 +14,7 @@ from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Ha
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
 import requests
+import base64
 
 
 # @login_required
@@ -100,10 +101,11 @@ def retrieve_single_post_with_id(request, post_id):
 
     def html_handler(request, posts, pager, pagination_uris):
         post = Post.objects.get(id=post_id)
-        #print(post.categories.all())
-        # post = get_object_or_404(Post, pk=post_id)
-        # for c in post.categories:
-        #     print(c)
+        if post.contentType == post.TYPE_PNG or post.contentType == post.TYPE_JPEG:
+            # Note, this REQUIRES that the content be in base64 format.
+            response = HttpResponse(base64.b64decode(post.content), status=200)
+            response['Content-Type'] = post.contentType
+            return response
         return render(request, 'posts/post.html', {'post': post})
 
     # Get a single post
