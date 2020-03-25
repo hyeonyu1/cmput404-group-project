@@ -144,11 +144,11 @@
 
             //retrieve posts visible to currently authenticated user
             get_post() {
-
                 window.axios.get("/author/posts").then((response) => {
                     const posts_list = response.data['posts'];
                     posts_list.forEach((post)=>{
-                        post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        const date = new Date(post.published);
+                        post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                         this.posts.push(post);
                     });
                     this.next = response.data["next"];
@@ -162,7 +162,8 @@
                         const data = response.data["posts"];
                         this.next = response.data["next"];
                         data.forEach((post) => {
-                            post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                            const date = new Date(post.published);
+                            post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                             this.posts.push(post);
                         })
                     })
@@ -178,7 +179,8 @@
                     console.log(response.data);
                     const posts_list = response.data['posts'];
                     posts_list.forEach((post)=>{
-                        post.published=moment(post.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        const date = new Date(post.published);
+                        post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                         this.foreign_posts.push(post);
                     })
 
