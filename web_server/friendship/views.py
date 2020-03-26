@@ -128,86 +128,92 @@ def retrieve_friend_request_of_author_id(request, author_id):
 # FOAF verification involves the 3 hosts of the 3 friends A->B->C
 # assuming A B C reside on different hosts.
 # and in the same server
+
+# CHANGE PASSWORD
 def FOAF_verification(request, author_id):
 
     auth_user = request.user.uid
+    own_node = request.get_host()
+    print(auth_user)
 
-    # nodes = [request.get_host()]
-    nodes = []
+    print("")
+    # getting all the nodes
+    nodes = [own_node]
     for node in Node.objects.all():
         nodes.append(node.foreign_server_hostname)
     print("nodes = ", nodes)
 
-    response = requests.get(
-        "http://{}/author/{}/posts".format("127.0.0.1:5000", "39345efe95024a8bbe688dc904d906e5"),
-        auth=("user@user.com", "user_password")
-    )
-    print(response.text)
+    for node in nodes:
+        author = node + "/author/" + author_id
+        print("\n___________________\n", author)
+        # If the author is a friend of auth user return True
+        if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
+            print("Author is a friend")
+            return True
 
-    response = requests.get(
-            "http://{}/author/{}/friends".format("127.0.0.1:5000", "127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5"),
-            auth=("user@user.com", "user_password")
-        )
-        # this should be json of all friend relationship
-    print(response.text)
-    # friends = Friend.objects.all()
-    # for i in friends:
-    #     print(i.friend_id)
-    #
-    # response = requests.get(
-    #     "http://127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5/friends",
-    #     auth=("user@user.com", "user_password")
-    # )
-    # # this should be json of all friend relationship
-    # print(response.text)
-    #
-    # for node in nodes:
-    #
-    #     #deals with friendship
-    #     if Friend.objects.filter(author_id=auth_user).filter(friend_id=node + "/author/" + author_id).exists():
-    #         return True
-    #
-    #     # deals with FOAF
-    #     print(node)
-    #     response = requests.get(
-    #         "http://{}/author/{}/friends".format(node, "127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5"),
-    #         auth=("user@user.com", "user_password")
-    #     )
-    #     # this should be json of all friend relationship
-    #     print(response.text)
-    #     # gets all of author's friend
-    #     author_friends = Friend.objects.filter(author_id=auth_user)
-    #     # for friend_of_author in author_friends:
-    #     #     # getting friends of authors friend
-    #     #     friend_of_authors_friend = Friend.objects.filter(
-    #     #         author_id=friend_of_author.friend_id).values('friend_id')
-    #     #     for friend in friend_of_authors_friend:
-    #     #         print(friend)
-    #     #         if request.user.uid == friend['friend_id']:
-    #     #             print("friends of friends")
-    #     #             return True
-    #     #         else:
-    #     #             print("here")
-    #     #             friends_uuid = friend['friend_id']
-    #     #             if friends_uuid[-1] == "/":
-    #     #                 friends_uuid = friends_uuid[:-1]
-    #     #             friends_uuid = friends_uuid.split("/")[-1]
-    #     #             print("friends_uuid", friends_uuid)
-    #     #             print(node)
-    #     #             response = requests.get(
-    #     #                 "http://{}/author/{}/friends".format(node, friends_uuid),
-    #     #                 auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
-    #     #             )
-    #     #             # this should be json of all friend relationship
-    #     #             print(response)
-    #     #             for remote_friend in response:
-    #     #                 print(remote_friend)
-    #
-    #
-    #
-    #
-    #
-    #
-    #
+        # not friends so check for FOAF
+        else:
+            # if the author is on the same host as auth user
+            if node == own_node:
+                author_friends = Friend.objects.filter(author_id=author)
+                for friend in author_friends:
+                    # getting the node of the friend
+                    friend_node = friend.friend_id.split("/author/")[0]
+                    friends_uuid = friend.friend_id.split("/author/")[-1]
+                    print(friend_node, friends_uuid)
+                    # if friend of the author is on the same host as the auth user
+                    # A -> A -> A
+                    if friend_node == own_node:
+                        print("Author's friend is in same node")
+                        # E.g Test <-> Lara <-> Bob
+                        if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
+                            print("FOAF")
+                            return True
+                        else:
+                            print("Not FOAF")
+                            return False
+
+                    # Since the friend is not on the same host as the auth user make a request to get friends from the other node
+                    # A -> A -> B
+                    else:
+                        print("Author's friend is in a different node so making a get request")
+                        username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+                        password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+                        response = requests.get(
+                            "http://{}/author/{}/friends".format(node, "{}/author/{}".format(node, author_id)),
+                            auth=(username, password)
+                        )
+                        friends_list = response.json()
+
+                        for user in friends_list["authors"]:
+                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                print("FOAF")
+                                return True
+                            else:
+                                print("Not FOAF")
+                                return False
+
+            # author's host is different from auth user
+            else:
+                print("Author is in different Node so making a get request")
+                username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+                password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+                print(node, author)
+                response = requests.get(
+                    "http://{}/author/{}/friends".format(node, author),
+                    auth=(username, password)
+                )
+                friends_list = response.json()
+
+                print(friends_list)
+                for user in friends_list["authors"]:
+                    # E.g Test <-> Lara <-> User
+                    if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                        print("FOAF")
+                        return True
+                    else:
+                        print("Not FOAF")
+                        return False
 
     return False
+
