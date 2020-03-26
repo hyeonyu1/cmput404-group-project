@@ -9,6 +9,9 @@
             {% csrf_token %}
             <input type="hidden" name="author" value={{ author }}>
 
+
+            <input id="upload-file" type="file" accept="image/jpeg, image/png" />
+
             <label for="title">Title</label>
             <textarea id="title" name="title" required></textarea>
 
@@ -53,5 +56,86 @@
         <button type="submit" form="postForm" id="postButton">Post</button>
 
         <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
+        <script>
+            /**
+             * Content derivative from:
+             *  https://usefulangle.com/post/67/pure-javascript-ajax-file-upload-showing-progess-percent
+             * Available under the MIT license
+             */
+            document.querySelector('#upload-file').addEventListener('change', function() {
+                // This is the file user has chosen
+                var file = this.files[0];
+
+                // Allowed types
+                var mime_types = [ 'image/jpeg', 'image/png' ];
+
+                // Validate MIME type
+                if(mime_types.indexOf(file.type) == -1) {
+                    alert('Error : Incorrect file type');
+                    return;
+                }
+
+                // Max 2 Mb allowed
+                if(file.size > 2*1024*1024) {
+                    alert('Error : Exceeded size 2MB');
+                    return;
+                }
+
+                // Validation is successful
+                // This is the name of the file
+                alert('You have chosen the file ' + file.name);
+
+                var data = new FormData();
+
+                var request = new XMLHttpRequest();
+
+                // File selected by the user
+                // In case of multiple files append each of them
+                data.append('file', document.querySelector('#upload-file').files[0]);
+
+                data.append('title', '');
+                data.append('description', '');
+                data.append('content', '');
+                data.append('contentType', file.type);
+                data.append('visibility', "PRIVATE");
+                data.append('visibleTo', "");
+                data.append('categories', "");
+                data.append('unlisted', "true");
+
+
+                // AJAX request finished
+                request.addEventListener('load', function(e) {
+                    // request.response will hold the response from the server
+                    console.log(request.response);
+                });
+
+                // Upload progress on request.upload
+                request.upload.addEventListener('progress', function(e) {
+                    var percent_complete = (e.loaded / e.total)*100;
+
+                    // Percentage of upload completed
+                    // console.log(percent_complete);
+                });
+
+                // When the upload is complete is should respond
+                request.onreadystatechange = function() {
+                    if (request.readyState === 4) {
+                        if(request.response.success === "true"){
+                            let url = "{% url 'post' '00000000000000000000000000000000'%}".replace(/00000000000000000000000000000000\//, "");
+                            document.querySelector('#content').value += (`![This is my uploaded image](${url}${request.response.msg})`);
+                        } else {
+                            alert(`We were unable to upload your image, error: ${request.response.msg}`)
+                        }
+                    }
+                };
+
+                // If server is sending a JSON response then set JSON response type
+                request.responseType = 'json';
+
+                // Send POST request to the server side script
+                request.open('post', '/author/posts/');
+                request.send(data);
+            });
+        </script>
     </div>
 {% endblock %}
