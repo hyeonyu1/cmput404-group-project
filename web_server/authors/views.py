@@ -374,7 +374,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": str(post.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -453,7 +453,7 @@ def get_comments(post_id):
             "id": str(comment.id),
             "contentType": str(comment.contentType),
             "comment": str(comment.content),
-            "published": str((comment.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+            "published": str(comment.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
             "author": {
                 "id": str(author.uid),
                 "email": str(author.email),
@@ -683,7 +683,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": str(post.published.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
