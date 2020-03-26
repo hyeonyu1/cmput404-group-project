@@ -53,7 +53,7 @@
 }
 
 #categories {
-  height:160pt;
+  height:192pt;
   width: 80%;
   font-size: 12pt;
   text-align: left;
@@ -62,7 +62,7 @@
 }
 
 #contentType {
-  width: 22%;
+  width: 27%;
   font-size: 12pt;
   border-radius: 3pt;
 }

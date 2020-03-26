@@ -28,5 +28,4 @@ urlpatterns = [
 
     # Webpage URLS
     path('create_post', views.post_creation_page, name='post_create_form'),
-    path('upload_image', views.image_upload_page, name='image_upload_form')
 ]
