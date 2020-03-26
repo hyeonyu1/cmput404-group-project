@@ -16,12 +16,18 @@ from django.template import RequestContext
 from django.conf import settings
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
+from social_distribution.utils.basic_auth import validate_remote_server_authentication
+
+from django.conf import settings
 
 
 import json
 import datetime
 import sys
 import re
+import base64
+
+
 # used for stripping url protocol
 url_regex = re.compile(r"(http(s?))?://")
 
@@ -140,6 +146,7 @@ def update_author_profile(request, author_id):
 
 # Ida Hou
 # service/author/{author_id} endpoint handler
+@validate_remote_server_authentication()
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
@@ -207,24 +214,51 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         new_post = Post()
 
+        # Post ID's are created automatically in the database
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
+
         #: "A post title about a post about web dev",
         new_post.title = post['title']
-        #new_post.source      = settings.HOSTNAME+"/posts/"       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
-        #new_post.origin      = settings.HOSTNAME+"/posts/"      #: "http://whereitcamefrom.com/posts/zzzzz"
-        # : "This post discusses stuff -- brief",
-        new_post.description = post['description']
-        new_post.contentType = post['contentType']  # : "text/plain",
-        new_post.content = post['content']      #: "stuffs",
+
+        # Source and origin are the same, and depend on the ID so we wait until after the post gets saved to
+        # generate this URLS
+        # new_post.source    = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
+        # new_post.origin    = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
+
+        new_post.description = post['description']  # : "This post discusses stuff -- brief",
+
+        # If the post is an image, the content would have been provided as a file along with the upload
+        if len(request.FILES) > 0:
+            file_type = request.FILES['file'].content_type
+            allowed_file_type_map = {
+                'image/png': Post.TYPE_PNG,
+                'image/jpg': Post.TYPE_JPEG
+            }
+
+            if file_type not in allowed_file_type_map.keys():
+                return JsonResponse({
+                    'success': 'false',
+                    'msg': f'You uploaded an image with content type: {file_type}, but only one of {allowed_file_type_map.keys()} is allowed'
+                })
+
+            new_post.contentType = allowed_file_type_map[file_type]  # : "text/plain"
+            new_post.content = base64.b64encode(request.FILES['file'].read()).decode('utf-8')
+        else:
+            new_post.contentType = post['contentType']  # : "text/plain",
+            new_post.content = post['content']      #: "stuffs",
+
         new_post.author = request.user         # the authenticated user
 
         # Categories added after new post is saved
-        #: 1023, initially the number of comments is zero
-        new_post.count = 0
-        new_post.size = size                 #: 50,
+
+        new_post.count = 0                  #: 1023, initially the number of comments is zero
+        new_post.size = size                 #: 50, the actual size of the post in bytes
+
+        # This is not a property that gets stored, but rather a link to the comments of this post that should
+        # be generated on the fly.
         # new_post.next        = post['next']         #: "http://service/posts/{post_id}/comments",
 
-        # @todo allow adding comments to new post
+        # We do not permit adding comments at the same time a post is created, so this field is not created
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
 
         current_tz = pytz.timezone('America/Edmonton')
@@ -233,8 +267,13 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.published = str(datetime.datetime.now())
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
-        # new_post.unlisted = post['unlisted']       #: true
+        new_post.unlisted = True if 'unlisted' in post and post['unlisted'] == 'true' else False       #: true
 
+        new_post.save()
+
+        # Now we can set source and origin
+        new_post.source = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
+        new_post.origin = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
         new_post.save()
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
@@ -256,14 +295,22 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return redirect("/")
+        if len(request.FILES) > 0:
+            # If they uploaded a file this is an ajax call and we need to return a JSON response
+            return JsonResponse({
+                'success': 'true',
+                'msg': new_post.id.hex
+            })
+        else:
+            return redirect("/")
 
     def retrieve_posts(request):
         # own post
-        own_post = Post.objects.filter(author_id=request.user.uid)
+        own_post = Post.objects.filter(
+            author_id=request.user.uid, unlisted=False)
 
         # visibility =  PUBLIC
-        public_post = Post.objects.filter(visibility="PUBLIC")
+        public_post = Post.objects.filter(visibility="PUBLIC", unlisted=False)
 
         # visibility = FRIENDS
         users_friends = []
@@ -271,7 +318,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         for friend in friends:
             users_friends.append(friend.friend_id)
         friend_post = Post.objects.filter(
-            author__in=users_friends, visibility="FRIENDS")
+            author__in=users_friends, visibility="FRIENDS", unlisted=False)
 
         # visibility = FOAF
         FOAF_post_authors = []
@@ -289,15 +336,16 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # private to FOAF is jus to FOAF and friends
         visible_FOAF_author = visible_FOAF_author + users_friends
         foaf_post = Post.objects.filter(
-            author__in=visible_FOAF_author, visibility="FOAF")
+            author__in=visible_FOAF_author, visibility="FOAF", unlisted=False)
 
         # visibility = PRIVATE
-        private_post = Post.objects.filter(visibleTo=request.user.uid)
+        private_post = Post.objects.filter(
+            visibleTo=request.user.uid, unlisted=False)
 
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
-            author__host=local_host, visibility="SERVERONLY")
+            author__host=local_host, visibility="SERVERONLY", unlisted=False)
 
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
@@ -573,17 +621,18 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         author_uid = host + "/author/" + str(id_of_author)
 
         if author_uid == request.user.uid:
-            visible_post = Post.objects.filter(author=author_uid)
+            visible_post = Post.objects.filter(
+                author=author_uid, unlisted=False)
 
         else:
             # visibility =  PUBLIC
             public_post = Post.objects.filter(
-                author=author, visibility="PUBLIC")
+                author=author, visibility="PUBLIC", unlisted=False)
 
             # visibility = FRIENDS
             if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
                 friend_post = Post.objects.filter(
-                    author=author, visibility__in=["FRIENDS", "FOAF"])
+                    author=author, visibility__in=["FRIENDS", "FOAF"], unlisted=False)
             else:
                 friend_post = Post.objects.none()
 
@@ -600,18 +649,18 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             if foaf:
                 foaf_post = Post.objects.filter(
-                    author=author, visibility="FOAF")
+                    author=author, visibility="FOAF", unlisted=False)
             else:
                 foaf_post = Post.objects.none()
 
             # visibility = PRIVATE
             private_post = Post.objects.filter(
-                author=author, visibleTo=request.user.uid)
+                author=author, visibleTo=request.user.uid, unlisted=False)
 
             # visibility = SERVERONLY
             if request.user.host == author.host:
                 server_only_post = Post.objects.filter(
-                    author=author, visibility="SERVERONLY")
+                    author=author, visibility="SERVERONLY", unlisted=False)
             else:
                 server_only_post = Post.objects.none()
 
@@ -814,14 +863,6 @@ def post_creation_page(request):
     :return:
     """
     return render(request, 'posting.html')
-
-def image_upload_page(request):
-    """
-    Provide page that will allow a user to upload an image
-    :param request:
-    :return:
-    """
-    return render(request, 'imageUpload.html')
 
 def get_all_authors(request):
     """

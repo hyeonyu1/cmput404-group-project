@@ -4,7 +4,9 @@
 {% load static %}
 {% load show_markdown %}
 
-<div class="container-fluid">
+<script src="{% static 'js/vue-markdown.js' %}"></script>
+
+<div id="app" class="container-fluid">
      <div class="row">
          <div class="col-sm-2"></div>
 
@@ -75,26 +77,55 @@
 
              <hr>
 
-             <h4>Leave a Comment:</h4>
-
-             <form role="form" method="POST" action="{% url 'get_or_add_comment' post.id %}">
-                 <div class="form-group">
-                     <textarea class="form-control" rows="3" required></textarea>
+             <!-- This part is used to allow users leave comments and choose types(markdown/plaintext).-->
+             <div class="form-group">
+                 <div class="d-flex w-100 justify-content-between">
+                     <h4>Leave a Comment:</h4>
+                     <div class="row">
+                        <div class="col-md-15 mr-3">
+                            <select class="browser-default custom-select">
+                                <option @click="app.set_contentType('text/plain')">Plaintext</option>
+                                <option @click="app.set_contentType('text/markdown')">Markdown</option>
+                            </select>
+                        </div>
+                     </div>
                  </div>
-                 <button type="submit" class="btn btn-light">Submit</button>
-             </form>
+                 <div class="form-group">
+                     <textarea class="form-control" rows="3" required v-model="content"></textarea>
+                 </div>
+                 <button type="submit"  @click="app.add_comments('{{ post.id }}')" class="btn btn-light">Submit</button>
+             </div>
 
+             <!-- This part is used to show all comments under this post.-->
              <p>Comments:</p>
              <div class="row">
-                 <div class="col-sm-10">
-                     <h4>Phoebe <small>time</small></h4>
-                     <p>hardcode comment</p>
-                 </div>
+                 <div class="col-sm-10" >
+                     <comment-list
+                     v-for="comment in comments"
+                     v-bind:comment="comment"
+                     :contentType="contentType"
+                     >
+                     </comment-list>
+                </div>
              </div>
          </div>
-         <div class="col-sm-2"></div>
+         <div class="col-sm-2">
+         </div>
     </div>
 </div>
+
+<!-- This is a template to list all comments.-->
+<template id="list-comment">
+    <div>
+        <div>
+            <a v-bind:href="'/user/profile/' + comment.author.id.replace(/[-]/g,'')">[[comment.author.first_name + ' ' + comment.author.last_name]]</a>
+            <small>[[comment.published]]</small>
+        </div>
+        <vue-markdown v-if="comment.contentType === 'text/markdown'">[[comment.content]]</vue-markdown>
+        <p v-else>[[comment.content]]</p>
+        <br>
+    </div>
+</template>
 
 <script>
     function delete_post() {
@@ -106,13 +137,101 @@
             body: JSON.stringify({
                 post_id: "{{ post.id }}"
             })
-        }).then(response => {
-            if (response.status == 200) {
-                window.location.href = "{% url "stream" %}"
+        })
+        .then(response=>{
+            if (response.status == 200){
+                window.location.href = "{% url 'stream' %}"
             } else {
                 alert("Unable to delete post")
             }
         })
+    };
+
+    Vue.component('comment-list', {
+        delimiters: ['[[', ']]'],
+        props: ['comment','contentType' ],
+        template: '#list-comment'
+    });
+
+    class Comment{
+        constructor(comment){
+            this.contentType = comment['contentType'];
+            this.content = comment['content'];
+            this.published = comment['published'];
+            this.author = comment['author'];
+            this.commentId = comment['id'];
+            this.uid = comment['uid'];
+        }
+
     }
+    Vue.use(VueMarkdown);
+
+    var app = new Vue({
+        el: '#app',
+        delimiters: ['[[', ']]'],
+        data() {
+           return {
+               'comments': [],
+               'content':'',
+               'contentType':''
+           }
+        },
+        methods:{
+            // Retrieve all comments under the current post.
+            get_comments(post_id){
+                let url = 'comments/';
+                window.axios.get(url).then((response) =>{
+                    for(let item of response.data['comments']){
+                        let comment = new Comment(item);
+                        comment.published=moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        this.comments.push(comment);
+                    }
+                });
+            },
+
+            add_comments(post_id){
+                //Add comments, if status code is 200, push this comment into comments(list)
+                let url = 'comments/';
+                let comment = new Comment({
+                        'content':this.content,
+                        'published':new Date(),
+                        'author':{
+                            'id':'{{user.id}}',
+                            'first_name': '{{user.first_name}}',
+                            'last_name':'{{user.last_name}}',
+                            'uid': '{{user.id.hex}}'
+                        },
+                        'contentType':this.contentType,
+                        'commentId': undefined
+                    });
+
+                window.axios.post(url,{
+                    'comment':{
+                        'comment': comment.content,
+                        'published': comment.published,
+                        'author': { "id": comment.author.id },
+                        'contentType': comment.contentType
+                    }
+                }).then((response) => {
+                    alert(response.data['message']);
+                    if( response.data['type']){
+                        comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        this.comments.push(comment);
+                    }
+                })
+            },
+
+            //Set comments types: markdown/plaintext
+            set_contentType(type){
+                this.contentType=type;
+            }
+        },
+         created() {
+            this.get_comments("{{ post.id }}")
+         }
+
+    });
+
 </script>
+
 {% endblock %}
