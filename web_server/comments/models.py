@@ -2,6 +2,8 @@ from django.db import models
 from users.models import Author
 from posts.models import Post
 
+from django.conf import settings
+
 
 from uuid import uuid4
 
@@ -35,3 +37,15 @@ class Comment(models.Model):
         # Number of characters to include as snippet before cutting off with elipsis
         snippet_length = 15
         return f'{self.author} commented "{self.content[:snippet_length]}{"..." if len(self.content) >= snippet_length else ""}"'
+
+    def to_api_object(self):
+        """
+        Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
+        """
+        return {
+                    "author": self.author.to_api_object(),
+                    "comment": self.content,
+                    "contentType": self.contentType,
+                    "published": self.published,
+                    "id": str(self.id.hex)
+                }

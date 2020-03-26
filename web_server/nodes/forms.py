@@ -26,7 +26,10 @@ class ForeignServerRegisterForm(forms.ModelForm):
     post_share = forms.BooleanField(
         label="post_share", required=False, widget=forms.CheckboxInput)
 
+    append_slash = forms.BooleanField(
+        label="append_slash", required=False, widget=forms.CheckboxInput)
+
     class Meta:
         model = Node
         fields = ['foreign_server_hostname', 'foreign_server_username', 'foreign_server_password',  'foreign_server_api_location', 'username_registered_on_foreign_server',
-                  'password_registered_on_foreign_server', 'image_share', 'post_share']
+                  'password_registered_on_foreign_server', 'image_share', 'post_share', 'append_slash']

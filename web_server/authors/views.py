@@ -18,6 +18,8 @@ from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 from friendship.views import FOAF_verification
 
+from django.conf import settings
+
 
 import json
 import datetime
@@ -209,24 +211,32 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         new_post = Post()
 
+        # Post ID's are created automatically in the database
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
+
         #: "A post title about a post about web dev",
         new_post.title = post['title']
-        # new_post.source      = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
-        # new_post.origin      = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
-        # : "This post discusses stuff -- brief",
-        new_post.description = post['description']
+
+        # Source and origin are the same, and depend on the ID so we wait until after the post gets saved to
+        # generate this URLS
+        # new_post.source    = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
+        # new_post.origin    = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
+
+        new_post.description = post['description']  # : "This post discusses stuff -- brief",
         new_post.contentType = post['contentType']  # : "text/plain",
         new_post.content = post['content']      #: "stuffs",
         new_post.author = request.user         # the authenticated user
 
         # Categories added after new post is saved
-        #: 1023, initially the number of comments is zero
-        new_post.count = 0
-        new_post.size = size                 #: 50,
+
+        new_post.count = 0                  #: 1023, initially the number of comments is zero
+        new_post.size = size                 #: 50, the actual size of the post in bytes
+
+        # This is not a property that gets stored, but rather a link to the comments of this post that should
+        # be generated on the fly.
         # new_post.next        = post['next']         #: "http://service/posts/{post_id}/comments",
 
-        # @todo allow adding comments to new post
+        # We do not permit adding comments at the same time a post is created, so this field is not created
         # new_post.comments = post['comments']  #: LIST OF COMMENT,
 
         current_tz = pytz.timezone('America/Edmonton')
@@ -237,6 +247,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         # new_post.unlisted = post['unlisted']       #: true
 
+        new_post.save()
+
+        # Now we can set source and origin
+        new_post.source = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
+        new_post.origin = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
         new_post.save()
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
