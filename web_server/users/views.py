@@ -21,6 +21,9 @@ class CustomLogin(auth_views.LoginView):
 def profile(request,user_id):
     return render(request, 'users/profile.html', {'user_id':user_id})
 
+@login_required
+def add_friend(request):
+    return render(request, 'users/add_friend.html')
 
 def register(request):
     if request.method == 'POST':
