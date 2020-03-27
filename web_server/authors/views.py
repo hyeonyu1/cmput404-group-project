@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.urls import reverse
 from django.template import RequestContext
+from django.conf import settings
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
@@ -276,7 +277,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.save()
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
-        uids = post['visibleTo'].split(",")
+        uids = post.getlist('visibleTo')
         visible_authors = Author.objects.filter(uid__in=uids)
         for author in visible_authors:
             new_post.visibleTo.add(author)
@@ -862,7 +863,6 @@ def post_creation_page(request):
     :return:
     """
     return render(request, 'posting.html')
-
 
 def get_all_authors(request):
     """

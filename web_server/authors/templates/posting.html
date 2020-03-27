@@ -5,56 +5,61 @@
 
     <div id="postPage">
         <!-- Form content -->
+        
         <form action="/author/posts/" method="POST" id="postForm">
             {% csrf_token %}
             <input type="hidden" name="author" value={{ author }}>
+            <span id="column1">
+                <label for="title">Title</label>
+                <textarea id="title" name="title" required></textarea>
+                <label for="description">Description</label>
+                <textarea id="description" name="description" required></textarea>
 
+                <label for="upload-file" id="postButton" style="width: 120pt">Choose Image</label>
+                <input id="upload-file" type="file" accept="image/jpeg, image/png" placeholder="Upload Image" hidden />
 
-            <input id="upload-file" type="file" accept="image/jpeg, image/png" />
+                <label for="content">Content</label>
+                <textarea id="content" name="content" required></textarea>
 
-            <label for="title">Title</label>
-            <textarea id="title" name="title" required></textarea>
+            </span>
+            <span id="column2">
+                <label for="categories">Categories</label>
+                <textarea id="categories" name="categories" placeholder="Separate on different lines"></textarea>
+            </span>
 
-            <label for="description">Description</label>
-            <textarea id="description" name="description" required></textarea>
-
-            <label for="content">Content</label>
-            <textarea id="content" name="content" required></textarea>
-
-            <label for="categories">Categories</label>
-            <textarea id="categories" name="categories" placeholder="Separate on different lines"></textarea>
         </form>
 
-
-        <label for="contentType">Choose your content type:</label>
-        <select id="contentType" form="postForm" name="contentType">
-            <option value="TYPE_PLAIN">Plain Text</option>
-            <option value="TYPE_MARKDOWN">Markdown</option>
-        </select>
-
-        <!-- Select for choosing visibility of post -->
-        <label for="visi">Choose the Visibility of your post:</label>
-        <select id="visi" form="postForm" name="visibility" onchange="visibilityChanged()">
-            <option value="PUBLIC">Public</option>
-            <option value="FRIENDS">Friends</option>
-            <option value="FOAF">Friends of A Friend</option>
-            <option value="PRIVATE">Private</option>
-            <option value="SERVERONLY">Server Only</option>
-        </select>
-
-        <!-- Only appears when visibility is set to private.
-            this will have to be implemented later when we know all the users on
-            the server and can specify certain people -->
-        <div id="visibleTo" style="visibility: hidden;">
-            <label for="visibleFor">Who can view your post:</label>
-            <select id="visibleFor" form="postForm" name="visibleTo">
-                <option>No users available to choose from</option>
+        <div id="section2">
+            <label for="contentType">Choose your content type:</label>
+            <select id="contentType" form="postForm" name="contentType">
+                <option value="TYPE_MARKDOWN">Markdown</option>
+                <option value="TYPE_PLAIN">Plain Text</option>
             </select>
+
+            <!-- Select for choosing visibility of post -->
+            <label for="visi">Choose the Visibility of your post:</label>
+            <select id="visi" form="postForm" name="visibility" onchange="visibilityChanged()">
+                <option value="PUBLIC">Public</option>
+                <option value="FRIENDS">Friends</option>
+                <option value="FOAF">Friends of A Friend</option>
+                <option value="PRIVATE">Private</option>
+                <option value="SERVERONLY">Server Only</option>
+            </select>
+
+            <!-- Only appears when visibility is set to private.
+                this will have to be implemented later when we know all the users on
+                the server and can specify certain people -->
+            <div id="visibleTo" style="visibility: hidden;">
+                <label for="visibleFor">Who can view your post:(ctrl+click to select multiple)</label>
+                <select id="visibleFor" form="postForm" name="visibleTo" multiple>
+                    <option>No users available to choose from</option>
+                </select>
+            </div>
+
+            <!-- type="submit" form="postForm" -->
+            <button type="submit" form="postForm" id="postButton">Post</button>
+        
         </div>
-
-        <!-- type="submit" form="postForm" -->
-        <button type="submit" form="postForm" id="postButton">Post</button>
-
         <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
         <script>
             /**
@@ -122,7 +127,8 @@
                     if (request.readyState === 4) {
                         if(request.response.success === "true"){
                             let url = "{% url 'post' '00000000000000000000000000000000'%}".replace(/00000000000000000000000000000000\//, "");
-                            document.querySelector('#content').value += (`![This is my uploaded image](${url}${request.response.msg})`);
+                            document.querySelector('#content').value += '!['+file.name+']';
+                            document.querySelector('#content').value += (`(${url}${request.response.msg})`);
                         } else {
                             alert(`We were unable to upload your image, error: ${request.response.msg}`)
                         }
