@@ -386,7 +386,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         uri = request.build_absolute_uri()
 
         if page_num > pager.num_pages:
-            # print("here")
             response_data = {
                 "query": "posts",
                 "count": int(count),

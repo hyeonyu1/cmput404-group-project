@@ -179,8 +179,9 @@ def FOAF_verification(request, author_id):
                         print("Author's friend is in a different node so making a get request")
                         username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
                         password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+                        api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
                         response = requests.get(
-                            "http://{}/author/{}/friends".format(node, "{}/author/{}".format(node, author_id)),
+                            "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author_id)),
                             auth=(username, password)
                         )
                         friends_list = response.json()
@@ -198,9 +199,10 @@ def FOAF_verification(request, author_id):
                 print("Author is in different Node so making a get request")
                 username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
                 password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-                print(node, author)
+                api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                print(node, author, api)
                 response = requests.get(
-                    "http://{}/author/{}/friends".format(node, author),
+                    "http://{}/author/{}/friends".format(api, author),
                     auth=(username, password)
                 )
                 friends_list = response.json()
