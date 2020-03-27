@@ -13,17 +13,24 @@ from django.db.models import Q
 from django.utils import timezone
 from django.urls import reverse
 from django.template import RequestContext
+from django.conf import settings
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
 from django.conf import settings
 
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import is_aware, utc
+
 
 import json
 import datetime
 import sys
 import re
+import base64
+
+
 # used for stripping url protocol
 url_regex = re.compile(r"(http(s?))?://")
 
@@ -222,8 +229,27 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # new_post.origin    = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
 
         new_post.description = post['description']  # : "This post discusses stuff -- brief",
-        new_post.contentType = post['contentType']  # : "text/plain",
-        new_post.content = post['content']      #: "stuffs",
+
+        # If the post is an image, the content would have been provided as a file along with the upload
+        if len(request.FILES) > 0:
+            file_type = request.FILES['file'].content_type
+            allowed_file_type_map = {
+                'image/png': Post.TYPE_PNG,
+                'image/jpg': Post.TYPE_JPEG
+            }
+
+            if file_type not in allowed_file_type_map.keys():
+                return JsonResponse({
+                    'success': 'false',
+                    'msg': f'You uploaded an image with content type: {file_type}, but only one of {allowed_file_type_map.keys()} is allowed'
+                })
+
+            new_post.contentType = allowed_file_type_map[file_type]  # : "text/plain"
+            new_post.content = base64.b64encode(request.FILES['file'].read()).decode('utf-8')
+        else:
+            new_post.contentType = post['contentType']  # : "text/plain",
+            new_post.content = post['content']      #: "stuffs",
+
         new_post.author = request.user         # the authenticated user
 
         # Categories added after new post is saved
@@ -244,7 +270,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.published = str(datetime.datetime.now())
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
-        # new_post.unlisted = post['unlisted']       #: true
+        new_post.unlisted = True if 'unlisted' in post and post['unlisted'] == 'true' else False       #: true
 
         new_post.save()
 
@@ -254,7 +280,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.save()
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
-        uids = post['visibleTo'].split(",")
+        uids = post.getlist('visibleTo')
         visible_authors = Author.objects.filter(uid__in=uids)
         for author in visible_authors:
             new_post.visibleTo.add(author)
@@ -272,7 +298,14 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return redirect("/")
+        if len(request.FILES) > 0:
+            # If they uploaded a file this is an ajax call and we need to return a JSON response
+            return JsonResponse({
+                'success': 'true',
+                'msg': new_post.id.hex
+            })
+        else:
+            return redirect("/")
 
     def retrieve_posts(request):
         # own post
@@ -358,6 +391,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             else:
                 host = "http://" + host
 
+
             next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
             array_of_posts.append({
@@ -374,7 +408,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -453,7 +487,8 @@ def get_comments(post_id):
             "id": str(comment.id),
             "contentType": str(comment.contentType),
             "comment": str(comment.content),
-            "published": str((comment.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+            "published": "{}+{}".format(comment.published.strftime('%Y-%m-%dT%H:%M:%S'),
+                                        str(comment.published).split("+")[-1]),
             "author": {
                 "id": str(author.uid),
                 "email": str(author.email),
@@ -683,7 +718,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -833,7 +868,6 @@ def post_creation_page(request):
     :return:
     """
     return render(request, 'posting.html')
-
 
 def get_all_authors(request):
     """
