@@ -27,6 +27,9 @@ import json
 import datetime
 import sys
 import re
+import base64
+
+
 # used for stripping url protocol
 url_regex = re.compile(r"(http(s?))?://")
 
@@ -284,8 +287,29 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         # : "This post discusses stuff -- brief",
         new_post.description = post['description']
-        new_post.contentType = post['contentType']  # : "text/plain",
-        new_post.content = post['content']      #: "stuffs",
+
+        # If the post is an image, the content would have been provided as a file along with the upload
+        if len(request.FILES) > 0:
+            file_type = request.FILES['file'].content_type
+            allowed_file_type_map = {
+                'image/png': Post.TYPE_PNG,
+                'image/jpg': Post.TYPE_JPEG
+            }
+
+            if file_type not in allowed_file_type_map.keys():
+                return JsonResponse({
+                    'success': 'false',
+                    'msg': f'You uploaded an image with content type: {file_type}, but only one of {allowed_file_type_map.keys()} is allowed'
+                })
+
+            # : "text/plain"
+            new_post.contentType = allowed_file_type_map[file_type]
+            new_post.content = base64.b64encode(
+                request.FILES['file'].read()).decode('utf-8')
+        else:
+            new_post.contentType = post['contentType']  # : "text/plain",
+            new_post.content = post['content']      #: "stuffs",
+
         new_post.author = request.user         # the authenticated user
 
         # Categories added after new post is saved
@@ -306,7 +330,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.published = str(datetime.datetime.now())
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
-        # new_post.unlisted = post['unlisted']       #: true
+        #: true
+        new_post.unlisted = True if 'unlisted' in post and post['unlisted'] == 'true' else False
 
         new_post.save()
 
@@ -334,7 +359,14 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # for key in body.keys():
         #     print(f'{key}: {body[key]}')
 
-        return redirect("/")
+        if len(request.FILES) > 0:
+            # If they uploaded a file this is an ajax call and we need to return a JSON response
+            return JsonResponse({
+                'success': 'true',
+                'msg': new_post.id.hex
+            })
+        else:
+            return redirect("/")
 
     def retrieve_posts(request):
         # own post
