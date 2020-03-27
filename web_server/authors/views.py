@@ -19,6 +19,9 @@ from social_distribution.utils.basic_auth import validate_remote_server_authenti
 
 from django.conf import settings
 
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import is_aware, utc
+
 
 import json
 import datetime
@@ -358,6 +361,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             else:
                 host = "http://" + host
 
+
             next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
             array_of_posts.append({
@@ -374,7 +378,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -453,7 +457,8 @@ def get_comments(post_id):
             "id": str(comment.id),
             "contentType": str(comment.contentType),
             "comment": str(comment.content),
-            "published": str((comment.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+            "published": "{}+{}".format(comment.published.strftime('%Y-%m-%dT%H:%M:%S'),
+                                        str(comment.published).split("+")[-1]),
             "author": {
                 "id": str(author.uid),
                 "email": str(author.email),
@@ -683,7 +688,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
