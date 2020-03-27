@@ -19,7 +19,6 @@ url_regex = re.compile(r"(http(s?))?://")
 # internal endpoint
 
 
-@login_required  # Local server usage only
 def handle_friend_request(request):
     # handle friend request acception
     if request.method != "POST" and request.method != "DELETE":
@@ -77,7 +76,6 @@ def handle_friend_request(request):
             return HttpResponse("No such friend request", status=404)
 
 
-@login_required  # Local server usage only
 def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_server):
 
     if not Node.objects.filter(foreign_server_hostname=foreign_server).exists():
