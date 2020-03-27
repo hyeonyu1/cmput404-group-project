@@ -118,7 +118,8 @@ def view_list_of_available_authors_to_befriend(request, author_id):
     nodes = Node.objects.all()
     for node in nodes:
         url = "http://{}/author".format(node.foreign_server_api_location)
-        res = requests.get(url)
+        res = requests.get(url, auth=(
+            node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
         if res.status_code == 200:
             response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
     # if author has no friends
