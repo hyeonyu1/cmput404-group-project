@@ -867,7 +867,9 @@ def post_creation_page(request):
     :param request:
     :return:
     """
-    return render(request, 'posting.html')
+    return render(request, 'posting.html', context={
+        'post_retrieval_url': settings.HOSTNAME + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
+    })
 
 def get_all_authors(request):
     """
