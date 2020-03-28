@@ -63,16 +63,20 @@ def retrieve_friends_of_author(authorid):
             else:
 
                 foreign_server_hostname = each.friend_id.split("/")[0]
-                url = "http://{}".format(each.friend_id)
-                res = requests.get(url)
-                if res.status_code == 200:
-                    print(res.content)
-                    foreign_friend = res.json()
-                    entry['id'] = foreign_friend['id']
-                    entry['host'] = foreign_friend['host']
-                    entry['displayName'] = foreign_friend['displayName']
-                    entry['url'] = foreign_friend['url']
-                    response_data.append(entry)
+                if Node.objects.filter(foreign_server_hostname=foreign_server_hostname).exists():
+                    node = Node.objects.get(pk=foreign_server_hostname)
+                    url = "http://{}/{}".format(
+                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[1])
+                    print(url)
+                    res = requests.get(url)
+                    print("asajskldf;asd", res.content)
+                    if res.status_code == 200:
+                        foreign_friend = res.json()
+                        entry['id'] = foreign_friend['id']
+                        entry['host'] = foreign_friend['host']
+                        entry['displayName'] = foreign_friend['displayName']
+                        entry['url'] = foreign_friend['url']
+                        response_data.append(entry)
 
     return response_data
 
@@ -84,9 +88,9 @@ def return_all_authors_registered_on_local_server(request):
     data = []
     for author in authors:
         each = {}
-        each['id'] = author.uid
-        each['host'] = author.host
-        each['url'] = author.url
+        each['id'] = "https://" + author.uid
+        each['host'] = "https://" + author.host
+        each['url'] = "https://" + author.url
         each['displayName'] = author.display_name
         each['firstName'] = author.first_name
         each['lastName'] = author.last_name
@@ -125,7 +129,6 @@ def view_list_of_available_authors_to_befriend(request, author_id):
         url = "http://{}/author".format(node.foreign_server_api_location)
         res = requests.get(url, auth=(
             node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
-        print(res.content)
         if res.status_code == 200:
             response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
     # if author has no friends
@@ -135,6 +138,7 @@ def view_list_of_available_authors_to_befriend(request, author_id):
     existing_friends = Friend.objects.filter(author_id=author_id)
     existing_friends_set = set([each.friend_id for each in existing_friends])
     available_authors_to_friend = []
+    print(response_data["available_authors_to_befriend"])
     for each in response_data["available_authors_to_befriend"]:
         if not url_regex.sub('', each['id']) in existing_friends_set:
             available_authors_to_friend.append(each)
@@ -884,7 +888,6 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
         response_data = {}
         response_data['query'] = "friends"
         response_data['authors'] = []
-        print(author_id)
         if Friend.objects.filter(author_id=author_id).exists():
             # get friend id from Friend table
             friends = Friend.objects.filter(
