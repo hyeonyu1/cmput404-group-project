@@ -92,12 +92,9 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
         node.foreign_server_api_location.rstrip("/"))
     if node.append_slash:
         url += "/"
-    print(node.username_registered_on_foreign_server,
-          node.password_registered_on_foreign_server)
     response = requests.post(
         url, headers=headers, auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server), data=json_data)
-    print(data)
-    print(response)
+
     return HttpResponse(response.text, status=response.status_code)
 
 
