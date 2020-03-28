@@ -66,6 +66,7 @@ def retrieve_friends_of_author(authorid):
                 url = "http://{}".format(each.friend_id)
                 res = requests.get(url)
                 if res.status_code == 200:
+                    print(res.content)
                     foreign_friend = res.json()
                     entry['id'] = foreign_friend['id']
                     entry['host'] = foreign_friend['host']
