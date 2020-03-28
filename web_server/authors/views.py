@@ -19,7 +19,8 @@ from social_distribution.utils.basic_auth import validate_remote_server_authenti
 from friendship.views import FOAF_verification
 
 from django.conf import settings
-
+from json import loads
+from django.core import serializers
 
 import json
 import datetime
@@ -275,6 +276,21 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         return redirect("/")
 
+    def json_handler(request, posts, pager, pagination_uris):
+
+        output = {
+            "query": "posts",
+            "count": pager.count,
+            "size": len(posts),
+            "posts": [post.to_api_object() for post in posts]
+        }
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
+        return JsonResponse(output)
+
     def retrieve_posts(request):
         # own post
         own_post = Post.objects.filter(
@@ -375,7 +391,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -434,9 +450,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         return JsonResponse(response_data)
 
-    return Endpoint(request, None, [
+
+    return Endpoint(request, Post.objects.all().exclude(visibility="SERVERONLY").order_by("-published"), [
         Handler("POST", "application/json", create_new_post),
-        Handler("GET", "application/json", retrieve_posts)
+        # Handler("GET", "application/json", retrieve_posts),
+        PagingHandler("GET", "application/json", json_handler)
     ]).resolve()
 
 
@@ -453,7 +471,8 @@ def get_comments(post_id):
             "id": str(comment.id),
             "contentType": str(comment.contentType),
             "comment": str(comment.content),
-            "published": str((comment.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+            "published": "{}+{}".format(comment.published.strftime('%Y-%m-%dT%H:%M:%S'),
+                                        str(comment.published).split("+")[-1]),
             "author": {
                 "id": "http://" + str(author.uid),
                 "email": str(author.email),
@@ -563,14 +582,28 @@ def post_edit_and_delete(request, post_id):
 
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
-
-
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
     id_of_author = author_id
+    # 127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5
+    uid = "{}/author/{}".format(request.get_host(),author_id)
+
+    def json_handler(request, posts, pager, pagination_uris):
+
+        output = {
+            "query": "posts",
+            "count": pager.count,
+            "size": len(posts),
+            "posts": [post.to_api_object() for post in posts]
+        }
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
+        return JsonResponse(output)
 
     def retrieve_author_posts(request):
         print(request.user.uid)
-
 
         try:
             valid_uuid = UUID(id_of_author, version=4)
@@ -689,7 +722,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": str((post.published - datetime.timedelta(hours=6)).strftime('%B %d, %Y, %I:%M %p')),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -747,9 +780,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
         return JsonResponse(response_data)
 
-    return Endpoint(request, None, [
-        Handler("GET", "application/json", retrieve_author_posts)]
-    ).resolve()
+    return Endpoint(request, Post.objects.filter(author=uid).order_by("-published"), [
+        # Handler("GET", "application/json", retrieve_author_posts)
+        PagingHandler("GET","application/json", json_handler)
+        ]).resolve()
 
 
 # Ida Hou
