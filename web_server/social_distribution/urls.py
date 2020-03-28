@@ -26,7 +26,7 @@ urlpatterns = [
     # All authors are users, and all users are authors
     path('author/', include('authors.urls')),
     path('posts/', include('posts.urls')),
-    path('friendrequest', include('friendship.urls')),
+    path('friendrequest/', include('friendship.urls')),
     path('user/', include('users.urls')),
     path('github/', views.github, name='github'),
 

@@ -458,7 +458,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             else:
                 host = "http://" + host
 
-
             next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
             array_of_posts.append({
@@ -938,6 +937,7 @@ def post_creation_page(request):
     return render(request, 'posting.html', context={
         'post_retrieval_url': settings.HOSTNAME + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
     })
+
 
 def get_all_authors(request):
     """
