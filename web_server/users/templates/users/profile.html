@@ -265,10 +265,14 @@
                         "url": user_uid
                     }
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status == 200 || response.status == 201) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
+                }).catch(error => {
+                    let errorMessage = error.message + "! Friendship already exist!";
+                    alert(errorMessage);
+                    this.request_senders[index]['isDeleted'] = true;
                 })
             },
             // checked 
@@ -293,7 +297,7 @@
                     }
 
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status == 200 || response.status == 201) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
@@ -306,7 +310,7 @@
                     'author_id': user_id,
                     'friend_id': friend_id
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status == 200 || response.status == 201) {
                         alert(response.data);
                         this.friends[index]['isDeleted'] = true;
                     }

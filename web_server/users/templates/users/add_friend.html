@@ -9,6 +9,7 @@
                 class="list-group-item list-group-item-action flex-column align-items-start">
                 <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1">[[friend.displayName]]</h5>
+                    <h5 class="mb-1">[[friend.host]]</h5>
                     <button class="btn btn-info" style="color: white" @click="add_friend(friend)">Add Friend</button>
                 </div>
 
@@ -96,14 +97,17 @@
                         "url": friend.url
                     }
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status === 201 || response.status == 200) {
                         alert("Friend Request Successfully Sent!");
                     } else {
                         alert(response.status);
                     }
 
                 }).catch((err => {
-                    alert("You already followed this user/ You already sent the friend request.");
+
+
+                    let errorMessage = err.message + "! Friendship already exist! OR Friend Request already Sent!";
+                    alert(errorMessage);
                 }));
             },
         },

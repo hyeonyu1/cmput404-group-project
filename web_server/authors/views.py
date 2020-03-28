@@ -70,7 +70,7 @@ def retrieve_friends_of_author(authorid):
 
                     res = requests.get(url)
 
-                    if res.status_code == 200:
+                    if res.status_code == 200 or res.status_code == 201:
                         foreign_friend = res.json()
                         entry['id'] = foreign_friend['id']
                         entry['host'] = foreign_friend['host']
@@ -85,6 +85,8 @@ def retrieve_friends_of_author(authorid):
 
 
 def return_all_authors_registered_on_local_server(request):
+    if request.method != 'GET':
+        return HttpResponse("Method Not Allowed", status=405)
     authors = Author.objects.filter(is_active=1).filter(is_superuser=0)
     data = []
     for author in authors:
@@ -130,7 +132,7 @@ def view_list_of_available_authors_to_befriend(request, author_id):
         url = "http://{}/author".format(node.foreign_server_api_location)
         res = requests.get(url, auth=(
             node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
-        if res.status_code == 200:
+        if res.status_code == 200 or res.status_code == 201:
             response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
     # if author has no friends
     if not Friend.objects.filter(author_id=author_id).exists():
