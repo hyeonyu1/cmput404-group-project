@@ -79,6 +79,7 @@ def unfriend(request):
     if request.method == 'POST':
         body = request.body.decode('utf-8')
         body = json.loads(body)
+        print(body)
         # strip protocol from url
         author_id = url_regex.sub('', body.get("author_id", ""))
         friend_id = url_regex.sub('', body.get("friend_id", ""))

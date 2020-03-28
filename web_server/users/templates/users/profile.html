@@ -81,7 +81,7 @@
                     v-bind:index="index"
                     v-bind:is_visitor="is_visitor"
                 >
-                >
+
                 </friend-list>
             </ul>
 
@@ -123,7 +123,7 @@
         <li class="list-group-item">
             <div class="form-inline">
                 <a v-bind:href="'/user/profile/' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
-                <button class="btn btn-primary" v-if="!is_visitor" @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
+                <button class="btn btn-primary" v-if="!is_visitor" @click="app.unfriend(friend.uid, '{{ user.uid }}', index)">Delete</button>
 
             </div>
         </li>
@@ -203,6 +203,14 @@
         template: '#user-posts'
     });
 
+    class Friend{
+        constructor(uid,firstName,lastName){
+            this.uid=uid;
+            this.firstName=firstName;
+            this.lastName=lastName;
+            this.isDeleted=false;
+        }
+    }
     var app = new Vue({
         el: '#app',
         delimiters: ['[[', ']]'],
@@ -232,16 +240,17 @@
                     this.user = response.data;
                     let alist=this.user.id.split('/');
                     let user_id = alist[alist.length-1];
-                    console.log(user_id);
-                    console.log('{{user.id.hex}}');
                     if('{{user.id.hex}}' === user_id){
                         this.is_visitor=false
                     }
 
                     for (let friend of response.data['friends']){
-                        let idlist = friend.id.split('/');
-                        friend['uid']= idlist[idlist.length - 1];
-                        this.friends.push(friend);
+                        let id = friend.id;
+                        let firstName = friend['firstName'];
+                        let lastName = friend['lastName'];
+                        let afriend=new Friend(id,firstName,lastName);
+                        this.friends.push(afriend);
+
                     }
                 })
             },
@@ -254,7 +263,6 @@
 
                     for (var uid of from_ids) {
                         let idlist = uid.split('/');
-
                         let from_id = idlist[idlist.length - 1];
                         window.axios.get('/author/' + from_id).then((response) => {
                             //let username = response.data['firstName'] +' '+ response.data['lastName'];
@@ -391,14 +399,10 @@
             get_mypost(user_id){
                 let url = "/author/"+user_id+"/posts";
                 window.axios.get(url).then((response)=>{
-
                     for (let post of response.data["posts"]){
-                        console.log(post);
                         this.myposts.push(post);
                     }
-
                 });
-
             },
 
         },
