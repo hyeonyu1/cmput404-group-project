@@ -136,7 +136,7 @@
         <li class="list-group-item">
             <div class="form-inline">
                 <a v-bind:href="'/user/profile/' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
-                <button class="btn btn-primary" v-if="!is_visitor" @click="app.accept(sender.id, '{{ user.uid }}', index)">Accept</button>
+                <button class="btn btn-primary" v-if="!is_visitor" @click="app.accept(sender.id, '{{ user.uid }}', sender.firstName,sender.lastName,index)">Accept</button>
                 <button class="btn btn-warning" v-if="!is_visitor" @click="app.deny(sender.id, '{{ user.uid }}', index)">Deny</button>
             </div>
         </li>
@@ -275,7 +275,7 @@
             },
 
             // Accept users' friend requests
-            accept: function (sender_id, user_id, index) {
+            accept: function (sender_id, user_id, sender_firstName,sender_lastName,index) {
                 window.axios.post("/friendrequest/handle", {
                     // Author id is from_id (Other's id)
                     "author": {
@@ -286,9 +286,11 @@
                         "id":  user_id
                     }
                 }).then((response) => {
+                    alert(response.data);
                     if (response.status === 200) {
-                        alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
+                        let afriend=new Friend(sender_id,sender_firstName,sender_lastName);
+                        this.friends.push(afriend);
                     }
                 })
             },
