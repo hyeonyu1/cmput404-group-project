@@ -102,7 +102,7 @@ class Post(models.Model):
         visible_to = self.visibleTo.all()
         visible_to_list = []
         for visible in visible_to:
-            visible_to_list.append(visible.username)
+            visible_to_list.append(visible.uid)
 
         return {
             "title": self.title,
@@ -121,6 +121,6 @@ class Post(models.Model):
             "published": self.published,
             "id": str(self.id.hex),
             "visibility": self.visibility,
-            "visibleTo": visible_to_list,  # @todo figure out how to specify visibility
+            "visibleTo": visible_to_list,
             "unlisted": self.unlisted
         }

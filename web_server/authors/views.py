@@ -26,6 +26,8 @@ from django.core import serializers
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import is_aware, utc
 
+from django.contrib.auth.decorators import login_required
+
 
 import json
 import datetime
@@ -196,12 +198,15 @@ def retrieve_author_profile(request, author_id):
 
     return HttpResponse("You can only GET the URL", status=405)
 
-
+@validate_remote_server_authentication()
 def post_creation_and_retrieval_to_curr_auth_user(request):
     """
     Endpoint handler for service/author/posts
     POST is for creating a new post using the currently authenticated user
     GET is for retrieving posts visible to currently authenticated user
+
+    For servers, the 'currently authenticated user' is a node, and if you are authenticated as a node, you are root.
+    Thus we return all the posts, unless they are 'SERVERONLY'
     :param request:
     :return:
     """
@@ -310,8 +315,9 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         else:
             return redirect("/")
 
-    def json_handler(request, posts, pager, pagination_uris):
-
+    # Response to a server, servers are considered 'root' and get all posts except for 'SERVERONLY' because
+    # they have no reason to see those ones.
+    def api_response(request, posts, pager, pagination_uris):
         output = {
             "query": "posts",
             "count": pager.count,
@@ -325,6 +331,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             output['next'] = next_uri
         return JsonResponse(output)
 
+    # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
         # own post
         own_post = Post.objects.filter(
@@ -409,7 +416,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             else:
                 host = "http://" + host
 
-
             next_http = "{}/posts/{}/comments".format(host, post.id)
             comment_size, comments = get_comments(post.id)
             array_of_posts.append({
@@ -426,7 +432,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'),
+                                            str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -485,13 +492,15 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         return JsonResponse(response_data)
 
-
-    return Endpoint(request, Post.objects.all().exclude(visibility="SERVERONLY").order_by("-published"), [
-        Handler("POST", "application/json", create_new_post),
-        # Handler("GET", "application/json", retrieve_posts),
-        PagingHandler("GET", "application/json", json_handler)
-    ]).resolve()
-
+    if request.user.is_authenticated():
+        return Endpoint(request, None, [
+            Handler("POST", "application/json", create_new_post),
+            Handler('GET', 'application/json', retrieve_posts)
+        ]).resolve()
+    else:
+        return Endpoint(request, Post.objects.all().exclude(visibility="SERVERONLY").order_by("-published"), [
+            PagingHandler("GET", "application/json", api_response)
+        ]).resolve()
 
 # Returns 5 newest comment on the post
 def get_comments(post_id):
