@@ -96,6 +96,8 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
           node.password_registered_on_foreign_server)
     response = requests.post(
         url, headers=headers, auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server), data=json_data)
+    print(data)
+    print(response)
     return HttpResponse(response.text, status=response.status_code)
 
 
@@ -118,7 +120,7 @@ def send_friend_request(request):
         # strip protocol
         from_id = url_regex.sub('', from_id)
         to_id = url_regex.sub('', to_id)
-
+        print("it gets here")
         # if friend request already existed
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
 
