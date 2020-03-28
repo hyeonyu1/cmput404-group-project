@@ -61,7 +61,7 @@ def handle_friend_request(request):
 
                 return send_friend_request_to_foreign_friend(body.get("author"), body.get("friend"), from_host)
 
-            return HttpResponse("Friend successfully added", status=200)
+            return HttpResponse("Friend successfully added", status=201)
         else:
             return HttpResponse("No such friend request", status=404)
 
@@ -117,7 +117,7 @@ def send_friend_request(request):
         # strip protocol
         from_id = url_regex.sub('', from_id)
         to_id = url_regex.sub('', to_id)
-        print("it gets here")
+
         # if friend request already existed
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
 
@@ -136,7 +136,7 @@ def send_friend_request(request):
             if to_host != request.get_host():
                 # retrieve basic auth credential from Node table
                 return send_friend_request_to_foreign_friend(body.get("friend"), body.get("author"), to_host)
-            return HttpResponse("Friend Request Successfully sent", status=200)
+            return HttpResponse("Friend Request Successfully sent", status=201)
         # handle incoming friend request from remote server
         else:
             # now foreign author B is sending local author A an FriendRequest, However, on our local system
@@ -152,15 +152,15 @@ def send_friend_request(request):
                 new_friend = Friend(author_id=to_id, friend_id=from_id)
                 new_friend.save()
 
-                return HttpResponse("{} and {} become friend".format(from_id, to_id), status=200)
+                return HttpResponse("{} and {} become friend".format(from_id, to_id), status=201)
             # this is a pure friend request from remote author B to local author A -> create an entry in FriendRequest table
             # pending for local author A to handle
             else:
                 new_request = FriendRequest(from_id=from_id, to_id=to_id)
                 new_request.save()
-                return HttpResponse("Friend Request Successfully sent", status=200)
+                return HttpResponse("Friend Request Successfully sent", status=201)
 
-        return HttpResponse("Friend Request Successfully sent", status=200)
+        return HttpResponse("Friend Request Successfully sent", status=201)
 
     return HttpResponse("You can only POST to the URL", status=405)
 
