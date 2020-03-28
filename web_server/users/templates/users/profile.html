@@ -221,8 +221,6 @@
                     }
 
                     for (let friend of response.data['friends']) {
-                        let idlist = friend.id.split('/');
-                        friend['uid'] = idlist[idlist.length - 1];
                         this.friends.push(friend);
                     }
                 })
@@ -242,7 +240,6 @@
                             //let username = response.data['firstName'] +' '+ response.data['lastName'];
                             response.data['uid'] = idlist[idlist.length - 1];
                             response.data['isDeleted'] = false;
-
                             this.request_senders.push(response.data);
                         })
                     }
@@ -334,8 +331,6 @@
                         alert("Profile successfully updated");
                     }
                 });
-
-
             },
 
             //This function is used to allow users delete their account
@@ -369,13 +364,11 @@
 
             add_friend() {
                 window.axios.post("/friendrequest/", {
-
                     'author': {
                         'id': '{{user.uid}}',
                         'host': '{{user.host}}',
                         'displayName': '{{user.display_name}}',
                         "url": '{{user.url}}'
-
                     },
                     'friend': {
                         'id': this.user.id,
@@ -385,7 +378,6 @@
                     }
                 }).then((response) => {
                     alert(response.data);
-
                 }).catch((err => {
                     alert("You already followed this user/ You already sent the friend request.");
                 }));
@@ -395,17 +387,13 @@
                 window.axios.get("/author/" + user_id + "/friends/" + author_id).then((response) => {
                     this.is_already_friend = response.data["friends"];
                 });
-
-
             },
 
             //Retrieve all posts made by the current authenticated user
             get_mypost(user_id) {
                 let url = "/author/" + user_id + "/posts";
                 window.axios.get(url).then((response) => {
-
                     for (let post of response.data["posts"]) {
-                        //console.log(post);
                         this.myposts.push(post);
                     }
 

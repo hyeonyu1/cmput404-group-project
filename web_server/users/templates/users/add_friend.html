@@ -4,7 +4,7 @@
 <div id="app">
     <div class="container">
         <div class="list-group">
-            <label>Available friends: </label>
+            <h3>Available friends: </h3>
             <div :href="[[ friend.id]]" v-for="friend in friends"
                 class="list-group-item list-group-item-action flex-column align-items-start">
                 <div class="d-flex w-100 justify-content-between">
@@ -53,8 +53,7 @@
 
         methods: {
 
-            // Retrieve users' friends and info
-
+            // Retrieve users' potential friends
             get_potential_friends(author_id) {
                 let url = '/author/' + author_id + '/addfriend/';
                 console.log(url);
@@ -64,6 +63,7 @@
                     console.log(error);
                 });
             },
+
             add_friend(friend) {
                 const doc = {
                     "query": "friendrequest",
@@ -103,7 +103,7 @@
                     }
 
                 }).catch((err => {
-                    alert(err);
+                    alert("You already followed this user/ You already sent the friend request.");
                 }));
             },
         },
