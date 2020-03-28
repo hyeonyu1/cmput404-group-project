@@ -29,7 +29,8 @@ SECRET_KEY = 'fwbz+80c!ed=a$9x86vwexzl7ply4ay%9#%pbqtffq!aegd4j@'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'cmput404-group-project-mandala.herokuapp.com'
+    'cmput404-group-project-mandala.herokuapp.com',
+    'testing-social-distribution.herokuapp.com'
 ]
 
 

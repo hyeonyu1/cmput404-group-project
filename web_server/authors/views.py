@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
+from nodes.models import Node
 from friendship.models import Friend
 from posts.models import Post, Category
 from comments.models import Comment
@@ -18,10 +19,12 @@ from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 from friendship.views import FOAF_verification
+from django.contrib.auth.decorators import login_required
 
 from django.conf import settings
 from json import loads
 from django.core import serializers
+import requests
 
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import is_aware, utc
@@ -43,10 +46,73 @@ url_regex = re.compile(r"(http(s?))?://")
 DEFAULT_PAGE_SIZE = 10
 
 
+def retrieve_friends_of_author(authorid):
+    response_data = []
+    if Friend.objects.filter(author_id=authorid).exists():
+        # get friend id from Friend table
+        friends = Friend.objects.filter(author_id=authorid)
+        # compose response data
+        for each in friends:
+            entry = {}
+            if Author.objects.filter(uid=each.friend_id).exists():
+
+                friend = Author.objects.get(pk=each.friend_id)
+                entry['id'] = friend.uid
+                entry['host'] = friend.host
+                entry['displayName'] = friend.display_name
+                entry['url'] = friend.url
+                entry['firstName'] = friend.first_name
+                entry['lastName'] = friend.last_name
+                response_data.append(entry)
+            # foreign friend
+            else:
+
+                foreign_server_hostname = each.friend_id.split("/")[0]
+                if Node.objects.filter(foreign_server_hostname=foreign_server_hostname).exists():
+                    node = Node.objects.get(pk=foreign_server_hostname)
+                    url = "http://{}/{}".format(
+                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[1])
+
+                    res = requests.get(url)
+
+                    if res.status_code == 200 or res.status_code == 201:
+                        foreign_friend = res.json()
+                        entry['id'] = foreign_friend['id']
+                        entry['host'] = foreign_friend['host']
+                        entry['displayName'] = foreign_friend['displayName']
+                        entry['url'] = foreign_friend['url']
+                        response_data.append(entry)
+
+    return response_data
+
+# http://service/author endpoint
+# Author : Ida Hou
+
+
+def return_all_authors_registered_on_local_server(request):
+    if request.method != 'GET':
+        return HttpResponse("Method Not Allowed", status=405)
+    authors = Author.objects.filter(is_active=1).filter(is_superuser=0)
+    data = []
+    for author in authors:
+        each = {}
+        each['id'] = "https://" + author.uid
+        each['host'] = "https://" + author.host
+        each['url'] = "https://" + author.url
+        each['displayName'] = author.display_name
+        each['firstName'] = author.first_name
+        each['lastName'] = author.last_name
+        # each['friends'] = retrieve_friends_of_author(author.uid) # uncomment if should return friend list
+        data.append(each)
+
+    return JsonResponse(data, safe=False)
+
+
 # Ida Hou
 # return a list of author id that are currently stored in database and
 # are not friend with current author
-
+# internal endpoint -  not used
+@login_required
 def view_list_of_available_authors_to_befriend(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method Not Allowed", status=405)
@@ -59,16 +125,32 @@ def view_list_of_available_authors_to_befriend(request, author_id):
     response_data = {}
     response_data["available_authors_to_befriend"] = []
     for each in authors_on_record:
-        response_data["available_authors_to_befriend"].append(each.uid)
+        entry = {}
+        entry["id"] = each.uid
+        entry["displayName"] = each.display_name
+        entry["host"] = each.host
+        entry["url"] = each.url
+        response_data["available_authors_to_befriend"].append(entry)
+    # query foreign users
+    nodes = Node.objects.all()
+    for node in nodes:
+        url = "http://{}/author".format(node.foreign_server_api_location)
+        res = requests.get(url, auth=(
+            node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+        if res.status_code == 200 or res.status_code == 201:
+            response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
+    # if author has no friends
     if not Friend.objects.filter(author_id=author_id).exists():
         return JsonResponse(response_data)
 
     existing_friends = Friend.objects.filter(author_id=author_id)
-    friend_candidate_set = set(response_data["available_authors_to_befriend"])
-    existing_friends_set = set(
-        [existing_friend.friend_id for existing_friend in existing_friends])
-    response_data["available_authors_to_befriend"] = list(
-        friend_candidate_set.difference(existing_friends_set))
+    existing_friends_set = set([each.friend_id for each in existing_friends])
+    available_authors_to_friend = []
+    for each in response_data["available_authors_to_befriend"]:
+        if not url_regex.sub('', each['id']) in existing_friends_set:
+            available_authors_to_friend.append(each)
+    response_data["available_authors_to_befriend"] = available_authors_to_friend
+
     return JsonResponse(response_data)
 
 
@@ -80,6 +162,10 @@ def view_list_of_available_authors_to_befriend(request, author_id):
 #  friend_id : http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
 #
 # }
+# internal endpoints
+
+
+# @login_required
 def unfriend(request):
     if request.method == 'POST':
         body = request.body.decode('utf-8')
@@ -117,7 +203,10 @@ def check_missing_post_body_field_and_return_422(body, fields_to_check):
             return HttpResponse("Post body missing fields: {}".format(each), status=422)
     return None
 
+# internal endpoint - not used
 
+
+@login_required
 def update_author_profile(request, author_id):
     if request.method != 'POST':
         return HttpResponse("Method Not Allowed", status=405)
@@ -154,7 +243,6 @@ def update_author_profile(request, author_id):
 
 # Ida Hou
 # service/author/{author_id} endpoint handler
-@validate_remote_server_authentication()
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
@@ -169,25 +257,7 @@ def retrieve_author_profile(request, author_id):
         response_data['host'] = author.host
         response_data['url'] = author.url
         response_data['displayName'] = author.display_name
-        response_data['friends'] = []
-        # if current user has friends
-        if Friend.objects.filter(author_id=author.uid).exists():
-            # get friend id from Friend table
-            friends = Friend.objects.filter(
-                author_id=author.uid)
-            # retrieve full information from Author table (local Author only, foreign friends need send http request to retrieve full information)
-            friends_full_info = Author.objects.filter(
-                uid__in=[friend.friend_id for friend in friends])
-            # compose response data
-            for each in friends_full_info:
-                entry = {}
-                entry['id'] = each.uid
-                entry['host'] = each.host
-                entry['displayName'] = each.display_name
-                entry['url'] = each.url
-                entry['firstName'] = each.first_name
-                entry['lastName'] = each.last_name
-                response_data['friends'].append(entry)
+        response_data['friends'] = retrieve_friends_of_author(author.uid)
         # add optional information of current user
         response_data['github'] = author.github
         response_data['firstName'] = author.first_name
@@ -236,7 +306,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # new_post.source    = post['source']       #: "http://lastplaceigotthisfrom.com/posts/yyyyy"
         # new_post.origin    = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
 
-        new_post.description = post['description']  # : "This post discusses stuff -- brief",
+        # : "This post discusses stuff -- brief",
+        new_post.description = post['description']
 
         # If the post is an image, the content would have been provided as a file along with the upload
         if len(request.FILES) > 0:
@@ -252,8 +323,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                     'msg': f'You uploaded an image with content type: {file_type}, but only one of {allowed_file_type_map.keys()} is allowed'
                 })
 
-            new_post.contentType = allowed_file_type_map[file_type]  # : "text/plain"
-            new_post.content = base64.b64encode(request.FILES['file'].read()).decode('utf-8')
+            # : "text/plain"
+            new_post.contentType = allowed_file_type_map[file_type]
+            new_post.content = base64.b64encode(
+                request.FILES['file'].read()).decode('utf-8')
         else:
             new_post.contentType = post['contentType']  # : "text/plain",
             new_post.content = post['content']      #: "stuffs",
@@ -278,7 +351,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.published = str(datetime.datetime.now())
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
-        new_post.unlisted = True if 'unlisted' in post and post['unlisted'] == 'true' else False       #: true
+        #: true
+        new_post.unlisted = True if 'unlisted' in post and post['unlisted'] == 'true' else False
 
         new_post.save()
 
@@ -834,7 +908,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
 # author_id : (http://)localhost:8000/author/<UUID>
 
-
+@validate_remote_server_authentication()
 def friend_checking_and_retrieval_of_author_id(request, author_id):
     if request.method == 'POST':
         # ask a service if anyone in the list is a friend
@@ -866,7 +940,6 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
         response_data = {}
         response_data['query'] = "friends"
         response_data['authors'] = []
-
         if Friend.objects.filter(author_id=author_id).exists():
             # get friend id from Friend table
             friends = Friend.objects.filter(
@@ -885,6 +958,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
 # authorid2: https://127.0.0.1%3A5454%2Fauthor%2Fae345d54-75b4-431b-adb2-fb6b9e547891 (url-encoded)
 
 
+@validate_remote_server_authentication()
 def check_if_two_authors_are_friends(request, author1_id, author2_id):
     if request.method == 'GET':
         # compose author id from author uid
@@ -916,7 +990,10 @@ def post_creation_page(request):
     :param request:
     :return:
     """
-    return render(request, 'posting.html')
+    return render(request, 'posting.html', context={
+        'post_retrieval_url': settings.HOSTNAME + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
+    })
+
 
 def get_all_authors(request):
     """

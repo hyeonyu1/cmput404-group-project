@@ -1,9 +1,14 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from friendship.models import FriendRequest, Friend, Follow
+from nodes.models import Node
+from django.contrib.auth.decorators import login_required
 import json
 import re
 from nodes.models import Node
+import base64
+import requests
+from social_distribution.utils.basic_auth import validate_remote_server_authentication
 url_regex = re.compile(r"(http(s?))?://")
 import requests
 # author: Ida Hou
@@ -11,6 +16,8 @@ import requests
 # POST requests accepts the friend request
 # DELETE requests rejects the friend request
 # requires same request body content as http://service/friendrequest
+
+# internal endpoint
 
 
 def handle_friend_request(request):
@@ -21,14 +28,19 @@ def handle_friend_request(request):
     body = request.body.decode('utf-8')
     body = json.loads(body)
     from_id = body.get("author", {}).get("id", None)
+    from_host = body.get("author", {}).get("host", None)
+
     to_id = body.get("friend", {}).get("id", None)
-    if not from_id or not to_id:
+    to_host = body.get("friend", {}).get("host", None)
+    if not from_id or not to_id or not from_host or not to_host:
         # Unprocessable Entity
         return HttpResponse("post request body missing fields", status=422)
 
     # strip protocol
     from_id = url_regex.sub('', from_id)
     to_id = url_regex.sub('', to_id)
+    from_host = url_regex.sub('', from_host).rstrip("/")
+    to_host = url_regex.sub('', to_host).rstrip("/")
     if request.method == 'POST':
 
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
@@ -37,20 +49,20 @@ def handle_friend_request(request):
             FriendRequest.objects.filter(
                 from_id=from_id).filter(to_id=to_id).delete()
 
-            # if both way follows exist in Follow, real friendship established.
-            # then remove both entries from Follow but add a row in Friend table
-            if Follow.objects.filter(follower_id=to_id).filter(followee_id=from_id).exists():
-                Follow.objects.filter(
-                    follower_id=to_id).filter(followee_id=from_id).delete()
-                new_friend = Friend(author_id=from_id, friend_id=to_id)
-                new_friend.save()
-                new_friend = Friend(author_id=to_id, friend_id=from_id)
-                new_friend.save()
-            else:
-                new_follow = Follow(follower_id=from_id, followee_id=to_id)
-                new_follow.save()
+            if Friend.objects.filter(author_id=from_id).filter(friend_id=to_id).exists():
+                return HttpResponse("Friendship already exists!", status=409)
+            # if B accepts A's friend request, then B and A are friends
+            new_friend = Friend(author_id=from_id, friend_id=to_id)
+            new_friend.save()
+            new_friend = Friend(author_id=to_id, friend_id=from_id)
+            new_friend.save()
+            # if request is from remote author
+            # we need to send friend request back as "confirmation"
+            if from_host != request.get_host():
 
-            return HttpResponse("Friend successfully added", status=200)
+                return send_friend_request_to_foreign_friend(body.get("author"), body.get("friend"), from_host)
+
+            return HttpResponse("Friend successfully added", status=201)
         else:
             return HttpResponse("No such friend request", status=404)
 
@@ -65,40 +77,98 @@ def handle_friend_request(request):
             return HttpResponse("No such friend request", status=404)
 
 
+def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_server):
+
+    if not Node.objects.filter(foreign_server_hostname=foreign_server).exists():
+        return HttpResponse("Not Authenticated with Remote Server", status=401)
+    node = Node.objects.get(foreign_server_hostname=foreign_server)
+
+    data = {}
+    data["query"] = "friendrequest"
+    data["author"] = author_info
+    data["friend"] = friend_info
+    json_data = json.dumps(data)
+    headers = {'content-type': 'application/json'}
+    url = "http://{}/friendrequest".format(
+        node.foreign_server_api_location.rstrip("/"))
+    if node.append_slash:
+        url += "/"
+    response = requests.post(
+        url, headers=headers, auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server), data=json_data)
+
+    return HttpResponse(response.text, status=response.status_code)
+
+
 # author: Ida Hou
 # to make a friend request, POST to http://service/friendrequest
+@validate_remote_server_authentication()
 def send_friend_request(request):
     # Make a friend request
     if request.method == 'POST':
-
+        # parse request body
         body = request.body.decode('utf-8')
         body = json.loads(body)
         from_id = body.get("author", {}).get("id", None)
+        from_host = body.get("author", {}).get("host", None)
         to_id = body.get("friend", {}).get("id", None)
-        if not from_id or not to_id:
+        to_host = body.get("friend", {}).get("host", None)
+        if not from_id or not to_id or not from_host or not to_host:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
+        # strip protocol
         from_id = url_regex.sub('', from_id)
         to_id = url_regex.sub('', to_id)
-        # check duplication
-        # could be friend request already existed
-        # could be to_id already be followed by from_id
-        # could be to_id already friended with from_id
-        if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
-            return HttpResponse("Friend Request Already exists", status=409)
-        if Follow.objects.filter(follower_id=from_id).filter(followee_id=to_id).exists():
-            return HttpResponse("{} Already Followed {}".format(from_id, to_id), status=409)
-        if Friend.objects.filter(author_id=from_id).filter(friend_id=to_id).exists():
-            return HttpResponse("{} Already Friended with {}".format(from_id, to_id), status=409)
-        new_request = FriendRequest(from_id=from_id, to_id=to_id)
-        new_request.save()
 
-        return HttpResponse("Friend Request Successfully sent", status=200)
+        # if friend request already existed
+        if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
+
+            return HttpResponse("Friend Request Already exists", status=409)
+        # strip protocol for hostname
+        from_host = url_regex.sub('', from_host).rstrip("/")
+        to_host = url_regex.sub('', to_host).rstrip("/")
+        # if friendship already existed
+        if Friend.objects.filter(author_id=from_id).filter(friend_id=to_id).exists():
+            return HttpResponse("Friendship already exists!", status=409)
+        # handle outgoing request from local author
+        if from_host == request.get_host():
+            new_request = FriendRequest(from_id=from_id, to_id=to_id)
+            new_request.save()
+            # friend request from local author to local author
+            if to_host != request.get_host():
+                # retrieve basic auth credential from Node table
+                return send_friend_request_to_foreign_friend(body.get("friend"), body.get("author"), to_host)
+            return HttpResponse("Friend Request Successfully sent", status=201)
+        # handle incoming friend request from remote server
+        else:
+            # now foreign author B is sending local author A an FriendRequest, However, on our local system
+            # there is already FriendRequest sent from A to B.
+            # that's means that B accepted A's request and B is sending A "confirmation request"
+            # this case, we should just delete FriendRequest entry from A to B and friend A and B
+
+            if FriendRequest.objects.filter(from_id=to_id).filter(to_id=from_id).exists():
+                FriendRequest.objects.filter(
+                    from_id=to_id).filter(to_id=from_id).delete()
+                new_friend = Friend(author_id=from_id, friend_id=to_id)
+                new_friend.save()
+                new_friend = Friend(author_id=to_id, friend_id=from_id)
+                new_friend.save()
+
+                return HttpResponse("{} and {} become friend".format(from_id, to_id), status=201)
+            # this is a pure friend request from remote author B to local author A -> create an entry in FriendRequest table
+            # pending for local author A to handle
+            else:
+                new_request = FriendRequest(from_id=from_id, to_id=to_id)
+                new_request.save()
+                return HttpResponse("Friend Request Successfully sent", status=201)
+
+        return HttpResponse("Friend Request Successfully sent", status=201)
 
     return HttpResponse("You can only POST to the URL", status=405)
 
 # author: Ida Hou
 # http://service/friendrequest/{author_id}
+
+# internal endpoints
 
 
 def retrieve_friend_request_of_author_id(request, author_id):
