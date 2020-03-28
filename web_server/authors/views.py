@@ -67,9 +67,9 @@ def retrieve_friends_of_author(authorid):
                     node = Node.objects.get(pk=foreign_server_hostname)
                     url = "http://{}/{}".format(
                         node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[1])
-                    print(url)
+
                     res = requests.get(url)
-                    print("asajskldf;asd", res.content)
+
                     if res.status_code == 200:
                         foreign_friend = res.json()
                         entry['id'] = foreign_friend['id']
@@ -82,7 +82,8 @@ def retrieve_friends_of_author(authorid):
 
 # http://service/author endpoint
 # Author : Ida Hou
-@validate_remote_server_authentication()
+
+
 def return_all_authors_registered_on_local_server(request):
     authors = Author.objects.filter(is_active=1).filter(is_superuser=0)
     data = []
@@ -138,7 +139,6 @@ def view_list_of_available_authors_to_befriend(request, author_id):
     existing_friends = Friend.objects.filter(author_id=author_id)
     existing_friends_set = set([each.friend_id for each in existing_friends])
     available_authors_to_friend = []
-    print(response_data["available_authors_to_befriend"])
     for each in response_data["available_authors_to_befriend"]:
         if not url_regex.sub('', each['id']) in existing_friends_set:
             available_authors_to_friend.append(each)
