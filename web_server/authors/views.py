@@ -566,7 +566,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         return JsonResponse(response_data)
 
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return Endpoint(request, None, [
             Handler("POST", "application/json", create_new_post),
             Handler('GET', 'application/json', retrieve_posts)

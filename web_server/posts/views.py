@@ -43,17 +43,8 @@ def retrieve_all_public_posts_on_local_server(request):
 
         return JsonResponse(output)
 
-    def html_handler(request, posts, pager, pagination_uris):
-        (prev_uri, next_uri) = pagination_uris
-
-        return render(request, 'posts/stream.html')
-
-    endpoint = Endpoint(request,
-                        Post.objects.filter(visibility="PUBLIC").order_by('-published'),
-                        [
-                            PagingHandler("GET", "text/html", html_handler),
-                            PagingHandler(
-                                "GET", "application/json", json_handler)
+    endpoint = Endpoint(request, Post.objects.filter(visibility="PUBLIC").order_by('-published'), [
+                            PagingHandler("GET", "application/json", json_handler)
                         ])
 
     return endpoint.resolve()
