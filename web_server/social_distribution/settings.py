@@ -14,7 +14,7 @@ import os
 import django_heroku
 
 
-HOSTNAME = "https://cmput404-group-project-mandala.herokuapp.com"
+HOSTNAME = "https://cmput404-group-project-mandala.herokuapp.com" if os.getenv("MANDALA_HOSTNAME") is None else os.getenv("MANDALA_HOSTNAME")
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
