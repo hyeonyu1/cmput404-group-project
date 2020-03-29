@@ -265,7 +265,7 @@
                         "url": user_uid
                     }
                 }).then((response) => {
-                    if (response.status == 200 || response.status == 201) {
+                    if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
@@ -297,7 +297,7 @@
                     }
 
                 }).then((response) => {
-                    if (response.status == 200 || response.status == 201) {
+                    if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
@@ -310,7 +310,7 @@
                     'author_id': user_id,
                     'friend_id': friend_id
                 }).then((response) => {
-                    if (response.status == 200 || response.status == 201) {
+                    if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.friends[index]['isDeleted'] = true;
                     }
@@ -331,7 +331,7 @@
                     'display_name': this.user.displayName
 
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status >= 200 && response.status < 300) {
                         alert("Profile successfully updated");
                     }
                 });
@@ -350,7 +350,7 @@
                     'display_name': this.user.displayName
 
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status >= 200 && response.status < 300) {
                         alert("Delete successfully !");
                         window.location.reload();
                     }

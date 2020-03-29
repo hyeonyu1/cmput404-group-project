@@ -13,17 +13,20 @@ class CustomLogin(auth_views.LoginView):
         login(self.request, form.get_user())
         # set expiration of the current login session
         # a single login is alive for 10hrs
+
         self.request.session.set_expiry(36000)
         return HttpResponseRedirect(self.get_success_url())
 
 
 @login_required
-def profile(request,user_id):
-    return render(request, 'users/profile.html', {'user_id':user_id})
+def profile(request, user_id):
+    return render(request, 'users/profile.html', {'user_id': user_id})
+
 
 @login_required
 def add_friend(request):
     return render(request, 'users/add_friend.html')
+
 
 def register(request):
     if request.method == 'POST':

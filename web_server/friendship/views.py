@@ -8,6 +8,7 @@ import re
 import base64
 import requests
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
+from urllib.parse import quote
 url_regex = re.compile(r"(http(s?))?://")
 
 # author: Ida Hou
@@ -168,14 +169,14 @@ def send_friend_request(request):
 # http://service/friendrequest/{author_id}
 
 # internal endpoints
-
-
+@login_required
 def retrieve_friend_request_of_author_id(request, author_id):
     if request.method == "GET":
         # construct full url of author id
 
         host = request.get_host()
         author_id = host + "/author/" + str(author_id)
+        invalidate_friend_requests(author_id)
         response_data = {}
         response_data["query"] = "retrieve_friend_requests"
         response_data["author"] = author_id
@@ -190,3 +191,46 @@ def retrieve_friend_request_of_author_id(request, author_id):
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
+
+# author : Ida Hou
+# invalidate outgoing friend requests of an author by calling foreign servers'
+# https://service/authorid/friend/authorid2 endpoint
+
+
+def invalidate_friend_requests(author_id):
+    # if there are no outgoing friendrequests -> do nothing
+    if not FriendRequest.objects.filter(from_id=author_id).exists():
+        return
+
+    author_id = url_regex.sub('', author_id)
+    author_id = author_id.rstrip("/")
+    friend_requests = FriendRequest.objects.filter(from_id=author_id)
+
+    hostname = author_id.split("/")[0]
+    for request in friend_requests:
+        to_host = request.to_id.split("/")[0]
+        to_author_id = request.to_id.split("/")[2]
+        print(hostname, to_host, to_author_id)
+        # foreign requests -> call foreign server endpoint to validate
+        if hostname != to_host:
+            if Node.objects.filter(pk=hostname).exists():
+                node = Node.objects.filter(pk=hostname)
+                quoted_author_id = quote(
+                    author_id, safe='~()*!.\'')
+                url = "https://{}/author/{}/friends/{}".format(
+                    node.foreign_server_api_location.rstrip("/"), to_author_id, quoted_author_id)
+                res = requests.get(url, auth=(
+                    node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+                if res.status_code >= 200 and res.status_code < 300:
+                    res = res.josn()
+                    # if they are friends
+                    if res["friends"]:
+                        if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
+                            FriendRequest.objects.filter(from_id=author_id).filter(
+                                to_id=request.to_id).delete()
+                            new_friend = Friend(
+                                author_id=author_id, friend_id=request.to_id)
+                            new_friend.save()
+                            new_friend = Friend(
+                                author_id=request.to_id, friend_id=author_id)
+                            new_friend.save()
