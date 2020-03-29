@@ -236,7 +236,7 @@ def invalidate_friend_requests(author_id):
         print("\n")
         if hostname != to_host:
             if Node.objects.filter(pk=to_host).exists():
-                node = Node.objects.filter(pk=to_host)
+                node = Node.objects.get(foreign_server_hostname=to_host)
                 # quoted_author_id = quote(
                 #     author_id, safe='~()*!.\'')
                 headers = {"Content-Type: application/json",
