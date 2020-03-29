@@ -20,7 +20,7 @@ import requests
 import base64
 
 
-@validate_remote_server_authentication()
+# No Authentication Required
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
@@ -116,6 +116,9 @@ def retrieve_single_post_with_id(request, post_id):
             response = HttpResponse(base64.b64decode(post.content), status=200)
             response['Content-Type'] = post.contentType
             return response
+
+        if not check_perm(request, post.to_api_object()):
+            return HttpResponse("You do not have permission to see this post", status=401)
         return render(request, 'posts/post.html', {'post': post})
 
     # Get a single post

@@ -357,8 +357,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.save()
 
         # Now we can set source and origin
-        new_post.source = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
-        new_post.origin = settings.HOSTNAME + "/posts/" + str(new_post.id.hex)
+        new_post.source = settings.HOST_URI + "/posts/" + str(new_post.id.hex)
+        new_post.origin = settings.HOST_URI + "/posts/" + str(new_post.id.hex)
         new_post.save()
 
         # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
@@ -991,7 +991,7 @@ def post_creation_page(request):
     :return:
     """
     return render(request, 'posting.html', context={
-        'post_retrieval_url': settings.HOSTNAME + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
+        'post_retrieval_url': settings.HOST_URI + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
     })
 
 
