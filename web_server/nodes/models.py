@@ -48,3 +48,26 @@ class Node(models.Model):
         # self.password_registered_on_foreign_server = make_password(
         #     self.password_registered_on_foreign_server)
         super(Node, self).save(*args, **kwargs)
+
+    def get_safe_api_url(self, path):
+        """
+        Returns a url that will access this Node's API location.
+        Abstracts away choices like if a slash should be appended, or what protocol to use
+        """
+        api_url = self.foreign_server_api_location
+
+        # Strip away any protocol prefixes that may have accidentally been specified
+        api_url = api_url[8:] if api_url[:8] == 'https://' else api_url
+        api_url = api_url[7:] if api_url[:7] == 'http://' else api_url
+
+        # Strip away any remaining leading or trailing slashes that may have been specified for the api or path
+        api_url = api_url.strip('/')
+        stripped_path = path.strip('/')
+
+        # Construct the desired api path
+        api_url = f'http://{api_url}/{stripped_path}'
+
+        if self.append_slash:
+            api_url += "/"
+
+        return api_url

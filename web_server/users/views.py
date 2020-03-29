@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm
 from django.contrib.auth import views as auth_views
 from django.urls import reverse
+from users.models import Author
 
 
 class CustomLogin(auth_views.LoginView):
@@ -18,8 +19,12 @@ class CustomLogin(auth_views.LoginView):
 
 
 @login_required
-def profile(request,user_id):
-    return render(request, 'users/profile.html', {'user_id':user_id})
+def profile(request, user_id):
+    if Author.is_uid_local(user_id):
+        # @todo , this template expects a uuid in order to render, it should be able to handle a uid
+        return render(request, 'users/profile.html', {'user_id': Author.extract_uuid_from_uid(user_id)})
+    # @todo, see above, we dont yet have a profile viewing template that handles uids
+    return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
 
 @login_required
 def add_friend(request):
