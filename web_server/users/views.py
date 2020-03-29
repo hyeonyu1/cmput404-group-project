@@ -7,7 +7,7 @@ from .forms import UserRegisterForm
 from django.contrib.auth import views as auth_views
 from django.urls import reverse
 from users.models import Author
-
+from django.conf import settings
 
 class CustomLogin(auth_views.LoginView):
     def form_valid(self, form):
@@ -27,8 +27,10 @@ def profile(request, user_id):
     if Author.is_uid_local(user_id):
         # @todo , this template expects a uuid in order to render, it should be able to handle a uid
         return render(request, 'users/profile.html', {
-            'user_id': Author.extract_uuid_from_uid(user_id),
-            'user_full_id': user_id
+            'user_id': Author.extract_uuid_from_uid(user_id),  # uuid
+            'user_full_id': user_id,  # uid
+
+            'post_view_url': reverse('view_post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
         })
     # @todo, see above, we dont yet have a profile viewing template that handles uids
     return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
@@ -37,7 +39,16 @@ def view_post(request, post_path):
     """
     Local handler for viewing a post, the post might be local or foreign, and the path should determine that.
     """
-    pass
+    path = post_path.split('/')
+    host = path[0]
+
+    if host == settings.HOSTNAME:
+        # Local post, handle as normal by redirecting them to the current post viewer
+        return redirect(reverse('post', args=[path[-1]]))
+
+    # Foreign post
+    # @todo foreign post viewing
+    return HttpResponse('Foreign posts cannot be viewed from our local server at this time', status=404)
 
 @login_required
 def add_friend(request):

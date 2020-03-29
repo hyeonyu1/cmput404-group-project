@@ -85,7 +85,8 @@
 
 <template id="user-posts">
 
-    <a :href="'/posts/'+ [[ post.id]]" class="list-group-item list-group-item-action flex-column align-items-start">
+    <a :href="'{{ post_view_url }}' + [[post.source_host]] + '/posts/' + [[post.id]]"
+       class="list-group-item list-group-item-action flex-column align-items-start">
         <div class="d-flex w-100 justify-content-between">
             <h5 class="mb-1">[[post.title]]</h5>
             <small>[[post.published]]</small>
@@ -397,6 +398,12 @@
                 let url = "/author/" + user_id + "/posts";
                 window.axios.get(url).then((response) => {
                     for (let post of response.data["posts"]) {
+                        // Find the host of the post so we can fetch the post from them
+                        let source_host = post['source'];
+                        if(source_host.slice(0,8) === 'https://') {source_host = source_host.slice(8)}
+                        if(source_host.slice(0,7) === 'http://') {source_host = source_host.slice(7)}
+                        source_host = source_host.split('/')[0];
+                        post['source_host'] = source_host;
                         this.myposts.push(post);
                     }
 
