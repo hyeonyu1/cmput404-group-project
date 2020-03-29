@@ -16,7 +16,7 @@
                     </div>
                     <div class="col-sm-9 my-auto">
                         <div class="row justify-content-center">
-                            <h1 v-if="is_visitor" style="color: #362dff"> [[user.firstName ]]'s &nbsp; Profile </h1>
+                            <h1 v-if="is_visitor" style="color: #362dff"> [[user.firstName ]]'s Profile </h1>
                             <h1 v-else style="color: #22b315"> [[user.firstName ]], Welcome to Mandala </h1>
                         </div>
                         <div class="row justify-content-center">
@@ -34,7 +34,12 @@
             <button class="btn" v-bind:class="show['info']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('info')">Info</button>
             <button class="btn" v-bind:class="show['friend']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend')">Friends</button>
             <button class="btn" v-bind:class="show['friend_request']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend_request')">Friend Requests</button>
+
+            {% if user.uid == user_full_id %}
             <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('post')">My Stream</button>
+            {% else %}
+            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('post')">Their Stream</button>
+            {% endif %}
         </div>
 
         <div class="row">
@@ -98,7 +103,7 @@
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'/user/profile/' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
+                <a v-bind:href="'/user/profile/' + friend.id">[[friend.firstName + ' ' + friend.lastName]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
                     @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
 

@@ -22,7 +22,10 @@ class CustomLogin(auth_views.LoginView):
 def profile(request, user_id):
     if Author.is_uid_local(user_id):
         # @todo , this template expects a uuid in order to render, it should be able to handle a uid
-        return render(request, 'users/profile.html', {'user_id': Author.extract_uuid_from_uid(user_id)})
+        return render(request, 'users/profile.html', {
+            'user_id': Author.extract_uuid_from_uid(user_id),
+            'user_full_id': user_id
+        })
     # @todo, see above, we dont yet have a profile viewing template that handles uids
     return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
 
