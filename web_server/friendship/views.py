@@ -89,7 +89,16 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
     data["friend"] = friend_info
     json_data = json.dumps(data)
     headers = {'Content-Type': 'application/json'}
+    print("\n")
+    print("\n")
+    print("\n")
+    print("\n")
+    print("\n")
     print(data)
+    print("\n")
+    print("\n")
+    print("\n")
+    print("\n")
     url = "http://{}/friendrequest".format(
         node.foreign_server_api_location.rstrip("/"))
     if node.append_slash:
