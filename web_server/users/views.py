@@ -20,6 +20,10 @@ class CustomLogin(auth_views.LoginView):
 
 @login_required
 def profile(request, user_id):
+    """
+    Local handler for viewing author profiles, the author in question might be local or foreign,
+    both should be supported
+    """
     if Author.is_uid_local(user_id):
         # @todo , this template expects a uuid in order to render, it should be able to handle a uid
         return render(request, 'users/profile.html', {
@@ -28,6 +32,12 @@ def profile(request, user_id):
         })
     # @todo, see above, we dont yet have a profile viewing template that handles uids
     return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
+
+def view_post(request, post_path):
+    """
+    Local handler for viewing a post, the post might be local or foreign, and the path should determine that.
+    """
+    pass
 
 @login_required
 def add_friend(request):
