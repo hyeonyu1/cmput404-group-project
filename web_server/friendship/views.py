@@ -229,6 +229,7 @@ def invalidate_friend_requests(author_id):
         print("\n")
         print("\n")
         print(hostname, to_host, to_author_id)
+        # testing-mandala-2.herokuapp.com testing-mandala.herokuapp.com ea9c2f9a980d4fe18a2988770417be19
         print("\n")
         print("\n")
         print("\n")
@@ -236,16 +237,27 @@ def invalidate_friend_requests(author_id):
         if hostname != to_host:
             if Node.objects.filter(pk=hostname).exists():
                 node = Node.objects.filter(pk=hostname)
-                quoted_author_id = quote(
-                    author_id, safe='~()*!.\'')
+                # quoted_author_id = quote(
+                #     author_id, safe='~()*!.\'')
                 headers = {"Content-Type: application/json",
                            "Accept: application/json"}
                 url = "https://{}/author/{}/friends/{}".format(
-                    node.foreign_server_api_location.rstrip("/"), to_author_id, quoted_author_id)
+                    node.foreign_server_api_location.rstrip("/"), to_author_id, author_id)
                 res = requests.get(url, headers=headers, auth=(
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
                 if res.status_code >= 200 and res.status_code < 300:
                     res = res.josn()
+                    print("\n")
+                    print("\n")
+                    print("\n")
+                    print("\n")
+                    print("\n")
+                    print(res)
+                    print("\n")
+                    print("\n")
+                    print("\n")
+                    print("\n")
+                    print("\n")
                     # if they are friends
                     if res["friends"]:
                         if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
