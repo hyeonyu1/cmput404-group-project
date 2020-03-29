@@ -169,7 +169,8 @@ def send_friend_request(request):
 # http://service/friendrequest/{author_id}
 
 # internal endpoints
-@login_required
+
+
 def retrieve_friend_request_of_author_id(request, author_id):
     if request.method == "GET":
         # construct full url of author id
@@ -210,8 +211,9 @@ def invalidate_friend_requests(author_id):
     for request in friend_requests:
         to_host = request.to_id.split("/")[0]
         to_author_id = request.to_id.split("/")[2]
-        print(hostname, to_host, to_author_id)
+
         # foreign requests -> call foreign server endpoint to validate
+        print(hostname, to_host, to_author_id)
         if hostname != to_host:
             if Node.objects.filter(pk=hostname).exists():
                 node = Node.objects.filter(pk=hostname)
@@ -228,9 +230,10 @@ def invalidate_friend_requests(author_id):
                         if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
                             FriendRequest.objects.filter(from_id=author_id).filter(
                                 to_id=request.to_id).delete()
-                            new_friend = Friend(
-                                author_id=author_id, friend_id=request.to_id)
-                            new_friend.save()
-                            new_friend = Friend(
-                                author_id=request.to_id, friend_id=author_id)
-                            new_friend.save()
+                            if not Friend.objects.filter(author_id=author_id).filter(friend_id=request.to_id).exists():
+                                new_friend = Friend(
+                                    author_id=author_id, friend_id=request.to_id)
+                                new_friend.save()
+                                new_friend = Friend(
+                                    author_id=request.to_id, friend_id=author_id)
+                                new_friend.save()
