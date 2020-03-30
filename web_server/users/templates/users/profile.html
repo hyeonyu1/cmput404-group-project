@@ -178,6 +178,15 @@
         props: ['post', 'myposts'],
         template: '#user-posts'
     });
+    
+    class Friend{
+        constructor(uid,firstName,lastName){
+            this.uid=uid;
+            this.firstName=firstName;
+            this.lastName=lastName;
+            this.isDeleted=false;
+        }
+    }
 
     var app = new Vue({
         el: '#app',
