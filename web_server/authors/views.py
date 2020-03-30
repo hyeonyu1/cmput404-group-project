@@ -174,7 +174,6 @@ def unfriend(request):
         # strip protocol from url
         author_id = url_regex.sub('', body.get("author_id", ""))
         friend_id = url_regex.sub('', body.get("friend_id", ""))
-        print(author_id,"jjjj",friend_id )
         if not author_id or not friend_id:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
