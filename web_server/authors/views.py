@@ -167,12 +167,14 @@ def view_list_of_available_authors_to_befriend(request, author_id):
 
 # @login_required
 def unfriend(request):
+
     if request.method == 'POST':
         body = request.body.decode('utf-8')
         body = json.loads(body)
         # strip protocol from url
         author_id = url_regex.sub('', body.get("author_id", ""))
         friend_id = url_regex.sub('', body.get("friend_id", ""))
+        print(author_id,"jjjj",friend_id )
         if not author_id or not friend_id:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
