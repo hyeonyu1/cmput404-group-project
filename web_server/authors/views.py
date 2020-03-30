@@ -18,13 +18,18 @@ from django.conf import settings
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
+from friendship.views import FOAF_verification
 from django.contrib.auth.decorators import login_required
 
 from django.conf import settings
+from json import loads
+from django.core import serializers
 import requests
 
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import is_aware, utc
+
+from django.contrib.auth.decorators import login_required
 
 
 import json
@@ -264,12 +269,15 @@ def retrieve_author_profile(request, author_id):
 
     return HttpResponse("You can only GET the URL", status=405)
 
-
+@validate_remote_server_authentication()
 def post_creation_and_retrieval_to_curr_auth_user(request):
     """
     Endpoint handler for service/author/posts
     POST is for creating a new post using the currently authenticated user
     GET is for retrieving posts visible to currently authenticated user
+
+    For servers, the 'currently authenticated user' is a node, and if you are authenticated as a node, you are root.
+    Thus we return all the posts, unless they are 'SERVERONLY'
     :param request:
     :return:
     """
@@ -382,6 +390,23 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         else:
             return redirect("/")
 
+    # Response to a server, servers are considered 'root' and get all posts except for 'SERVERONLY' because
+    # they have no reason to see those ones.
+    def api_response(request, posts, pager, pagination_uris):
+        output = {
+            "query": "posts",
+            "count": pager.count,
+            "size": len(posts),
+            "posts": [post.to_api_object() for post in posts]
+        }
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
+        return JsonResponse(output)
+
+    # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
         # own post
         own_post = Post.objects.filter(
@@ -439,7 +464,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             author_id = Author.objects.get(uid=post.author_id)
 
             author_info = {
-                "id": str(author_id.uid),
+                "id": "http://" + str(author_id.uid),
                 "email": str(author_id.email),
                 "bio": str(author_id.bio),
                 "host": str(author_id.host),
@@ -482,7 +507,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "size": int(size),
                 "next": str(next_http),
                 "comments": comments,  # return ~5
-                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'), str(post.published).split("+")[-1]),
+                "published": "{}+{}".format(post.published.strftime('%Y-%m-%dT%H:%M:%S'),
+                                            str(post.published).split("+")[-1]),
                 "visibility": str(post.visibility),
                 "visibleTo": visible_to_list,
                 "unlisted": post.unlisted
@@ -493,7 +519,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         uri = request.build_absolute_uri()
 
         if page_num > pager.num_pages:
-            # print("here")
             response_data = {
                 "query": "posts",
                 "count": int(count),
@@ -542,11 +567,15 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         return JsonResponse(response_data)
 
-    return Endpoint(request, None, [
-        Handler("POST", "application/json", create_new_post),
-        Handler("GET", "application/json", retrieve_posts)
-    ]).resolve()
-
+    if request.user.is_authenticated:
+        return Endpoint(request, None, [
+            Handler("POST", "application/json", create_new_post),
+            Handler('GET', 'application/json', retrieve_posts)
+        ]).resolve()
+    else:
+        return Endpoint(request, Post.objects.all().exclude(visibility="SERVERONLY").order_by("-published"), [
+            PagingHandler("GET", "application/json", api_response)
+        ]).resolve()
 
 # Returns 5 newest comment on the post
 def get_comments(post_id):
@@ -564,7 +593,7 @@ def get_comments(post_id):
             "published": "{}+{}".format(comment.published.strftime('%Y-%m-%dT%H:%M:%S'),
                                         str(comment.published).split("+")[-1]),
             "author": {
-                "id": str(author.uid),
+                "id": "http://" + str(author.uid),
                 "email": str(author.email),
                 "bio": str(author.bio),
                 "host": str(author.host),
@@ -672,12 +701,29 @@ def post_edit_and_delete(request, post_id):
 
 # http://service/author/{AUTHOR_ID}/posts
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
-
-
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
     id_of_author = author_id
+    # 127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5
+    uid = "{}/author/{}".format(request.get_host(),author_id)
+
+    def json_handler(request, posts, pager, pagination_uris):
+
+        output = {
+            "query": "posts",
+            "count": pager.count,
+            "size": len(posts),
+            "posts": [post.to_api_object() for post in posts]
+        }
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
+        return JsonResponse(output)
 
     def retrieve_author_posts(request):
+        print(request.user.uid)
+
         try:
             valid_uuid = UUID(id_of_author, version=4)
 
@@ -698,6 +744,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         host = request.get_host()
 
         author_uid = host + "/author/" + str(id_of_author)
+
+        FOAF_verification(request, id_of_author)
+
 
         if author_uid == request.user.uid:
             visible_post = Post.objects.filter(
@@ -754,7 +803,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             print(post.author_id)
             author_id = Author.objects.get(uid=post.author_id)
             author_info = {
-                "id": str(author_id.uid),
+                "id": "http://" + str(author_id.uid),
                 "email": str(author_id.email),
                 "bio": str(author_id.bio),
                 "host": str(author_id.host),
@@ -850,9 +899,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
         return JsonResponse(response_data)
 
-    return Endpoint(request, None, [
-        Handler("GET", "application/json", retrieve_author_posts)]
-    ).resolve()
+    return Endpoint(request, Post.objects.filter(author=uid).order_by("-published"), [
+        # Handler("GET", "application/json", retrieve_author_posts)
+        PagingHandler("GET","application/json", json_handler)
+        ]).resolve()
 
 
 # Ida Hou
