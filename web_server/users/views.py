@@ -65,10 +65,13 @@ def view_post(request, post_path):
     node = Node.objects.get(foreign_server_hostname=host)
     req = node.make_api_get_request(f'posts/{post_id}')
     #@todo foreign post error handling
+    # try:
     return render(request, 'posts/post.html', {
-        'post': req.json()['post'][0],
-        'user': request.user
+        'post': req.json()['posts'][0]
     })
+    # except:
+    #     return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
+    #                         "We are unable to show the post at this time", status=500)
 
 @login_required
 def add_friend(request):
