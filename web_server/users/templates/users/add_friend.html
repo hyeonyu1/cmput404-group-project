@@ -1,0 +1,121 @@
+{% extends "navigation.html" %}
+{% block navigation_content %}
+
+<div id="app">
+    <div class="container">
+        <div class="list-group">
+            <h3>Available friends: </h3>
+            <div :href="[[ friend.id]]" v-for="friend in friends"
+                class="list-group-item list-group-item-action flex-column align-items-start">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">[[friend.displayName]]</h5>
+                    <h5 class="mb-1">[[friend.host]]</h5>
+                    <button class="btn btn-info" style="color: white" @click="add_friend(friend)">Add Friend</button>
+                </div>
+
+            </div>
+            </post-list>
+        </div>
+    </div>
+</div>
+
+<template id="list-post">
+
+    <a :href="[[ post.id]]" class="list-group-item list-group-item-action flex-column align-items-start">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">[[post.title]]</h5>
+            <small>[[post.published]]</small>
+        </div>
+        <p class="mb-1">[[post.content]]</p>
+        <small>[[post.author.firstName]] [[post.author.lastName]]</small>
+    </a>
+    <div>
+
+    </div>
+</template>
+
+<script>
+    Vue.component('friend-list', {
+        delimiters: ['[[', ']]'],
+        props: ['friend', 'index', 'is_visitor'],
+        template: '#friend-list'
+    });
+
+
+    var app = new Vue({
+        el: '#app',
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                friends: []
+            }
+
+        },
+
+        methods: {
+
+            // Retrieve users' potential friends
+            get_potential_friends(author_id) {
+                let url = '/author/' + author_id + '/addfriend/';
+                console.log(url);
+                window.axios.get(url).then((response) => {
+                    this.friends = response.data.available_authors_to_befriend;
+                }).catch((error) => {
+                    console.log(error);
+                });
+            },
+
+            add_friend(friend) {
+                const doc = {
+                    "query": "friendrequest",
+                    'author': {
+                        'id': '{{user.uid}}',
+                        'host': '{{user.host}}',
+                        'displayName': '{{user.display_name}}',
+                        "url": '{{user.url}}'
+                    },
+                    'friend': {
+                        'id': friend.id,
+                        'host': friend.host,
+                        'displayName': friend.displayName,
+                        "url": friend.url
+                    }
+                };
+
+                window.axios.post("/friendrequest/", {
+                    'query': 'friendrequest',
+                    'author': {
+                        'id': 'https://{{user.uid}}',
+                        'host': 'https://{{user.host}}/',
+                        'displayName': '{{user.display_name}}',
+                        "url": 'https://{{user.url}}'
+                    },
+                    'friend': {
+                        'id': friend.id,
+                        'host': friend.host,
+                        'displayName': friend.displayName,
+                        "url": friend.url
+                    }
+                }).then((response) => {
+                    if (response.status === 201 || response.status == 200) {
+                        alert("Friend Request Successfully Sent!");
+                    } else {
+                        alert(response.status);
+                    }
+
+                }).catch((err => {
+
+
+                    let errorMessage = err.message + "! Friendship already exist! OR Friend Request already Sent!";
+                    alert(errorMessage);
+                }));
+            },
+        },
+
+        created() {
+            this.get_potential_friends('{{user.id.hex}}');
+        }
+
+    });
+</script>
+{% endblock %}

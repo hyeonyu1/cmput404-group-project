@@ -71,3 +71,19 @@ class Author(AbstractUser):
                 "url": self.uid,
                 "github": self.github
             }
+
+    @staticmethod
+    def is_uid_local(uid):
+        """
+        Tests if a given uid is local to the server. If it belongs to a local user, it returns True, otherwise False
+        """
+        if settings.HOSTNAME in uid:
+            return True
+        return False
+
+    @staticmethod
+    def extract_uuid_from_uid(uid):
+        """
+        Given a uid (uri pointing to author), returns the uuid that is unique to the user
+        """
+        return uid.split('/')[-1]

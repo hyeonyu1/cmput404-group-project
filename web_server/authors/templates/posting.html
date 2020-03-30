@@ -126,7 +126,7 @@
                 request.onreadystatechange = function() {
                     if (request.readyState === 4) {
                         if(request.response.success === "true"){
-                            let url = "{% url 'post' '00000000000000000000000000000000'%}".replace(/00000000000000000000000000000000\//, "");
+                            let url = "{{ post_retrieval_url }}";
                             document.querySelector('#content').value += '!['+file.name+']';
                             document.querySelector('#content').value += (`(${url}${request.response.msg})`);
                         } else {

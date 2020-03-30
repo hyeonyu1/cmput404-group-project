@@ -14,7 +14,7 @@ import os
 import django_heroku
 
 
-HOSTNAME = "https://cmput404-group-project-mandala.herokuapp.com"
+HOSTNAME = "https://cmput404-group-project-mandala.herokuapp.com" if os.getenv("MANDALA_HOSTNAME") is None else os.getenv("MANDALA_HOSTNAME")
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -29,7 +29,8 @@ SECRET_KEY = 'fwbz+80c!ed=a$9x86vwexzl7ply4ay%9#%pbqtffq!aegd4j@'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'cmput404-group-project-mandala.herokuapp.com'
+    'cmput404-group-project-mandala.herokuapp.com',
+    'testing-social-distribution.herokuapp.com'
 ]
 
 
@@ -139,7 +140,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
-LOGIN_REDIRECT_URL = 'post_index'
+LOGIN_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
 AUTH_USER_MODEL = 'users.Author'  # new
 

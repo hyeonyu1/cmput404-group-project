@@ -20,7 +20,8 @@
                             <h1 v-else style="color: #22b315"> [[user.firstName ]], Welcome to Mandala </h1>
                         </div>
                         <div class="row justify-content-center">
-                            <button v-if="is_visitor && !is_already_friend" class="btn btn-light" @click="app.add_friend()">Add Friend</button>
+                            <button v-if="is_visitor && !is_already_friend" class="btn btn-light"
+                                @click="app.add_friend()">Add Friend</button>
                         </div>
                     </div>
                 </div>
@@ -29,29 +30,18 @@
             <div class="col-sm-1"></div>
         </div>
 
-        <div class="row">
-            <div class="col-sm-4"></div>
-            <div class="col-sm-4">
-                <div class="form-group">
-                        <button class="btn" @click="app.show_page('info')">Info</button>
-                        <button class="btn" @click="app.show_page('friend')">Friends</button>
-                        <button class="btn" @click="app.show_page('friend_request')">Friend Requests</button>
-                        <button class="btn" @click="app.show_page('post')">My Post</button>
-                </div>
-            </div>
-            <div class="col-sm-4"></div>
+        <div class="row justify-content-center">
+            <button class="btn" v-bind:class="show['info']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('info')">Info</button>
+            <button class="btn" v-bind:class="show['friend']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend')">Friends</button>
+            <button class="btn" v-bind:class="show['friend_request']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend_request')">Friend Requests</button>
+            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('post')">My Stream</button>
         </div>
 
         <div class="row">
             <div class="col-sm-1"></div>
             <div class="col-sm-10">
-                <nav-content
-                :show="show"
-                :friends="friends"
-                :request_senders="request_senders"
-                :user="user"
-                :is_visitor="is_visitor"
-                :myposts="myposts">
+                <nav-content :show="show" :friends="friends" :request_senders="request_senders" :user="user"
+                    :is_visitor="is_visitor" :myposts="myposts">
 
                 </nav-content>
             </div>
@@ -65,38 +55,24 @@
     <div>
         <div class="card card-body">
             <ul class="list-group" v-if="show['friend_request'] && !is_visitor">
-                <request-list
-                    v-for="(sender, index) in request_senders"
-                    v-bind:sender="sender"
-                    v-bind:index="index"
-                    v-bind:is_visitor="is_visitor"
-                >
+                <request-list v-for="(sender, index) in request_senders" v-bind:sender="sender" v-bind:index="index"
+                    v-bind:is_visitor="is_visitor">
                 </request-list>
             </ul>
 
             <ul class="list-group" v-if="show['friend']">
-                <friend-list
-                    v-for="(friend, index) in friends"
-                    v-bind:friend="friend"
-                    v-bind:index="index"
-                    v-bind:is_visitor="is_visitor"
-                >
-                >
+                <friend-list v-for="(friend, index) in friends" v-bind:friend="friend" v-bind:index="index"
+                    v-bind:is_visitor="is_visitor">
+                    >
                 </friend-list>
             </ul>
 
             <div class="list-group" v-if="show['post']">
-                <user-posts
-                    v-for="post in myposts"
-                    v-bind:post="post">
+                <user-posts v-for="post in myposts" v-bind:post="post">
                 </user-posts>
             </div>
 
-            <user-info
-                v-bind:user="user"
-                v-if="show['info']"
-                :is_visitor="is_visitor"
-            >
+            <user-info v-bind:user="user" v-if="show['info']" :is_visitor="is_visitor">
             </user-info>
         </div>
     </div>
@@ -106,8 +82,8 @@
 
     <a :href="'/posts/'+ [[ post.id]]" class="list-group-item list-group-item-action flex-column align-items-start">
         <div class="d-flex w-100 justify-content-between">
-        <h5 class="mb-1">[[post.title]]</h5>
-        <small>[[post.published]]</small>
+            <h5 class="mb-1">[[post.title]]</h5>
+            <small>[[post.published]]</small>
         </div>
         <p class="mb-1">[[post.content]]</p>
         <small>[[post.author.firstName]] [[post.author.lastName]]</small>
@@ -123,7 +99,8 @@
         <li class="list-group-item">
             <div class="form-inline">
                 <a v-bind:href="'/user/profile/' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
-                <button class="btn btn-primary" v-if="!is_visitor" @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
+                <button class="btn btn-primary" v-if="!is_visitor"
+                    @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
 
             </div>
         </li>
@@ -136,8 +113,10 @@
         <li class="list-group-item">
             <div class="form-inline">
                 <a v-bind:href="'/user/profile/' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
-                <button class="btn btn-primary" v-if="!is_visitor" @click="app.accept(sender.id, '{{ user.uid }}', index)">Accept</button>
-                <button class="btn btn-warning" v-if="!is_visitor" @click="app.deny(sender.id, '{{ user.uid }}', index)">Deny</button>
+                <button class="btn btn-primary" v-if="!is_visitor"
+                    @click="app.accept(sender, '{{ user.uid }}', '{{ user.host }}','{{ user.display_name}}', index)">Accept</button>
+                <button class="btn btn-warning" v-if="!is_visitor"
+                    @click="app.deny(sender, '{{ user.uid }}', '{{ user.host }}','{{ user.display_name}}', index)">Deny</button>
             </div>
         </li>
     </div>
@@ -148,26 +127,23 @@
     <div class="container profile-info-body">
         <div class="form-group">
             <label for="first_name">Firstname: </label>
-            <input class="form-control" id="first_name" type="text" name="first_name"
-                v-model="user.firstName">
+            <input class="form-control" id="first_name" type="text" name="first_name" v-model="user.firstName">
             <label for="last_name">Lastname: </label>
-            <input class="form-control" id="last_name" type="text" name="last_name"
-                v-model="user.lastName">
+            <input class="form-control" id="last_name" type="text" name="last_name" v-model="user.lastName">
             <label for="display_name">Displayname: </label>
-            <input class="form-control" id="display_name" type="text" name="display_name"
-                v-model=" user.displayName">
+            <input class="form-control" id="display_name" type="text" name="display_name" v-model=" user.displayName">
             <label for="email">Email: </label>
-            <input class="form-control" id="email" type="text" name="email"
-                v-model="user.email">
+            <input class="form-control" id="email" type="text" name="email" v-model="user.email">
             <label for="bio">Bio: </label>
             <input class="form-control" id="bio" type="text" name="bio" v-model="user.bio">
             <label for="github">Github: </label>
-            <input class="form-control" id="github" type="text" name="github"
-                v-model=" user.github">
+            <input class="form-control" id="github" type="text" name="github" v-model=" user.github">
         </div>
         <div class="row justify-content-between">
-                <button v-if="!is_visitor" class="btn btn-outline-primary ml-3" @click="app.edit('{{ user.id.hex }}')">Edit</button>
-                <button v-if="!is_visitor" class="btn btn-outline-danger mr-3" @click="app.delete_account('{{ user.id.hex }}')">Delete My Account</button>
+            <button v-if="!is_visitor" class="btn btn-outline-primary ml-3"
+                @click="app.edit('{{ user.id.hex }}')">Edit</button>
+            <button v-if="!is_visitor" class="btn btn-outline-danger mr-3"
+                @click="app.delete_account('{{ user.id.hex }}')">Delete My Account</button>
         </div>
     </div>
 </template>
@@ -176,30 +152,30 @@
 <script>
     Vue.component('request-list', {
         delimiters: ['[[', ']]'],
-        props: ['sender', 'index','is_visitor'],
+        props: ['sender', 'index', 'is_visitor'],
         template: '#list-item'
     });
 
-    Vue.component('nav-content',{
-        props: ['show', 'friends', 'user', 'request_senders','is_visitor','myposts'],
+    Vue.component('nav-content', {
+        props: ['show', 'friends', 'user', 'request_senders', 'is_visitor', 'myposts'],
         template: '#nav'
     });
 
     Vue.component('friend-list', {
         delimiters: ['[[', ']]'],
-        props: ['friend', 'index','is_visitor'],
+        props: ['friend', 'index', 'is_visitor'],
         template: '#list-friend'
     });
 
     Vue.component('user-info', {
         delimiters: ['[[', ']]'],
-        props: ['user','is_visitor'],
+        props: ['user', 'is_visitor'],
         template: '#user-info'
     });
 
-    Vue.component('user-posts',{
+    Vue.component('user-posts', {
         delimiters: ['[[', ']]'],
-        props: ['post','myposts'],
+        props: ['post', 'myposts'],
         template: '#user-posts'
     });
 
@@ -211,16 +187,16 @@
                 request_senders: [],
                 user: {},
                 friends: [],
-                myposts:[],
+                myposts: [],
                 show: {
-                    'info':true,
-                    'friend':false,
-                    'friend_request':false,
-                    'post':false,
+                    'info': true,
+                    'friend': false,
+                    'friend_request': false,
+                    'post': false,
                 },
 
-                is_visitor:true,
-                is_added:false,
+                is_visitor: true,
+                is_added: false,
                 is_already_friend: false
             }
         },
@@ -230,17 +206,15 @@
                 let url = '/author/' + id;
                 window.axios.get(url).then((response) => {
                     this.user = response.data;
-                    let alist=this.user.id.split('/');
-                    let user_id = alist[alist.length-1];
-                    console.log(user_id);
-                    console.log('{{user.id.hex}}');
-                    if('{{user.id.hex}}' === user_id){
-                        this.is_visitor=false
+                    let alist = this.user.id.split('/');
+                    let user_id = alist[alist.length - 1];
+                    // console.log(user_id);
+                    // console.log('{{user.id.hex}}');
+                    if ('{{user.id.hex}}' === user_id) {
+                        this.is_visitor = false
                     }
 
-                    for (let friend of response.data['friends']){
-                        let idlist = friend.id.split('/');
-                        friend['uid']= idlist[idlist.length - 1];
+                    for (let friend of response.data['friends']) {
                         this.friends.push(friend);
                     }
                 })
@@ -265,52 +239,72 @@
                     }
                 });
             },
-
+            // checked 
             // Accept users' friend requests
-            accept: function (sender_id, user_id, index) {
+            accept: function (sender, user_uid, user_host, user_display_name, index) {
+
                 window.axios.post("/friendrequest/handle", {
                     // Author id is from_id (Other's id)
                     "author": {
-                        "id": sender_id
+                        "id": sender.id,
+                        "host": sender.host,
+                        "displayName": sender.displayName,
+                        "url": sender.url
                     },
                     // Friend id is to_id (Your id)
                     "friend": {
-                        "id":  user_id
+                        "id": user_uid,
+                        "host": user_host,
+                        "displayName": user_display_name,
+                        "url": user_uid
                     }
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status == 200 || response.status == 201) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
+                }).catch(error => {
+                    let errorMessage = error.message + "! Friendship already exist!";
+                    alert(errorMessage);
+                    this.request_senders[index]['isDeleted'] = true;
                 })
             },
+            // checked 
             // Deny users' friend requests
-            deny: function (sender_id, user_id, index) {
+            deny: function (sender, user_uid, user_host, user_display_name, index) {
                 window.axios.delete("/friendrequest/handle", {
                     data: {
+                        // Author id is from_id (Other's id)
                         "author": {
-                            "id": sender_id
+                            "id": sender.id,
+                            "host": sender.host,
+                            "displayName": sender.displayName,
+                            "url": sender.url
                         },
                         // Friend id is to_id (Your id)
                         "friend": {
-                            "id": user_id
+                            "id": user_uid,
+                            "host": user_host,
+                            "displayName": user_display_name,
+                            "url": user_uid
                         }
                     }
 
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status == 200 || response.status == 201) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
                     }
                 })
             },
+            // checked
             // Delete users' friends
             unfriend: function (friend_id, user_id, index) {
                 window.axios.post("/author/unfriend", {
                     'author_id': user_id,
                     'friend_id': friend_id
                 }).then((response) => {
-                    if (response.status === 200) {
+                    if (response.status == 200 || response.status == 201) {
                         alert(response.data);
                         this.friends[index]['isDeleted'] = true;
                     }
@@ -322,11 +316,11 @@
 
                 window.axios.post("/author/" + user_id + "/update", {
 
-                    'delete':false,
-                    'first_name':this.user.firstName,
-                    'last_name':this.user.lastName,
-                    'email':this.user.email,
-                    'bio':this.user.bio,
+                    'delete': false,
+                    'first_name': this.user.firstName,
+                    'last_name': this.user.lastName,
+                    'email': this.user.email,
+                    'bio': this.user.bio,
                     'github': this.user.github,
                     'display_name': this.user.displayName
 
@@ -335,24 +329,22 @@
                         alert("Profile successfully updated");
                     }
                 });
-
-
             },
 
             //This function is used to allow users delete their account
-            delete_account(user_id){
+            delete_account(user_id) {
 
                 window.axios.post("/author/" + user_id + "/update", {
-                    'delete':true,
-                    'first_name':this.user.firstName,
-                    'last_name':this.user.lastName,
-                    'email':this.user.email,
-                    'bio':this.user.bio,
+                    'delete': true,
+                    'first_name': this.user.firstName,
+                    'last_name': this.user.lastName,
+                    'email': this.user.email,
+                    'bio': this.user.bio,
                     'github': this.user.github,
                     'display_name': this.user.displayName
 
                 }).then((response) => {
-                    if(response.status === 200) {
+                    if (response.status === 200) {
                         alert("Delete successfully !");
                         window.location.reload();
                     }
@@ -360,40 +352,46 @@
             },
 
             show_page(name) {
-                this.show[name]=true;
-                for(let key in this.show){
-                    if(key != name){
-                        this.show[key]=false;
+                this.show[name] = true;
+                for (let key in this.show) {
+                    if (key != name) {
+                        this.show[key] = false;
                     }
                 }
             },
 
-            add_friend(){
-                window.axios.post("/friendrequest/",{
-                    'author':{'id': '{{user.uid}}'},
-                    'friend':{'id': this.user.id}
-                }).then((response) =>{
+            add_friend() {
+                window.axios.post("/friendrequest/", {
+                    'author': {
+                        'id': '{{user.uid}}',
+                        'host': '{{user.host}}',
+                        'displayName': '{{user.display_name}}',
+                        "url": '{{user.url}}'
+                    },
+                    'friend': {
+                        'id': this.user.id,
+                        'host': this.user.host,
+                        'displayName': this.user.displayName,
+                        "url": this.user.url
+                    }
+                }).then((response) => {
                     alert(response.data);
-
                 }).catch((err => {
                     alert("You already followed this user/ You already sent the friend request.");
                 }));
             },
 
-            check_already_friend(user_id, author_id){
-                window.axios.get("/author/"+user_id+ "/friends/" + author_id).then((response)=>{
-                    this.is_already_friend=response.data["friends"];
+            check_already_friend(user_id, author_id) {
+                window.axios.get("/author/" + user_id + "/friends/" + author_id).then((response) => {
+                    this.is_already_friend = response.data["friends"];
                 });
-
             },
 
             //Retrieve all posts made by the current authenticated user
-            get_mypost(user_id){
-                let url = "/author/"+user_id+"/posts";
-                window.axios.get(url).then((response)=>{
-
-                    for (let post of response.data["posts"]){
-                        console.log(post);
+            get_mypost(user_id) {
+                let url = "/author/" + user_id + "/posts";
+                window.axios.get(url).then((response) => {
+                    for (let post of response.data["posts"]) {
                         this.myposts.push(post);
                     }
 
@@ -406,7 +404,8 @@
         created() {
             this.get_user("{{user_id}}");
             this.get_request('/friendrequest/{{user_id}}');
-            this.check_already_friend("{{user_id}}","{{user.uid}}");
+
+            this.check_already_friend("{{user_id}}", "{{user.uid}}");
             this.get_mypost("{{user_id}}");
         }
     });

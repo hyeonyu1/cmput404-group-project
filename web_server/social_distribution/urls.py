@@ -18,7 +18,7 @@ from django.urls import include, path
 from . import views
 from users import views as users_views
 urlpatterns = [
-    #After logging in successfully, redirect to home page
+    # After logging in successfully, redirect to home page
     path('', views.home),
     path('admin/', admin.site.urls),
 
@@ -29,6 +29,10 @@ urlpatterns = [
     path('friendrequest/', include('friendship.urls')),
     path('user/', include('users.urls')),
     path('github/', views.github, name='github'),
+
+
+    # Home is where we go after login, and also should be a starting point for all users
+    path('home/', views.landing_page, name='home')
 
 
 
