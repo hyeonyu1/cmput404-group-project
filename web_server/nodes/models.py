@@ -33,10 +33,10 @@ class Node(models.Model):
         max_length=500)
 
     # As a server admin, I want to share or not share images with users on other servers. #5
-    image_share = models.BooleanField(default=True)
+    image_share = models.BooleanField(default=False)
 
     # As a server admin, I want to share or not share posts with users on other servers. #6
-    post_share = models.BooleanField(default=True)
+    post_share = models.BooleanField(default=False)
 
     append_slash = models.BooleanField(default=False)
 
@@ -45,5 +45,6 @@ class Node(models.Model):
         self.foreign_server_password = make_password(
             self.foreign_server_password)
         # self.password_registered_on_foreign_server = make_password(
-        #     self.password_registered_on_foreign_server)
+        #     self.password_registered_on_foreign_server)=
+
         super(Node, self).save(*args, **kwargs)

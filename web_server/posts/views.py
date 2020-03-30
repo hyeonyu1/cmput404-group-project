@@ -61,19 +61,33 @@ def retrieve_all_public_posts_on_local_server(request):
 # access to a single post with id = {POST_ID}
 # http://service/posts/{POST_ID} 
 def retrieve_single_post_with_id(request, post_id):
+
+    def api_response(request, posts, pager, pagination_uris):
+        output = {
+            "query": "posts",
+            "count": pager.count,
+            "size": len(posts),
+            "posts": [post.to_api_object() for post in posts]
+        }
+        (prev_uri, next_uri) = pagination_uris
+        if prev_uri:
+            output['prev'] = prev_uri
+        if next_uri:
+            output['next'] = next_uri
+        return JsonResponse(output)
+
     def check_perm(request, json_posts):
         visibility = json_posts[0]["fields"]["visibility"]
         user = request.user.uid
         uid = json_posts[0]["fields"]["author"].split("/")[-1]
-        print("the post's visibility is set to {}".format(visibility))
-        print(uid)
+
         if user == json_posts[0]["fields"]["author"] or visibility == "PUBLIC":
             return True
 
-        # ???
         elif visibility == "FOAF":
-           # getting the friends of the author
-           FOAF_verification(request,json_posts[0]["fields"]["author"] )
+            # getting the friends of the author
+            return FOAF_verification(request, json_posts[0]["fields"]["author"])
+
         elif visibility == "SERVERONLY":
             if request.user.host == Author.objects.get(id=uid).host:
                 return True
@@ -88,9 +102,8 @@ def retrieve_single_post_with_id(request, post_id):
         else:
             return False
 
-
-    # what if the post is from a different server, is this only dealing with posts in our own server?
     def json_handler(request, posts, pager, pagination_uris):
+        print("here")
         # Use Django's serializers to encode the posts as a python object
         json_posts = loads(serializers.serialize('json', posts))
         output = {
@@ -98,32 +111,37 @@ def retrieve_single_post_with_id(request, post_id):
             "post": []
         }
         if check_perm(request, json_posts):
-            # Explicitly add authors to the serialization
-            author_exclude_fields = ('password',"is_superuser", "is_staff", "groups", "user_permissions")
-            json_authors = loads(serializers.serialize('json_e', [post.author for post in posts], exclude_fields=author_exclude_fields))
-            for i in range(0, len(json_posts)):
-                json_posts[i]['fields']['author'] = json_authors[i]['fields']  # avoid inserting the meta data
-
-                # As per the specification, get the 5 most recent comments
-                comments = Comment.objects.filter(parentPost=posts[i])[:5]
-                comments_json = loads(serializers.serialize('json', comments))
-                comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
-                # Explicitly add authors to the comments
-                for j in range(0, len(comments_json)):
-                    comments_json[j]['fields']['author'] = comments_author_json[i]['fields']  # avoid inserting meta data
-                # Strip meta data from each comment
-                comments_json = [comment['fields'] for comment in comments_json]
-                json_posts[i]['fields']['comments'] = comments_json
-
-
-            # And filter out the meta data from the top level object
-            for post in json_posts:
-                post['fields']['id'] = post['pk']
-            json_posts = [post['fields'] for post in json_posts]
-
+            # # Explicitly add authors to the serialization
+            # author_exclude_fields = ('password',"is_superuser", "is_staff", "groups", "user_permissions")
+            # json_authors = loads(serializers.serialize('json_e', [post.author for post in posts], exclude_fields=author_exclude_fields))
+            # for i in range(0, len(json_posts)):
+            #     json_posts[i]['fields']['author'] = json_authors[i]['fields']  # avoid inserting the meta data
+            #
+            #     # As per the specification, get the 5 most recent comments
+            #     comments = Comment.objects.filter(parentPost=posts[i])[:5]
+            #     comments_json = loads(serializers.serialize('json', comments))
+            #     comments_author_json = loads(serializers.serialize('json_e', [comment.author for comment in comments], exclude_fields=author_exclude_fields))
+            #     # Explicitly add authors to the comments
+            #     for j in range(0, len(comments_json)):
+            #         comments_json[j]['fields']['author'] = comments_author_json[i]['fields']  # avoid inserting meta data
+            #     # Strip meta data from each comment
+            #     comments_json = [comment['fields'] for comment in comments_json]
+            #     json_posts[i]['fields']['comments'] = comments_json
+            #
+            # # And filter out the meta data from the top level object
+            # for post in json_posts:
+            #     post['fields']['id'] = post['pk']
+            # json_posts = [post['fields'] for post in json_posts]
+            #
+            # output = {
+            #     "query": "getPost",
+            #     "post": json_posts
+            # }
             output = {
-                "query": "getPost",
-                "post": json_posts
+                "query": "posts",
+                "count": pager.count,
+                "size": len(posts),
+                "posts": [post.to_api_object() for post in posts]
             }
             (prev_uri, next_uri) = pagination_uris
             if prev_uri:
@@ -131,26 +149,62 @@ def retrieve_single_post_with_id(request, post_id):
             if next_uri:
                 output['next'] = next_uri
 
+
         return JsonResponse(output)
 
     def html_handler(request, posts, pager, pagination_uris):
+        print("here")
         post = Post.objects.get(id=post_id)
+
         if post.contentType == post.TYPE_PNG or post.contentType == post.TYPE_JPEG:
             # Note, this REQUIRES that the content be in base64 format.
             response = HttpResponse(base64.b64decode(post.content), status=200)
             response['Content-Type'] = post.contentType
             return response
-        return render(request, 'posts/post.html', {'post': post})
+
+        json_posts = loads(serializers.serialize('json', posts))
+        print(post)
+        if check_perm(request, json_posts):
+            return render(request, 'posts/post.html', {'post': post})
 
     # Get a single post
-    endpoint = Endpoint(request,
-                        Post.objects.filter(id=post_id),
+    # endpoint = Endpoint(request,
+    #                     Post.objects.filter(id=post_id),
+    #                     [
+    #                         PagingHandler("GET", "text/html", html_handler),
+    #                         PagingHandler("GET", "application/json", json_handler)
+    #                     ])
+    #
+    # return endpoint.resolve()
+    if request.user.is_authenticated:
+        return Endpoint(request, Post.objects.filter(id=post_id),
                         [
                             PagingHandler("GET", "text/html", html_handler),
                             PagingHandler("GET", "application/json", json_handler)
-                        ])
-
-    return endpoint.resolve()
+                        ]).resolve()
+    # else:
+    #     auth = request.META['HTTP_AUTHORIZATION'].split()
+    #     if len(auth) == 2:
+    #         if auth[0].lower() == "basic":
+    #             uname, passwd = base64.b64decode(
+    #                 auth[1]).decode('utf-8').rsplit(':', 1)
+    #     node = Node.objects.get(foreign_server_username=uname)
+    #
+    #     post = Post.objects.get(id=post_id)
+    #
+    #     if node.post_share and post.contentType in ["text/plain", "text/markdown"]:
+    #         query = Post.objects.get(id=post_id)
+    #     elif node.image_share and post.contentType in ["image/png;base64", "image/jpeg;base64"]:
+    #         query = Post.objects.get(id=post_id)
+    #     else:
+    #         return JsonResponse({
+    #             "success": False,
+    #             "message": "Post and image sharing is turned off"
+    #         }, status=403)
+    #
+    #     return Endpoint(request, query, [
+    #         PagingHandler("GET", "application/json", api_response)
+    #     ]).resolve()
 
 
 def comments_retrieval_and_creation_to_post_id(request, post_id):
