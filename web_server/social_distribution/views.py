@@ -2,6 +2,8 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
+from django.conf import settings
+
 
 def home(request):
     if request.method == 'GET':
@@ -22,6 +24,7 @@ def github(request):
 
 def landing_page(request):
     context = {
-        'post_viewing_url': reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
+        'post_viewing_url': reverse('view_post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', ''),
+        'local_hostname': settings.HOSTNAME
     }
     return render(request, 'home.html', context)

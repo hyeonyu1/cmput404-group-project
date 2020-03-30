@@ -18,7 +18,7 @@
                 <a class="nav-link" href="{% url 'home' %}">Home</a>
             </li>
             <li class="nav-item active">
-                <a class="nav-link" href="{% url 'profile' user.uid %}">Profile</a>
+                <a class="nav-link" href="{% url 'profile' request.user.uid %}">Profile</a>
             </li>
             <li class="nav-item active">
                 <a class="nav-link" href="{% url 'add_friend' %}">Add Friends</a>
@@ -28,7 +28,7 @@
         <div class="form-inline my-2 my-lg-0">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'profile' user.id.hex %}"><img src="{% static '/users/images/logo.jpg' %}"
+                    <a class="nav-link" href="{% url 'profile' request.user.id.hex %}"><img src="{% static '/users/images/logo.jpg' %}"
                             width="30" height="30" class="d-inline-block align-top" alt=""></a>
                 </li>
                 <li class="nav-item">
