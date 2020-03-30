@@ -124,6 +124,7 @@ def view_list_of_available_authors_to_befriend(request, author_id):
         is_active=1).filter(is_superuser=0)
     response_data = {}
     response_data["available_authors_to_befriend"] = []
+    response_data["errors"] = {}
     for each in authors_on_record:
         entry = {}
         entry["id"] = each.uid
@@ -138,7 +139,12 @@ def view_list_of_available_authors_to_befriend(request, author_id):
         res = requests.get(url, auth=(
             node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
         if res.status_code == 200 or res.status_code == 201:
-            response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
+            # We cannot trust that the server will return a valid json list. Sanitize
+            try:
+                res_json = res.json()
+                response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
+            except Exception as e:
+                response_data['errors'][node.get_safe_api_url()] = f"Could not parse json response, exception: {e}"
     # if author has no friends
     if not Friend.objects.filter(author_id=author_id).exists():
         return JsonResponse(response_data)
