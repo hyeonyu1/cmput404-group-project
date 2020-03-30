@@ -65,16 +65,13 @@ def retrieve_friends_of_author(authorid):
                 foreign_server_hostname = each.friend_id.split("/")[0]
                 if Node.objects.filter(foreign_server_hostname=foreign_server_hostname).exists():
                     node = Node.objects.get(pk=foreign_server_hostname)
-                    url = "http://{}/{}".format(
-                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[1])
+                    url = "http://{}/author/{}".format(
+                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[2])
 
                     res = requests.get(url)
 
                     if res.status_code == 200 or res.status_code == 201:
                         foreign_friend = res.json()
-                        print("\n\n\n\n\n\n\n")
-                        print(foreign_friend)
-                        print("\n\n\n\n\n\n\n")
                         entry['id'] = foreign_friend['id']
                         entry['host'] = foreign_friend['host']
                         entry['displayName'] = foreign_friend['displayName']
