@@ -72,6 +72,9 @@ def retrieve_friends_of_author(authorid):
 
                     if res.status_code == 200 or res.status_code == 201:
                         foreign_friend = res.json()
+                        print("\n\n\n\n\n\n\n")
+                        print(foreign_friend)
+                        print("\n\n\n\n\n\n\n")
                         entry['id'] = foreign_friend['id']
                         entry['host'] = foreign_friend['host']
                         entry['displayName'] = foreign_friend['displayName']
