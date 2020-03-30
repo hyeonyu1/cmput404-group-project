@@ -20,6 +20,7 @@ urlpatterns = [
          views.check_if_two_authors_are_friends, name="check_if_two_authors_are_friends"),
     path('<slug:author_id>/', views.retrieve_author_profile,
          name="retrieve_author_profile"),
+    path('<path:author_id>/', views.retrieve_universal_author_profile),
     path('', views.return_all_authors_registered_on_local_server,
          name="retrieve_all_authors"),
     path('<slug:author_id>/update', views.update_author_profile,
