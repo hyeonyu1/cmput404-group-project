@@ -66,7 +66,7 @@ def view_post(request, post_path):
     req = node.make_api_get_request(f'posts/{post_id}')
     #@todo foreign post error handling
     # try:
-    return render(request, 'posts/post.html', {
+    return render(request, 'posts/foreign_post.html', {
         'post': req.json()['posts'][0]
     })
     # except:
