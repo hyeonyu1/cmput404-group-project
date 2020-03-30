@@ -6,6 +6,9 @@ from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm
 from django.contrib.auth import views as auth_views
 from django.urls import reverse
+from friendship.models import Friend
+from nodes.models import Node
+import requests
 
 
 class CustomLogin(auth_views.LoginView):
@@ -13,14 +16,49 @@ class CustomLogin(auth_views.LoginView):
         login(self.request, form.get_user())
         # set expiration of the current login session
         # a single login is alive for 10hrs
-
         self.request.session.set_expiry(36000)
         return HttpResponseRedirect(self.get_success_url())
 
 
 @login_required
 def profile(request, user_id):
+    invalidate_friends(request.get_host(), user_id)
     return render(request, 'users/profile.html', {'user_id': user_id})
+
+
+def invalidate_friends(host, user_id):
+    print("what is my user id")
+    print(user_id)
+    author_id = host + "/author/" + user_id
+    if not Friend.objects.filter(author_id=author_id).exists():
+        return
+    friends = Friend.objects.filter(author_id=author_id)
+    for friend in friends:
+        splits = friend.friend_id.split("/")
+        friend_host = splits[0]
+        friend_uid = splits[2]
+        if host != friend_host:
+            if Node.objects.filter(pk=friend_host).exists():
+                node = Node.objects.get(foreign_server_hostname=friend_host)
+                # quoted_author_id = quote(
+                #     author_id, safe='~()*!.\'')
+                headers = {"Content-Type": "application/json",
+                           "Accept": "application/json"}
+                url = "https://{}/author/{}/friends/{}".format(
+                    node.foreign_server_api_location.rstrip("/"), friend_uid, author_id)
+                res = requests.get(url, headers=headers, auth=(
+                    node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+                if res.status_code >= 200 and res.status_code < 300:
+                    res = res.json()
+                    print("\n\n\n\n")
+                    print(res)
+                    # if they are friends
+                    if not res["friends"]:
+                        if Friend.objects.filter(author_id=author_id).filter(friend_id=friend.friend_id).exists():
+                            Friend.objects.filter(author_id=author_id).filter(
+                                friend_id=friend.friend_id).delete()
+                            Friend.objects.filter(author_id=friend.friend_id).filter(
+                                friend_id=author_id).delete()
 
 
 @login_required

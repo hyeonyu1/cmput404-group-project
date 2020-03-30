@@ -89,16 +89,6 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
     data["friend"] = friend_info
     json_data = json.dumps(data)
     headers = {'Content-Type': 'application/json'}
-    print("\n")
-    print("\n")
-    print("\n")
-    print("\n")
-    print("\n")
-    print(data)
-    print("\n")
-    print("\n")
-    print("\n")
-    print("\n")
     url = "http://{}/friendrequest".format(
         node.foreign_server_api_location.rstrip("/"))
     if node.append_slash:
@@ -223,17 +213,6 @@ def invalidate_friend_requests(author_id):
         to_author_id = request.to_id.split("/")[2]
 
         # foreign requests -> call foreign server endpoint to validate
-        print("\n")
-        print("\n")
-        print("\n")
-        print("\n")
-        print("\n")
-        print(hostname, to_host, to_author_id)
-        # testing-mandala-2.herokuapp.com testing-mandala.herokuapp.com ea9c2f9a980d4fe18a2988770417be19
-        print("\n")
-        print("\n")
-        print("\n")
-        print("\n")
         if hostname != to_host:
             if Node.objects.filter(pk=to_host).exists():
                 node = Node.objects.get(foreign_server_hostname=to_host)
@@ -247,17 +226,6 @@ def invalidate_friend_requests(author_id):
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
                 if res.status_code >= 200 and res.status_code < 300:
                     res = res.json()
-                    print("\n")
-                    print("\n")
-                    print("\n")
-                    print("\n")
-                    print("\n")
-                    print(res)
-                    print("\n")
-                    print("\n")
-                    print("\n")
-                    print("\n")
-                    print("\n")
                     # if they are friends
                     if res["friends"]:
                         if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
