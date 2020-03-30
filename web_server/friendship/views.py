@@ -239,8 +239,8 @@ def invalidate_friend_requests(author_id):
                 node = Node.objects.get(foreign_server_hostname=to_host)
                 # quoted_author_id = quote(
                 #     author_id, safe='~()*!.\'')
-                headers = {"Content-Type: application/json",
-                           "Accept: application/json"}
+                headers = {"Content-Type": "application/json",
+                           "Accept": "application/json"}
                 url = "https://{}/author/{}/friends/{}".format(
                     node.foreign_server_api_location.rstrip("/"), to_author_id, author_id)
                 res = requests.get(url, headers=headers, auth=(
