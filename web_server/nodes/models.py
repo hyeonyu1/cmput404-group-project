@@ -49,7 +49,7 @@ class Node(models.Model):
         #     self.password_registered_on_foreign_server)
         super(Node, self).save(*args, **kwargs)
 
-    def get_safe_api_url(self, path):
+    def get_safe_api_url(self, path = ''):
         """
         Returns a url that will access this Node's API location.
         Abstracts away choices like if a slash should be appended, or what protocol to use
