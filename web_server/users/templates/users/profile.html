@@ -31,14 +31,19 @@
         </div>
 
         <div class="row justify-content-center">
-            <button class="btn" v-bind:class="show['info']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('info')">Info</button>
-            <button class="btn" v-bind:class="show['friend']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend')">Friends</button>
-            <button class="btn" v-bind:class="show['friend_request']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend_request')">Friend Requests</button>
+            <button class="btn" v-bind:class="show['info']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('info')">Info</button>
+            <button class="btn" v-bind:class="show['friend']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('friend')">Friends</button>
+            <button class="btn" v-bind:class="show['friend_request']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('friend_request')">Friend Requests</button>
 
             {% if user.uid == user_full_id %}
-            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('post')">My Stream</button>
+            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('post')">My Stream</button>
             {% else %}
-            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('post')">Their Stream</button>
+            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('post')">Their Stream</button>
             {% endif %}
         </div>
 
@@ -86,7 +91,7 @@
 <template id="user-posts">
 
     <a :href="'{{ post_view_url }}' + [[post.source_host]] + '/posts/' + [[post.id]]"
-       class="list-group-item list-group-item-action flex-column align-items-start">
+        class="list-group-item list-group-item-action flex-column align-items-start">
         <div class="d-flex w-100 justify-content-between">
             <h5 class="mb-1">[[post.title]]</h5>
             <small>[[post.published]]</small>
@@ -184,12 +189,12 @@
         props: ['post', 'myposts'],
         template: '#user-posts'
     });
-    
-    class Friend{
-        constructor(uid,displayName){
-            this.uid=uid;
-            this.displayName=displayName;
-            this.isDeleted=false;
+
+    class Friend {
+        constructor(uid, displayName) {
+            this.uid = uid;
+            this.displayName = displayName;
+            this.isDeleted = false;
         }
     }
 
@@ -224,7 +229,8 @@
                         this.is_visitor = false
                     }
                     for (let friend of response.data['friends']) {
-                        let afriend= new Friend(friend.id, friend.displayName);
+                        let afriend = new Friend(friend.id, friend.displayName);
+                        console.log(afriend)
                         this.friends.push(afriend);
                     }
                 })
@@ -267,7 +273,7 @@
                     if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
-                        let afriend=new Friend(sender.id,sender.displayName);
+                        let afriend = new Friend(sender.id, sender.displayName);
                         this.friends.push(afriend);
                     }
                 }).catch(error => {
@@ -401,8 +407,8 @@
                     for (let post of response.data["posts"]) {
                         // Find the host of the post so we can fetch the post from them
                         let source_host = post['source'];
-                        if(source_host.slice(0,8) === 'https://') {source_host = source_host.slice(8)}
-                        if(source_host.slice(0,7) === 'http://') {source_host = source_host.slice(7)}
+                        if (source_host.slice(0, 8) === 'https://') { source_host = source_host.slice(8) }
+                        if (source_host.slice(0, 7) === 'http://') { source_host = source_host.slice(7) }
                         source_host = source_host.split('/')[0];
                         post['source_host'] = source_host;
                         this.myposts.push(post);
@@ -417,7 +423,7 @@
         created() {
             this.get_user("{{user_full_id}}");
             this.get_request('/friendrequest/{{user_id}}');
-            this.check_already_friend("{{user_id}}", "{{user.uid}}");
+            //this.check_already_friend("{{user_id}}", "{{user.uid}}");
             this.get_mypost("{{user_id}}");
         }
     });

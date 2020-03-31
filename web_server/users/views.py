@@ -16,6 +16,10 @@ from nodes.models import Node
 
 import requests
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
+import re
+# used for stripping url protocol
+url_regex = re.compile(r"(http(s?))?://")
+
 
 class CustomLogin(auth_views.LoginView):
     def form_valid(self, form):
@@ -37,11 +41,14 @@ def profile(request, user_id):
         invalidate_friends(request.get_host(), user_id)
         return render(request, 'users/profile.html', {
             'user_id': Author.extract_uuid_from_uid(user_id),  # uuid
-            'user_full_id': user_id,  # uid
+            'user_full_id': url_regex.sub("", user_id),  # uid
 
             'post_view_url': reverse('view_post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
         })
-
+    print("\n\n\n\n")
+    print("it's a foreign user")
+    print(user_id)
+    print("\n\n\n\n")
     # @todo, see above, we dont yet have a profile viewing template that handles uids
     return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
 
@@ -112,6 +119,7 @@ def view_post(request, post_path):
     except:
         return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
                             "We are unable to show the post at this time", status=500)
+
 
 @login_required
 def add_friend(request):
