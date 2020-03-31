@@ -239,7 +239,7 @@
                     for (var uid of from_ids) {
                         window.axios.get('/author/profile/' + uid).then((response) => {
                             console.log(response.data);
-                            //response.data['isDeleted'] = false;
+                            response.data['isDeleted'] = false;
                             this.request_senders.push(response.data);
                         })
                     }
