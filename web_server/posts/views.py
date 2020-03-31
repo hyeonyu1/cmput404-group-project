@@ -102,7 +102,7 @@ def retrieve_single_post_with_id(request, post_id):
             "query": "post",
             "count": 1,
             "size": 1,
-            "post": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
+            "posts": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
         }
         return JsonResponse(output)
 
