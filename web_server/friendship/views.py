@@ -220,9 +220,6 @@ def invalidate_friend_requests(author_id):
                 headers = {"Content-Type": "application/json",
                            "Accept": "application/json"}
                 url = "https://{}/friends/{}".format(request.to_id, author_id)
-                print("\n\n\n\n\n\n\n")
-                print(url)
-                print("\n\n\n\n\n\n\n")
                 res = requests.get(url, headers=headers, auth=(
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
                 if res.status_code >= 200 and res.status_code < 300:
