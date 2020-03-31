@@ -14,30 +14,21 @@ from django.db.models import Q
 from django.utils import timezone
 from django.urls import reverse
 from django.template import RequestContext
-from django.conf import settings
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 from friendship.views import FOAF_verification
-from django.contrib.auth.decorators import login_required
 
-from nodes.models import Node
-import requests
 import math
 from django.conf import settings
-from json import loads
-from django.core import serializers
-import requests
 
-from django.utils.dateparse import parse_datetime
-from django.utils.timezone import is_aware, utc
+import requests
 
 from django.contrib.auth.decorators import login_required
 
 
 import json
 import datetime
-import sys
 import re
 import base64
 
@@ -398,13 +389,14 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         else:
             return redirect("/")
 
-    # Response to a server, servers are considered 'root' and get all posts except for 'SERVERONLY' because
+    # Response to a server, servers are considered 'root' and get all posts except for 'SERVERONLY'  and unlisted because
     # they have no reason to see those ones.
     def api_response(request, posts, pager, pagination_uris):
+        size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
         output = {
             "query": "posts",
             "count": pager.count,
-            "size": len(posts),
+            "size": size,
             "posts": [post.to_api_object() for post in posts]
         }
         (prev_uri, next_uri) = pagination_uris
@@ -723,15 +715,14 @@ def post_edit_and_delete(request, post_id):
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
 @validate_remote_server_authentication()
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
-    # id_of_author = author_id
-    # 127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5
-    # uid = "{}/author/{}".format(request.get_host(), author_id)
+
 
     def api_response(request, posts, pager, pagination_uris):
+        size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
         output = {
             "query": "posts",
             "count": pager.count,
-            "size": len(posts),
+            "size": size,
             "posts": [post.to_api_object() for post in posts]
         }
         (prev_uri, next_uri) = pagination_uris
@@ -754,20 +745,24 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             }, status=404)
 
         own_node = request.get_host()
-
         # Author is from different node
         if node != own_node:
             page_num = int(request.GET.get('page', "1"))
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
             request_size = 10
-            username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-            password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-            api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+            diff_node = Node.objects.get(foreign_server_hostname=node)
+            username = diff_node.username_registered_on_foreign_server
+            password = diff_node.password_registered_on_foreign_server
+            api = diff_node.foreign_server_api_location
+            if diff_node.append_slash:
+                api = api + "/"
+
             response = requests.get(
                 "http://{}/author/{}/posts?size={}&page={}".format(api, author_id, request_size, page_num),
                 auth=(username, password)
             )
+
             if response.status_code != 200:
                 response_data = {
                     "query": "posts",
@@ -804,7 +799,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             # "PUBLIC","FOAF","FRIENDS","PRIVATE"
             for i in range(len(total_post)):
-                print(i, "========", total_post[i])
                 if total_post[i]["visibility"] == "PUBLIC":
                     viewable_post.append(total_post[i])
                 if total_post[i]["visibility"] == "FOAF" and FOAF_verification(request, author_id):
@@ -1030,14 +1024,14 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         node = Node.objects.get(foreign_server_username=uname)
 
         if node.post_share and node.image_share:
-            query = Post.objects.filter(unlisted=False).exclude(visibility="SERVERONLY").order_by("-published")
+            query = Post.objects.filter(author=author_id, unlisted=False).exclude(visibility="SERVERONLY").order_by("-published")
         elif node.post_share and not node.image_share:
             post_type = ["text/plain", "text/markdown"]
-            query = Post.objects.filter(contentType__in=post_type, unlisted=False).exclude(
+            query = Post.objects.filter(author=author_id, contentType__in=post_type, unlisted=False).exclude(
                 visibility="SERVERONLY").order_by("-published")
         elif not node.post_share and node.image_share:
             post_type = ["image/png;base64", "image/jpeg;base64"]
-            query = Post.objects.filter(contentType__in=post_type, unlisted=False).exclude(
+            query = Post.objects.filter(author=author_id, contentType__in=post_type, unlisted=False).exclude(
                 visibility="SERVERONLY").order_by(
                 "-published")
         else:

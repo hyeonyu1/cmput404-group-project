@@ -232,6 +232,8 @@ def FOAF_verification(request, author):
                         username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
                         password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
                         api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                        if Node.objects.get(foreign_server_hostname=node).append_slash:
+                            api = api + "/"
                         response = requests.get(
                             "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author)),
                             auth=(username, password)
@@ -250,7 +252,8 @@ def FOAF_verification(request, author):
                 username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
                 password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
                 api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
-                print(node, author, api)
+                if Node.objects.get(foreign_server_hostname=node).append_slash:
+                    api = api + "/"
                 response = requests.get(
                     "http://{}/author/{}/friends".format(api, author),
                     auth=(username, password)
