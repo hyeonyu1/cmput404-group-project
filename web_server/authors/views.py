@@ -3,7 +3,7 @@ import pytz
 from django.shortcuts import render, get_object_or_404, redirect, render_to_response
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
 from nodes.models import Node
@@ -70,8 +70,8 @@ def retrieve_friends_of_author(authorid):
                 foreign_server_hostname = each.friend_id.split("/")[0]
                 if Node.objects.filter(foreign_server_hostname=foreign_server_hostname).exists():
                     node = Node.objects.get(pk=foreign_server_hostname)
-                    url = "http://{}/{}".format(
-                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[1])
+                    url = "http://{}/author/{}".format(
+                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[2])
 
                     res = requests.get(url)
 
@@ -171,7 +171,7 @@ def view_list_of_available_authors_to_befriend(request, author_id):
 # internal endpoints
 
 
-# @login_required
+@login_required
 def unfriend(request):
     if request.method == 'POST':
         body = request.body.decode('utf-8')
@@ -247,8 +247,39 @@ def update_author_profile(request, author_id):
     return HttpResponse("Author successfully updated", status=200)
 
 
+@login_required
+def retrieve_universal_author_profile(request, author_id):
+    current_host = request.get_host()
+    # strip protocol
+    author_id = url_regex.sub("", author_id)
+    # strip trailing slash
+    author_id = author_id.rstrip("/")
+    splits = author_id.split("/")
+    author_host = splits[0]
+
+    # if this is local author, redirect to /author/authorid
+    if current_host == author_host:
+        return redirect('retrieve_author_profile', author_id=splits[2])
+    # it's foreign author
+    if Node.objects.filter(foreign_server_hostname=author_host).exists():
+        node = Node.objects.get(pk=author_host)
+        url = "http://{}/author/{}".format(
+            node.foreign_server_api_location.rstrip("/"), splits[2])
+
+        res = requests.get(url)
+        if res.status_code >= 200 or res.status_code < 300:
+            try:
+                foreign_friend = res.json()
+                return JsonResponse(foreign_friend, status=200)
+            except:
+                return HttpResponse("Wrong Format Foreign Server Response", status=404)
+
+    return HttpResponse("Can't Retrieve Foreign Author's Information", status=404)
 # Ida Hou
 # service/author/{author_id} endpoint handler
+# publicly accessible without needing basic auth
+
+
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
