@@ -218,14 +218,12 @@
         methods: {
             // Retrieve users' friends and info
             get_user(id) {
-                let url = '/author/' + id;
+
+                let url = '/author/profile/' + id;
+
                 window.axios.get(url).then((response) => {
                     this.user = response.data;
-                    let alist = this.user.id.split('/');
-                    let user_id = alist[alist.length - 1];
-                    // console.log(user_id);
-                    // console.log('{{user.id.hex}}');
-                    if ('{{user.id.hex}}' === user_id) {
+                    if ('{{user.uid}}' === this.user.url) {
                         this.is_visitor = false
                     }
                     for (let friend of response.data['friends']) {
@@ -424,7 +422,7 @@
         },
 
         created() {
-            this.get_user("{{user_id}}");
+            this.get_user("{{user_full_id}}");
             this.get_request('/friendrequest/{{user_id}}');
 
             this.check_already_friend("{{user_id}}", "{{user.uid}}");
