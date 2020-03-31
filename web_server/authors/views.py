@@ -173,6 +173,7 @@ def view_list_of_available_authors_to_befriend(request, author_id):
 
 @login_required
 def unfriend(request):
+
     if request.method == 'POST':
         body = request.body.decode('utf-8')
         body = json.loads(body)

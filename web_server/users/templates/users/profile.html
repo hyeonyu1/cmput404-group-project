@@ -100,7 +100,7 @@
             <div class="form-inline">
                 <a v-bind:href="'/user/profile/' + friend.uid">[[friend.firstName + ' ' + friend.lastName]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
-                    @click="app.unfriend(friend.id, '{{ user.uid }}', index)">Delete</button>
+                    @click="app.unfriend(friend.uid, '{{ user.uid }}', index)">Delete</button>
 
             </div>
         </li>
@@ -178,6 +178,15 @@
         props: ['post', 'myposts'],
         template: '#user-posts'
     });
+    
+    class Friend{
+        constructor(uid,firstName,lastName){
+            this.uid=uid;
+            this.firstName=firstName;
+            this.lastName=lastName;
+            this.isDeleted=false;
+        }
+    }
 
     var app = new Vue({
         el: '#app',
@@ -213,9 +222,9 @@
                     if ('{{user.id.hex}}' === user_id) {
                         this.is_visitor = false
                     }
-
                     for (let friend of response.data['friends']) {
-                        this.friends.push(friend);
+                        let afriend= new Friend(friend.id, friend.firstName, friend.lastName);
+                        this.friends.push(afriend);
                     }
                 })
             },
@@ -228,7 +237,6 @@
 
                     for (var uid of from_ids) {
                         let idlist = uid.split('/');
-
                         let from_id = idlist[idlist.length - 1];
                         window.axios.get('/author/' + from_id).then((response) => {
                             //let username = response.data['firstName'] +' '+ response.data['lastName'];
@@ -262,6 +270,8 @@
                     if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
+                        let afriend=new Friend(sender.id,sender.firstName,sender.lastName);
+                        this.friends.push(afriend);
                     }
                 }).catch(error => {
                     let errorMessage = error.message + "! Friendship already exist!";
