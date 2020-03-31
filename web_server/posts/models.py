@@ -115,7 +115,7 @@ class Post(models.Model):
             "categories": [category.name for category in self.categories.all()],
             "count": self.comment_set.count(),
             "size": self.size,
-            "next": settings.HOSTNAME + "/posts/" + str(self.id.hex) + "/comments",
+            "next": settings.HOST_URI + "/posts/" + str(self.id.hex) + "/comments",
             # We only get the first 5 comments
             "comments": [comment.to_api_object() for comment in self.comment_set.all().order_by("-published")[:5]],
             "published": self.published,
