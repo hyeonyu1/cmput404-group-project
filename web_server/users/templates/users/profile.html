@@ -16,8 +16,8 @@
                     </div>
                     <div class="col-sm-9 my-auto">
                         <div class="row justify-content-center">
-                            <h1 v-if="is_visitor" style="color: #362dff"> [[user.firstName ]]'s Profile </h1>
-                            <h1 v-else style="color: #22b315"> [[user.firstName ]], Welcome to Mandala </h1>
+                            <h1 v-if="is_visitor" style="color: #362dff"> [[user.displayName ]]'s Profile </h1>
+                            <h1 v-else style="color: #22b315"> [[user.displayName ]], Welcome to Mandala </h1>
                         </div>
                         <div class="row justify-content-center">
                             <button v-if="is_visitor && !is_already_friend" class="btn btn-light"
@@ -92,7 +92,7 @@
             <small>[[post.published]]</small>
         </div>
         <p class="mb-1">[[post.content]]</p>
-        <small>[[post.author.firstName]] [[post.author.lastName]]</small>
+        <small>[[post.author.displayName]]</small>
     </a>
 
     <div>
@@ -235,7 +235,6 @@
                 window.axios.get(url).then((response) => {
                     let data = response.data;
                     let from_ids = data['request'];
-                    console.log(from_ids);
                     for (var uid of from_ids) {
                         window.axios.get('/author/profile/' + uid).then((response) => {
                             console.log(response.data);
@@ -268,7 +267,7 @@
                     if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
-                        let afriend=new Friend(sender.id,sender.firstName,sender.lastName);
+                        let afriend=new Friend(sender.id,sender.displayName);
                         this.friends.push(afriend);
                     }
                 }).catch(error => {
