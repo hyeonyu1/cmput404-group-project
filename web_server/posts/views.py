@@ -129,6 +129,8 @@ def retrieve_single_post_with_id(request, post_id):
     ]).resolve()
 
 
+
+
 def comments_retrieval_and_creation_to_post_id(request, post_id):
     def get_handler(request, posts, pager, pagination_uris):
         # Explicitly add authors to the serialization
