@@ -140,7 +140,7 @@
         })
         .then(response=>{
             if (response.status == 200){
-                window.location.href = "{% url 'stream' %}"
+                window.location.href = "{% url 'home' %}"
             } else {
                 alert("Unable to delete post")
             }

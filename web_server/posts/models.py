@@ -99,6 +99,11 @@ class Post(models.Model):
         """
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
+        visible_to = self.visibleTo.all()
+        visible_to_list = []
+        for visible in visible_to:
+            visible_to_list.append(visible.uid)
+
         return {
             "title": self.title,
             "source": self.source,
@@ -112,10 +117,10 @@ class Post(models.Model):
             "size": self.size,
             "next": settings.HOSTNAME + "/posts/" + str(self.id.hex) + "/comments",
             # We only get the first 5 comments
-            "comments": [comment.to_api_object() for comment in self.comment_set.all()[:5]],
+            "comments": [comment.to_api_object() for comment in self.comment_set.all().order_by("-published")[:5]],
             "published": self.published,
             "id": str(self.id.hex),
             "visibility": self.visibility,
-            "visibleTo": [],  # @todo figure out how to specify visibility
+            "visibleTo": visible_to_list,
             "unlisted": self.unlisted
         }

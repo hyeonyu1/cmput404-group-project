@@ -9,6 +9,7 @@ from django.urls import reverse
 from friendship.models import Friend
 from nodes.models import Node
 import requests
+from users.models import Author
 
 
 class CustomLogin(auth_views.LoginView):
@@ -22,8 +23,12 @@ class CustomLogin(auth_views.LoginView):
 
 @login_required
 def profile(request, user_id):
-    invalidate_friends(request.get_host(), user_id)
-    return render(request, 'users/profile.html', {'user_id': user_id})
+    if Author.is_uid_local(user_id):
+        # @todo , this template expects a uuid in order to render, it should be able to handle a uid
+        invalidate_friends(request.get_host(), user_id)
+        return render(request, 'users/profile.html', {'user_id': Author.extract_uuid_from_uid(user_id)})
+    # @todo, see above, we dont yet have a profile viewing template that handles uids
+    return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
 
 
 def invalidate_friends(host, user_id):
