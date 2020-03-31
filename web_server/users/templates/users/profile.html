@@ -218,9 +218,7 @@
         methods: {
             // Retrieve users' friends and info
             get_user(id) {
-
                 let url = '/author/profile/' + id;
-
                 window.axios.get(url).then((response) => {
                     this.user = response.data;
                     if ('{{user.uid}}' === this.user.url) {
@@ -238,13 +236,9 @@
                 window.axios.get(url).then((response) => {
                     let data = response.data;
                     let from_ids = data['request'];
-
                     for (var uid of from_ids) {
-                        let idlist = uid.split('/');
-                        let from_id = idlist[idlist.length - 1];
-                        window.axios.get('/author/' + from_id).then((response) => {
+                        window.axios.get('/author/profile/' + uid).then((response) => {
                             //let username = response.data['firstName'] +' '+ response.data['lastName'];
-                            response.data['uid'] = idlist[idlist.length - 1];
                             response.data['isDeleted'] = false;
                             this.request_senders.push(response.data);
                         })
