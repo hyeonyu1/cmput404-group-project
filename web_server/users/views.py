@@ -27,8 +27,6 @@ def profile(request, user_id):
 
 
 def invalidate_friends(host, user_id):
-    print("what is my user id")
-    print(user_id)
     author_id = host + "/author/" + user_id
     if not Friend.objects.filter(author_id=author_id).exists():
         return
@@ -36,7 +34,6 @@ def invalidate_friends(host, user_id):
     for friend in friends:
         splits = friend.friend_id.split("/")
         friend_host = splits[0]
-        friend_uid = splits[2]
         if host != friend_host:
             if Node.objects.filter(pk=friend_host).exists():
                 node = Node.objects.get(foreign_server_hostname=friend_host)
@@ -44,8 +41,11 @@ def invalidate_friends(host, user_id):
                 #     author_id, safe='~()*!.\'')
                 headers = {"Content-Type": "application/json",
                            "Accept": "application/json"}
-                url = "https://{}/author/{}/friends/{}".format(
-                    node.foreign_server_api_location.rstrip("/"), friend_uid, author_id)
+                url = "https://{}/friends/{}".format(
+                    friend.friend_id, author_id)
+                print("\n\n\n\n\n\n")
+                print(url)
+                print("\n\n\n\n\n\n")
                 res = requests.get(url, headers=headers, auth=(
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
                 if res.status_code >= 200 and res.status_code < 300:

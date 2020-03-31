@@ -210,7 +210,6 @@ def invalidate_friend_requests(author_id):
     hostname = author_id.split("/")[0]
     for request in friend_requests:
         to_host = request.to_id.split("/")[0]
-        to_author_id = request.to_id.split("/")[2]
 
         # foreign requests -> call foreign server endpoint to validate
         if hostname != to_host:
@@ -220,8 +219,10 @@ def invalidate_friend_requests(author_id):
                 #     author_id, safe='~()*!.\'')
                 headers = {"Content-Type": "application/json",
                            "Accept": "application/json"}
-                url = "https://{}/author/{}/friends/{}".format(
-                    node.foreign_server_api_location.rstrip("/"), to_author_id, author_id)
+                url = "https://{}/friends/{}".format(request.to_id, author_id)
+                print("\n\n\n\n\n\n\n")
+                print(url)
+                print("\n\n\n\n\n\n\n")
                 res = requests.get(url, headers=headers, auth=(
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
                 if res.status_code >= 200 and res.status_code < 300:
