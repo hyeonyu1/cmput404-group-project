@@ -8,7 +8,7 @@ urlpatterns = [
     # GET is also the user UI for editing
     path('posts/<str:post_id>', views.post_edit_and_delete,
          name="edit_or_delete_post"),
-    path('<str:author_id>/posts/', views.retrieve_posts_of_author_id_visible_to_current_auth_user,
+    path('<path:author_id>/posts/', views.retrieve_posts_of_author_id_visible_to_current_auth_user,
          name="retrieve_posts_of_author_id_visible_to_current_auth_user"),
     path('<path:author_id>/friends/', views.friend_checking_and_retrieval_of_author_id,
          name="friend_checking_and_retrieval_of_author_id"),
