@@ -12,6 +12,7 @@ from friendship.views import FOAF_verification
 
 from json import loads
 from django.core import serializers
+from django.contrib.auth.models import AnonymousUser
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
@@ -66,7 +67,7 @@ def retrieve_single_post_with_id(request, post_id):
         """
         visibility = api_object_post["visibility"]
         # Foreign servers can access all posts, unless they are 'SERVERONLY'
-        if request.user is None:
+        if request.remote_server_authenticated:
             if visibility != Post.SERVERONLY:
                 return True
             else:
