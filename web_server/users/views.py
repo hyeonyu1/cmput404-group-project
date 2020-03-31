@@ -37,6 +37,7 @@ def profile(request, user_id):
 
             'post_view_url': reverse('view_post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
         })
+
     # @todo, see above, we dont yet have a profile viewing template that handles uids
     return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
 
@@ -62,16 +63,19 @@ def view_post(request, post_path):
 
     # Foreign post
     # Find the node this post is associated with
-    node = Node.objects.get(foreign_server_hostname=host)
+    try:
+        node = Node.objects.get(foreign_server_hostname=host)
+    except Node.DoesNotExist as e:
+        return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+
     req = node.make_api_get_request(f'posts/{post_id}')
-    #@todo foreign post error handling
-    # try:
-    return render(request, 'posts/foreign_post.html', {
-        'post': req.json()['posts'][0]
-    })
-    # except:
-    #     return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
-    #                         "We are unable to show the post at this time", status=500)
+    try:
+        return render(request, 'posts/foreign_post.html', {
+            'post': req.json()['posts'][0]
+        })
+    except:
+        return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
+                            "We are unable to show the post at this time", status=500)
 
 @login_required
 def add_friend(request):
