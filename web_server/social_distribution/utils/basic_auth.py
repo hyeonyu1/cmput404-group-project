@@ -22,6 +22,7 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
     Return the view if all goes well, otherwise respond with a 401.
     """
     deny_response = ""
+    request.remote_server_authenticated = False
 
     # If the user is already authenticated on the local server, then we are fine, and we let them proceed
     if test_func(request.user):
@@ -57,6 +58,7 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
                     entry = Node.objects.all().get(foreign_server_username=uname)
 
                     if check_password(passwd, entry.foreign_server_password):
+                        request.remote_server_authenticated = True
                         return view(request, *args, **kwargs)
                     else:
                         deny_response += " The provided password for your server authentication was invalid"

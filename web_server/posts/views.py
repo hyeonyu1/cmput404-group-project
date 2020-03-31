@@ -12,6 +12,7 @@ from friendship.views import FOAF_verification
 
 from json import loads
 from django.core import serializers
+from django.contrib.auth.models import AnonymousUser
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
@@ -20,7 +21,7 @@ import requests
 import base64
 
 
-@validate_remote_server_authentication()
+# No Authentication Required
 def retrieve_all_public_posts_on_local_server(request):
     """
     For endpoint http://service/posts
@@ -66,7 +67,7 @@ def retrieve_single_post_with_id(request, post_id):
         """
         visibility = api_object_post["visibility"]
         # Foreign servers can access all posts, unless they are 'SERVERONLY'
-        if request.user is None:
+        if request.remote_server_authenticated:
             if visibility != Post.SERVERONLY:
                 return True
             else:
@@ -100,7 +101,7 @@ def retrieve_single_post_with_id(request, post_id):
             "query": "post",
             "count": 1,
             "size": 1,
-            "post": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
+            "posts": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
         }
         return JsonResponse(output)
 
@@ -115,6 +116,9 @@ def retrieve_single_post_with_id(request, post_id):
             response = HttpResponse(base64.b64decode(post.content), status=200)
             response['Content-Type'] = post.contentType
             return response
+
+        if not check_perm(request, post.to_api_object()):
+            return HttpResponse("You do not have permission to see this post", status=401)
         return render(request, 'posts/post.html', {'post': post})
 
     # Get a single post
