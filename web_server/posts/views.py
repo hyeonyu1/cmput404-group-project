@@ -54,7 +54,13 @@ def retrieve_single_post_with_id(request, post_id):
     """
     For endpoint http://service/posts/{POST_ID}
     Access the single specified post.
-    For consistency, it maintains the same pageable format as http://service/posts if JSON is requested
+    For consistency, it maintains the same pageable format as http://service/posts
+
+    There are 2 reasons someone might want to access the post:
+    - This is an API call from a foreign server, and they expect a JSON response,
+        since they are root we always give it to them, but we should check their credentials
+    - This is a browser, wanting to view an image we are hosting. They WONT be authenticated, but we should still
+    if JSON is requested
     If HTML is requested it will return a page that will view the post details, or if the post is an image it
     will respond directly with image data for use in hosting images.
     Methods: GET
