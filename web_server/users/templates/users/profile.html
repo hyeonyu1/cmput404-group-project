@@ -104,7 +104,7 @@
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'/user/profile/' + friend.id">[[friend.firstName + ' ' + friend.lastName]]</a>
+                <a v-bind:href="'/user/profile/' + friend.id">[[friend.displayName]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
                     @click="app.unfriend(friend.uid, '{{ user.uid }}', index)">Delete</button>
 
@@ -118,7 +118,7 @@
     <div v-if="!sender.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'/user/profile/' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
+                <a v-bind:href="'/user/profile/' + sender.uid">[[sender.displayName]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
                     @click="app.accept(sender, '{{ user.uid }}', '{{ user.host }}','{{ user.display_name}}', index)">Accept</button>
                 <button class="btn btn-warning" v-if="!is_visitor"
@@ -186,10 +186,9 @@
     });
     
     class Friend{
-        constructor(uid,firstName,lastName){
+        constructor(uid,displayName){
             this.uid=uid;
-            this.firstName=firstName;
-            this.lastName=lastName;
+            this.displayName=displayName;
             this.isDeleted=false;
         }
     }
@@ -225,7 +224,7 @@
                         this.is_visitor = false
                     }
                     for (let friend of response.data['friends']) {
-                        let afriend= new Friend(friend.id, friend.firstName, friend.lastName);
+                        let afriend= new Friend(friend.id, friend.displayName);
                         this.friends.push(afriend);
                     }
                 })
@@ -236,10 +235,11 @@
                 window.axios.get(url).then((response) => {
                     let data = response.data;
                     let from_ids = data['request'];
+                    console.log(from_ids);
                     for (var uid of from_ids) {
                         window.axios.get('/author/profile/' + uid).then((response) => {
-                            //let username = response.data['firstName'] +' '+ response.data['lastName'];
-                            response.data['isDeleted'] = false;
+                            console.log(response.data);
+                            //response.data['isDeleted'] = false;
                             this.request_senders.push(response.data);
                         })
                     }
@@ -418,7 +418,6 @@
         created() {
             this.get_user("{{user_full_id}}");
             this.get_request('/friendrequest/{{user_id}}');
-
             this.check_already_friend("{{user_id}}", "{{user.uid}}");
             this.get_mypost("{{user_id}}");
         }
