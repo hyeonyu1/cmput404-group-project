@@ -621,6 +621,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         return Endpoint(request, query,
                         [PagingHandler("GET", "application/json", api_response)]
                         ).resolve()
+
 # Returns 5 newest comment on the post
 def get_comments(post_id):
     comments_list = []

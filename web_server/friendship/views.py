@@ -242,7 +242,7 @@ def invalidate_friend_requests(author_id):
 # assuming A B C reside on different hosts.
 # and in the same server
 
-def FOAF_verification(request, author_id):
+def FOAF_verification(request, author):
 
     auth_user = request.user.uid
     own_node = request.get_host()
