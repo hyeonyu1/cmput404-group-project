@@ -66,6 +66,9 @@ def invalidate_friends(host, user_id):
     if not Friend.objects.filter(author_id=author_id).exists():
         return
     friends = Friend.objects.filter(author_id=author_id)
+    print("\n\n\n\n\n\n\n\n")
+    print(friends)
+    print("\n\n\n\n\n\n\n\n")
     for friend in friends:
         splits = friend.friend_id.split("/")
         friend_host = splits[0]
@@ -80,8 +83,16 @@ def invalidate_friends(host, user_id):
                     friend.friend_id, author_id)
                 res = requests.get(url, headers=headers, auth=(
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+                print("\n\n\n\n\n")
+                print("this is in invalidate friends ")
+                print(url)
+                print(res.text, res.status_code)
+                print("\n\n\n\n\n")
                 if res.status_code >= 200 and res.status_code < 300:
                     res = res.json()
+                    print("\n\n\n\n\n")
+                    print(res)
+                    print("\n\n\n\n\n")
                     # if they are friends
                     if not res["friends"]:
                         if Friend.objects.filter(author_id=author_id).filter(friend_id=friend.friend_id).exists():

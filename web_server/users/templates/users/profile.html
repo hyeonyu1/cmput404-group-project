@@ -253,7 +253,22 @@
             // checked 
             // Accept users' friend requests
             accept: function (sender, user_uid, user_host, user_display_name, index) {
-
+                console.log({
+                    // Author id is from_id (Other's id)
+                    "author": {
+                        "id": sender.id,
+                        "host": sender.host,
+                        "displayName": sender.displayName,
+                        "url": sender.url
+                    },
+                    // Friend id is to_id (Your id)
+                    "friend": {
+                        "id": user_uid,
+                        "host": user_host,
+                        "displayName": user_display_name,
+                        "url": user_uid
+                    }
+                });
                 window.axios.post("/friendrequest/handle", {
                     // Author id is from_id (Other's id)
                     "author": {

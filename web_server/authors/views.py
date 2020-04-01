@@ -48,15 +48,31 @@ DEFAULT_PAGE_SIZE = 10
 
 def retrieve_friends_of_author(authorid):
     response_data = []
+    foreign_author_dict = {}
     if Friend.objects.filter(author_id=authorid).exists():
         # get friend id from Friend table
         friends = Friend.objects.filter(author_id=authorid)
         # compose response data
-        for each in friends:
+        nodes = Node.objects.all()
+        for node in nodes:
+            url = "http://{}/author".format(
+                node.foreign_server_api_location.rstrip("/"))
+            res = requests.get(url, auth=(
+                node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+            if res.status_code >= 200 and res.status_code < 300:
+                try:
+                    foreign_authors = res.json()
+                    for foreign_author in foreign_authors:
+                        stripped_foreign_author_id = url_regex.sub(
+                            "", foreign_author.id.rstrip("/"))
+                        if stripped_foreign_author_id not in foreign_author_dict:
+                            foreign_author_dict[stripped_foreign_author_id] = foreign_author
+                except:
+                    continue
+        for friend in friends:
             entry = {}
-            if Author.objects.filter(uid=each.friend_id).exists():
-
-                friend = Author.objects.get(pk=each.friend_id)
+            if Author.objects.filter(uid=friend.friend_id).exists():
+                friend = Author.objects.get(pk=friend.friend_id)
                 entry['id'] = friend.uid
                 entry['host'] = friend.host
                 entry['displayName'] = friend.display_name
@@ -64,23 +80,16 @@ def retrieve_friends_of_author(authorid):
                 entry['firstName'] = friend.first_name
                 entry['lastName'] = friend.last_name
                 response_data.append(entry)
-            # foreign friend
-            else:
-
-                foreign_server_hostname = each.friend_id.split("/")[0]
-                if Node.objects.filter(foreign_server_hostname=foreign_server_hostname).exists():
-                    node = Node.objects.get(pk=foreign_server_hostname)
-                    url = "http://{}/author/{}".format(
-                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[2])
-                    res = requests.get(url)
-
-                    if res.status_code == 200 or res.status_code == 201:
-                        foreign_friend = res.json()
-                        entry['id'] = foreign_friend['id']
-                        entry['host'] = foreign_friend['host']
-                        entry['displayName'] = foreign_friend['displayName']
-                        entry['url'] = foreign_friend['url']
-                        response_data.append(entry)
+            elif friend.friend_id in foreign_author_dict:
+                entry['id'] = foreign_author_dict[friend.friend_id]['id']
+                entry['host'] = foreign_author_dict[friend.friend_id]['host']
+                entry['displayName'] = foreign_author_dict[friend.friend_id]['displayName']
+                entry['url'] = foreign_author_dict[friend.friend_id]['url']
+                response_data.append(entry)
+    print("\n\n\n\n")
+    print("in /author/authorid")
+    print(response_data)
+    print("\n\n\n\n")
 
     return response_data
 
@@ -251,8 +260,7 @@ def update_author_profile(request, author_id):
 @login_required
 def retrieve_universal_author_profile(request, author_id):
     current_host = request.get_host()
-    print("inside universla author profile")
-    print(author_id)
+
     # strip protocol
     author_id = url_regex.sub("", author_id)
     # strip trailing slash
@@ -266,10 +274,15 @@ def retrieve_universal_author_profile(request, author_id):
     # it's foreign author
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
-        url = "http://{}/author/{}".format(
-            node.foreign_server_api_location.rstrip("/"), splits[2])
+        url = "http://{}".format(author_id)
 
         res = requests.get(url)
+        print("\n\n\n\n\n\n")
+        print(author_id)
+        print(url)
+        print("inside universla author profile")
+        print(res.text, res.status_code)
+        print("\n\n\n\n\n\n")
         if res.status_code >= 200 or res.status_code < 300:
             try:
                 foreign_friend = res.json()
