@@ -200,6 +200,7 @@ def retrieve_friend_request_of_author_id(request, author_id):
 
 def invalidate_friend_requests(author_id):
     print("from invalidate friend request")
+    print("\n\n\n\n\n")
     print(author_id)
     # if there are no outgoing friendrequests -> do nothing
     author_id = url_regex.sub('', author_id)

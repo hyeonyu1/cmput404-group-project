@@ -252,6 +252,8 @@ def update_author_profile(request, author_id):
 @login_required
 def retrieve_universal_author_profile(request, author_id):
     current_host = request.get_host()
+    print("inside universla author profile")
+    print(author_id)
     # strip protocol
     author_id = url_regex.sub("", author_id)
     # strip trailing slash
