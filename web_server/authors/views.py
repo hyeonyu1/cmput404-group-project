@@ -138,13 +138,14 @@ def view_list_of_available_authors_to_befriend(request, author_id):
         url = "http://{}/author".format(node.foreign_server_api_location)
         res = requests.get(url, auth=(
             node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
-        if res.status_code == 200 or res.status_code == 201:
+        if res.status_code >= 200 and res.status_code < 300:
             # We cannot trust that the server will return a valid json list. Sanitize
             try:
                 res_json = res.json()
                 response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
             except Exception as e:
-                response_data['errors'][node.get_safe_api_url()] = f"Could not parse json response, exception: {e}"
+                response_data['errors'][node.get_safe_api_url(
+                )] = f"Could not parse json response, exception: {e}"
     # if author has no friends
     if not Friend.objects.filter(author_id=author_id).exists():
         return JsonResponse(response_data)
@@ -305,6 +306,7 @@ def retrieve_author_profile(request, author_id):
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
+
 
 @validate_remote_server_authentication()
 def post_creation_and_retrieval_to_curr_auth_user(request):
@@ -615,6 +617,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         ]).resolve()
 
 # Returns 5 newest comment on the post
+
+
 def get_comments(post_id):
     comments_list = []
     comments = Comment.objects.filter(
@@ -741,7 +745,7 @@ def post_edit_and_delete(request, post_id):
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
     id_of_author = author_id
     # 127.0.0.1:5000/author/39345efe95024a8bbe688dc904d906e5
-    uid = "{}/author/{}".format(request.get_host(),author_id)
+    uid = "{}/author/{}".format(request.get_host(), author_id)
 
     def json_handler(request, posts, pager, pagination_uris):
 
@@ -783,7 +787,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         author_uid = host + "/author/" + str(id_of_author)
 
         FOAF_verification(request, id_of_author)
-
 
         if author_uid == request.user.uid:
             visible_post = Post.objects.filter(
@@ -938,8 +941,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
     return Endpoint(request, Post.objects.filter(author=uid).order_by("-published"), [
         # Handler("GET", "application/json", retrieve_author_posts)
-        PagingHandler("GET","application/json", json_handler)
-        ]).resolve()
+        PagingHandler("GET", "application/json", json_handler)
+    ]).resolve()
 
 
 # Ida Hou

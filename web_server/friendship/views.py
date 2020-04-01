@@ -177,7 +177,7 @@ def retrieve_friend_request_of_author_id(request, author_id):
 
         host = request.get_host()
         author_id = host + "/author/" + str(author_id)
-        invalidate_friend_requests(author_id)
+
         response_data = {}
         response_data["query"] = "retrieve_friend_requests"
         response_data["author"] = author_id
@@ -199,12 +199,14 @@ def retrieve_friend_request_of_author_id(request, author_id):
 
 
 def invalidate_friend_requests(author_id):
+    print("from invalidate friend request")
+    print(author_id)
     # if there are no outgoing friendrequests -> do nothing
+    author_id = url_regex.sub('', author_id)
+    author_id = author_id.rstrip("/")
     if not FriendRequest.objects.filter(from_id=author_id).exists():
         return
 
-    author_id = url_regex.sub('', author_id)
-    author_id = author_id.rstrip("/")
     friend_requests = FriendRequest.objects.filter(from_id=author_id)
 
     hostname = author_id.split("/")[0]

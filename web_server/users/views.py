@@ -13,7 +13,7 @@ from users.models import Author
 from django.conf import settings
 
 from nodes.models import Node
-
+from friendship.views import invalidate_friend_requests
 import requests
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 import re
@@ -39,6 +39,7 @@ def profile(request, user_id):
     if Author.is_uid_local(user_id):
         # @todo , this template expects a uuid in order to render, it should be able to handle a uid
         invalidate_friends(request.get_host(), user_id)
+        invalidate_friend_requests(user_id)
         return render(request, 'users/profile.html', {
             'user_id': Author.extract_uuid_from_uid(user_id),  # uuid
             'user_full_id': url_regex.sub("", user_id),  # uid
@@ -54,7 +55,14 @@ def profile(request, user_id):
 
 
 def invalidate_friends(host, user_id):
-    author_id = host + "/author/" + user_id
+    print("\n\n\n\n\n\n\n\n")
+    print("from invalidate_friends")
+
+    author_id = url_regex.sub('', user_id)
+    author_id = author_id.rstrip("/")
+    print(author_id)
+    print(host)
+    print("\n\n\n\n\n\n\n\n")
     if not Friend.objects.filter(author_id=author_id).exists():
         return
     friends = Friend.objects.filter(author_id=author_id)
