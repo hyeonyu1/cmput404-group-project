@@ -64,11 +64,15 @@ def retrieve_friends_of_author(authorid):
                     foreign_authors = res.json()
                     for foreign_author in foreign_authors:
                         stripped_foreign_author_id = url_regex.sub(
-                            "", foreign_author.id.rstrip("/"))
+                            "", foreign_author["id"].rstrip("/"))
                         if stripped_foreign_author_id not in foreign_author_dict:
                             foreign_author_dict[stripped_foreign_author_id] = foreign_author
                 except:
                     continue
+        print("\n\n\n\n")
+        print("in /author/authorid")
+        print(foreign_author_dict)
+        print("\n\n\n\n")
         for friend in friends:
             entry = {}
             if Author.objects.filter(uid=friend.friend_id).exists():
