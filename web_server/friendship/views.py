@@ -5,11 +5,12 @@ from nodes.models import Node
 from django.contrib.auth.decorators import login_required
 import json
 import re
+from nodes.models import Node
 import base64
 import requests
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
+from urllib.parse import quote
 url_regex = re.compile(r"(http(s?))?://")
-
 # author: Ida Hou
 # http://service/friendrequest/handle endpoint handler
 # POST requests accepts the friend request
@@ -87,7 +88,7 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
     data["author"] = author_info
     data["friend"] = friend_info
     json_data = json.dumps(data)
-    headers = {'content-type': 'application/json'}
+    headers = {'Content-Type': 'application/json'}
     url = "http://{}/friendrequest".format(
         node.foreign_server_api_location.rstrip("/"))
     if node.append_slash:
@@ -176,6 +177,7 @@ def retrieve_friend_request_of_author_id(request, author_id):
 
         host = request.get_host()
         author_id = host + "/author/" + str(author_id)
+        invalidate_friend_requests(author_id)
         response_data = {}
         response_data["query"] = "retrieve_friend_requests"
         response_data["author"] = author_id
@@ -190,3 +192,128 @@ def retrieve_friend_request_of_author_id(request, author_id):
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
+
+# author : Ida Hou
+# invalidate outgoing friend requests of an author by calling foreign servers'
+# https://service/authorid/friend/authorid2 endpoint
+
+
+def invalidate_friend_requests(author_id):
+    # if there are no outgoing friendrequests -> do nothing
+    if not FriendRequest.objects.filter(from_id=author_id).exists():
+        return
+
+    author_id = url_regex.sub('', author_id)
+    author_id = author_id.rstrip("/")
+    friend_requests = FriendRequest.objects.filter(from_id=author_id)
+
+    hostname = author_id.split("/")[0]
+    for request in friend_requests:
+        to_host = request.to_id.split("/")[0]
+
+        # foreign requests -> call foreign server endpoint to validate
+        if hostname != to_host:
+            if Node.objects.filter(pk=to_host).exists():
+                node = Node.objects.get(foreign_server_hostname=to_host)
+                # quoted_author_id = quote(
+                #     author_id, safe='~()*!.\'')
+                headers = {"Content-Type": "application/json",
+                           "Accept": "application/json"}
+                url = "https://{}/friends/{}".format(request.to_id, author_id)
+                res = requests.get(url, headers=headers, auth=(
+                    node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+                if res.status_code >= 200 and res.status_code < 300:
+                    res = res.json()
+                    # if they are friends
+                    if res["friends"]:
+                        if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
+                            FriendRequest.objects.filter(from_id=author_id).filter(
+                                to_id=request.to_id).delete()
+                            if not Friend.objects.filter(author_id=author_id).filter(friend_id=request.to_id).exists():
+                                new_friend = Friend(
+                                    author_id=author_id, friend_id=request.to_id)
+                                new_friend.save()
+                                new_friend = Friend(
+                                    author_id=request.to_id, friend_id=author_id)
+                                new_friend.save()
+
+
+# FOAF verification involves the 3 hosts of the 3 friends A->B->C
+# assuming A B C reside on different hosts.
+# and in the same server
+
+def FOAF_verification(request, author):
+
+    auth_user = request.user.uid
+    own_node = request.get_host()
+
+    nodes = [own_node]
+    for node in Node.objects.all():
+        nodes.append(node.foreign_server_hostname)
+
+    for node in nodes:
+
+        # If the author is a friend of auth user return True
+        if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
+            return True
+
+        # not friends so check for FOAF
+        else:
+            # if the author is on the same host as auth user
+            if node == own_node:
+                author_friends = Friend.objects.filter(author_id=author)
+                for friend in author_friends:
+                    # getting the node of the friend
+                    friend_node = friend.friend_id.split("/author/")[0]
+                    friends_uuid = friend.friend_id.split("/author/")[-1]
+                    # if friend of the author is on the same host as the auth user
+                    # A -> A -> A
+                    if friend_node == own_node:
+                        # E.g Test <-> Lara <-> Bob
+                        if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
+                            return True
+                        else:
+                            return False
+
+                    # Since the friend is not on the same host as the auth user make a request to get friends from the other node
+                    # A -> A -> B
+                    else:
+                        username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+                        password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+                        api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                        if Node.objects.get(foreign_server_hostname=node).append_slash:
+                            api = api + "/"
+                        response = requests.get(
+                            "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author)),
+                            auth=(username, password)
+                        )
+                        if response.status_code == 200:
+                            friends_list = response.json()
+
+                            for user in friends_list["authors"]:
+                                if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                    return True
+                                else:
+                                    return False
+
+            # author's host is different from auth user
+            else:
+                username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+                password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+                api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                if Node.objects.get(foreign_server_hostname=node).append_slash:
+                    api = api + "/"
+                response = requests.get(
+                    "http://{}/author/{}/friends".format(api, author),
+                    auth=(username, password)
+                )
+                if response.status_code == 200:
+                    friends_list = response.json()
+                    for user in friends_list["authors"]:
+                        # E.g Test <-> Lara <-> User
+                        if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                            return True
+                        else:
+                            return False
+
+    return False

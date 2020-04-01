@@ -82,7 +82,7 @@
                     }
                 };
 
-                window.axios.post("/friendrequest/", {
+                window.axios.post("/friendrequest", {
                     'query': 'friendrequest',
                     'author': {
                         'id': 'https://{{user.uid}}',
@@ -97,7 +97,7 @@
                         "url": friend.url
                     }
                 }).then((response) => {
-                    if (response.status === 201 || response.status == 200) {
+                    if (response.status >= 200 && response.status < 300) {
                         alert("Friend Request Successfully Sent!");
                     } else {
                         alert(response.status);

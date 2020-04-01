@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password
 
+import requests
+
 
 # Create your models here.
 #
@@ -34,10 +36,10 @@ class Node(models.Model):
         max_length=500)
 
     # As a server admin, I want to share or not share images with users on other servers. #5
-    image_share = models.BooleanField(default=True)
+    image_share = models.BooleanField(default=False)
 
     # As a server admin, I want to share or not share posts with users on other servers. #6
-    post_share = models.BooleanField(default=True)
+    post_share = models.BooleanField(default=False)
 
     append_slash = models.BooleanField(default=False)
 
@@ -46,5 +48,41 @@ class Node(models.Model):
         self.foreign_server_password = make_password(
             self.foreign_server_password)
         # self.password_registered_on_foreign_server = make_password(
-        #     self.password_registered_on_foreign_server)
+        #     self.password_registered_on_foreign_server)=
+
         super(Node, self).save(*args, **kwargs)
+
+    def get_safe_api_url(self, path=''):
+        """
+        Returns a url that will access this Node's API location.
+        Abstracts away choices like if a slash should be appended, or what protocol to use
+        """
+        api_url = self.foreign_server_api_location
+
+        # Strip away any protocol prefixes that may have accidentally been specified
+        api_url = api_url[8:] if api_url[:8] == 'https://' else api_url
+        api_url = api_url[7:] if api_url[:7] == 'http://' else api_url
+
+        # Strip away any remaining leading or trailing slashes that may have been specified for the api or path
+        api_url = api_url.strip('/')
+        stripped_path = path.strip('/')
+
+        # Construct the desired api path
+        api_url = f'http://{api_url}/{stripped_path}'
+
+        if self.append_slash:
+            api_url += "/"
+
+        return api_url
+
+    def make_api_get_request(self, path=''):
+        """
+        Gets the appropriate API url based on the path, and then makes a request against it.
+        Automatically authenticates.
+        Returns the requests library response, it is not otherwise processed
+        """
+        url = self.get_safe_api_url(path)
+        req = requests.get(url,
+                           auth=(self.username_registered_on_foreign_server, self.password_registered_on_foreign_server),
+                           headers={'Accept': 'application/json'})
+        return req

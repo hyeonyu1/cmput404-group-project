@@ -85,7 +85,8 @@
 
 <template id="list-post">
 
-    <a :href="[[ post.id]]" class="list-group-item list-group-item-action flex-column align-items-start">
+    <a :href="[['{{ post_viewing_url }}' + '{{ local_hostname }}/' + post.id]]"
+       class="list-group-item list-group-item-action flex-column align-items-start">
         <div class="d-flex w-100 justify-content-between">
           <h5 class="mb-1">[[post.title]]</h5>
           <small>[[post.published]]</small>
@@ -100,7 +101,8 @@
 
 <template id="foreign_posts-list">
 
-    <a :href="[[ post.origin ]]" class="list-group-item list-group-item-action flex-column align-items-start">
+    <a :href="[['{{ post_viewing_url }}' + post.host]]"
+       class="list-group-item list-group-item-action flex-column align-items-start">
         <div class="d-flex w-100 justify-content-between">
           <h5 class="mb-1">[[post.title]]</h5>
           <small>[[post.published]]</small>
@@ -181,6 +183,13 @@
                     posts_list.forEach((post)=>{
                         const date = new Date(post.published);
                         post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
+                        // Calculate the foreign hostname
+                        // Strip protocol
+                        post.host = post.origin;
+                        post.host = post.host.replace('http://', '');
+                        post.host = post.host.replace('https://', '');
+                        // Strip all trailing slashes
+                        post.host = post.host.replace(/(\/)+$/, '');
                         this.foreign_posts.push(post);
                     })
 

@@ -31,7 +31,7 @@
                                  <a class="dropdown-item" href="{% url 'edit_or_delete_post' post.id %}">Edit</a>
                                  <!--
                                  Deleting a post doesn't require a page at this time. So instead we use javascript to call
-                                 the delete endpoint and the we redirect to the home page
+                                 the delete endpoint and the we redirect to the stream
                                  -->
                                  <a class="dropdown-item" onclick="delete_post()">Delete</a>
                              </div>
@@ -51,8 +51,8 @@
              <div class="form-inline">
                  <i class="far fa-clock mr-2"></i>
                  <p class="mt-3 mr-2">Post by</p>
-                 <a class="mr-2" href="{% url 'profile' post.author.uid %}">
-                      {{post.author}}
+                 <a class="mr-2" href="{% url 'profile' post.author.id %}">
+                      {{post.author.displayName}}
                  </a>
                  <small>{{post.published}}</small>
 
@@ -118,7 +118,7 @@
 <template id="list-comment">
     <div>
         <div>
-            <a v-bind:href="'/user/profile/' + comment.author.url">[[comment.author.first_name + ' ' + comment.author.last_name]]</a>
+            <a v-bind:href="'/user/profile/' + comment.author.uid">[[comment.author.first_name + ' ' + comment.author.last_name]]</a>
             <small>[[comment.published]]</small>
         </div>
         <vue-markdown v-if="comment.contentType === 'text/markdown'">[[comment.content]]</vue-markdown>
@@ -184,6 +184,9 @@
                     for(let item of response.data['comments']){
                         let comment = new Comment(item);
                         comment.published=moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+
+                        comment.author.uid = comment.author.url;
+                        comment.author.uid = comment.author.uid.replace(/http[s]*:\/\//, '');
 
                         this.comments.push(comment);
                     }

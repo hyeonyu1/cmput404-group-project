@@ -26,9 +26,13 @@ urlpatterns = [
     # All authors are users, and all users are authors
     path('author/', include('authors.urls')),
     path('posts/', include('posts.urls')),
-    path('friendrequest/', include('friendship.urls')),
+    path('', include('friendship.urls')),
     path('user/', include('users.urls')),
     path('github/', views.github, name='github'),
+
+
+    # Home is where we go after login, and also should be a starting point for all users
+    path('home/', views.landing_page, name='home')
 
 
 
