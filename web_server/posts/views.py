@@ -12,6 +12,7 @@ from friendship.views import FOAF_verification
 
 from json import loads
 from django.core import serializers
+from django.contrib.auth.models import AnonymousUser
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
@@ -66,7 +67,7 @@ def retrieve_single_post_with_id(request, post_id):
         """
         visibility = api_object_post["visibility"]
         # Foreign servers can access all posts, unless they are 'SERVERONLY'
-        if request.user is None:
+        if request.remote_server_authenticated:
             if visibility != Post.SERVERONLY:
                 return True
             else:
@@ -79,9 +80,8 @@ def retrieve_single_post_with_id(request, post_id):
             return True
 
         elif visibility == Post.FOAF:
-            # @todo please confirm this is working for both local and remote friends
             # getting the friends of the author
-            FOAF_verification(request, author_id)
+            return FOAF_verification(request, author_id)
         elif visibility == Post.SERVERONLY:
             if request.user.host == Author.objects.get(id=author_id).host:
                 return True
@@ -101,7 +101,7 @@ def retrieve_single_post_with_id(request, post_id):
             "query": "post",
             "count": 1,
             "size": 1,
-            "post": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
+            "posts": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
         }
         return JsonResponse(output)
 
