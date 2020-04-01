@@ -108,8 +108,8 @@
         <script type="text/javascript">
             //creates list of uids of selected users the post is visibleTo
             var people = []
-            {% for person in post.visibleTo.all %}
-                people.push("{{ person.uid }}")
+            {% for visibleTo in post.visibleTo.all %}
+                people.push("{{ visibleTo.author_uid }}")
             {% endfor %} 
             window.onload = visibilityChanged(people);
         </script>

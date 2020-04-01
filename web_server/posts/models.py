@@ -80,7 +80,7 @@ class Post(models.Model):
     visibility = models.CharField(max_length=16, choices=VISIBILITY_CHOICES, default=FRIENDS)
 
     # List of user URI's who can read this message
-    visibleTo = models.ManyToManyField(Author, related_name="posts_granted_access_to", blank=True)
+    # visibleTo = models.ManyToManyField(Author, related_name="posts_granted_access_to", blank=True)
 
     # Unlisted posts are hidden from users. By default posts should show to users.
     unlisted = models.BooleanField(default=False)
@@ -124,3 +124,21 @@ class Post(models.Model):
             "visibleTo": visible_to_list,
             "unlisted": self.unlisted
         }
+
+
+class VisibleTo(models.Model):
+    """
+    In leiu of storing actual foreign author profiles, we need some sort of one to many field to store
+    what the visible to field would store, which is a list of author ID's
+    """
+
+    # To be consistent with the Author model, this is labelled uid, and it is the url without the protocol
+    author_uid = models.CharField(max_length=500, null=False)
+
+    # Many visibleTo entries can exist on one post. From the visibleTo side, this is called their 'accessed_post'
+    # For the reverse relation ship, it is called their visibleTo
+    accessed_post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='visibleTo')
+
+    def __str__(self):
+        author = self.author_uid.split("/")
+        return f'{author[-1][:5]}... from {author[0]} can see post {self.accessed_post.id[:5]}...'

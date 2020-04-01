@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
 from nodes.models import Node
 from friendship.models import Friend
-from posts.models import Post, Category
+from posts.models import Post, Category, VisibleTo
 from comments.models import Comment
 from django.db.models import Q
 from django.utils import timezone
@@ -393,11 +393,12 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.origin = settings.HOST_URI + "/posts/" + str(new_post.id.hex)
         new_post.save()
 
-        # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
+        # Take the user uid's passed in and convert them into visibleTo objects so we can fill out the list
         uids = post.getlist('visibleTo')
-        visible_authors = Author.objects.filter(uid__in=uids)
-        for author in visible_authors:
-            new_post.visibleTo.add(author)
+        for uid in uids:
+            visible_to = VisibleTo(author_uid=uid, accessed_post=new_post)
+            visible_to.save()
+
 
         # Categories is commented out because it's not yet in the post data, uncomment once available
         for category in post['categories'].split('\r\n'):
@@ -506,7 +507,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             visible_to = post.visibleTo.all()
             visible_to_list = []
             for visible in visible_to:
-                visible_to_list.append(visible.username)
+                visible_to_list.append(visible.author_uid)
 
             host = request.get_host()
             if request.is_secure():
@@ -968,7 +969,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 visible_to = post.visibleTo.all()
                 visible_to_list = []
                 for visible in visible_to:
-                    visible_to_list.append("http://" + visible.uid)
+                    visible_to_list.append("http://" + visible.author_uid)
 
                 next_http = "http:/{}/posts/{}/comments".format(host, post.id)
 
