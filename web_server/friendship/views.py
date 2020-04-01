@@ -30,10 +30,10 @@ def handle_friend_request(request):
     from_id = body.get("author", {}).get("id", None)
     from_host = body.get("author", {}).get("host", None)
     from_host = url_regex.sub("", from_host).rstrip("/").split("/")[0]
-    print("\n\n\n\n")
-    print("in handle_friend_request ")
-    print(from_host)
-    print("\n\n\n\n")
+    # print("\n\n\n\n")
+    # print("in handle_friend_request ")
+    # print(from_host)
+    # print("\n\n\n\n")
 
     to_id = body.get("friend", {}).get("id", None)
     to_host = body.get("friend", {}).get("host", None)
@@ -83,10 +83,10 @@ def handle_friend_request(request):
 
 
 def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_server):
-    print("\n\n\n\n\n\n")
-    print("inside send_friend_request_to_foreign_friend!")
-    print(foreign_server)
-    print("\n\n\n\n\n\n")
+    # print("\n\n\n\n\n\n")
+    # print("inside send_friend_request_to_foreign_friend!")
+    # print(foreign_server)
+    # print("\n\n\n\n\n\n")
     if not Node.objects.filter(foreign_server_hostname=foreign_server).exists():
         return HttpResponse("Not Authenticated with Remote Server", status=401)
     node = Node.objects.get(foreign_server_hostname=foreign_server)
@@ -96,9 +96,9 @@ def send_friend_request_to_foreign_friend(friend_info, author_info, foreign_serv
     data["author"] = author_info
     data["friend"] = friend_info
     json_data = json.dumps(data)
-    print("\n\n\n\n")
-    print(data)
-    print("\n\n\n\n")
+    # print("\n\n\n\n")
+    # print(data)
+    # print("\n\n\n\n")
     headers = {'Content-Type': 'application/json'}
     url = "http://{}/friendrequest".format(
         node.foreign_server_api_location.rstrip("/"))
@@ -210,9 +210,9 @@ def retrieve_friend_request_of_author_id(request, author_id):
 
 
 def invalidate_friend_requests(author_id):
-    print("from invalidate friend request")
-    print("\n\n\n\n\n")
-    print(author_id)
+    # print("from invalidate friend request")
+    # print("\n\n\n\n\n")
+    # print(author_id)
     # if there are no outgoing friendrequests -> do nothing
     author_id = url_regex.sub('', author_id)
     author_id = author_id.rstrip("/")
@@ -238,9 +238,9 @@ def invalidate_friend_requests(author_id):
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
                 if res.status_code >= 200 and res.status_code < 300:
                     res = res.json()
-                    print("\n\n\n\n\n")
-                    print(res)
-                    print("\n\n\n\n\n")
+                    # print("\n\n\n\n\n")
+                    # print(res)
+                    # print("\n\n\n\n\n")
                     # if they are friends
                     if res["friends"]:
                         if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():

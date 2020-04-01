@@ -69,10 +69,7 @@ def retrieve_friends_of_author(authorid):
                             foreign_author_dict[stripped_foreign_author_id] = foreign_author
                 except:
                     continue
-        print("\n\n\n\n")
-        print("in /author/authorid")
-        print(foreign_author_dict)
-        print("\n\n\n\n")
+
         for friend in friends:
             entry = {}
             if Author.objects.filter(uid=friend.friend_id).exists():
@@ -90,11 +87,6 @@ def retrieve_friends_of_author(authorid):
                 entry['displayName'] = foreign_author_dict[friend.friend_id]['displayName']
                 entry['url'] = foreign_author_dict[friend.friend_id]['url']
                 response_data.append(entry)
-    print("\n\n\n\n")
-    print("in /author/authorid")
-    print(response_data)
-    print("\n\n\n\n")
-
     return response_data
 
 # http://service/author endpoint
@@ -281,12 +273,12 @@ def retrieve_universal_author_profile(request, author_id):
         url = "http://{}".format(author_id)
 
         res = requests.get(url)
-        print("\n\n\n\n\n\n")
-        print(author_id)
-        print(url)
-        print("inside universla author profile")
-        print(res.text, res.status_code)
-        print("\n\n\n\n\n\n")
+        # print("\n\n\n\n\n\n")
+        # print(author_id)
+        # print(url)
+        # print("inside universla author profile")
+        # print(res.text, res.status_code)
+        # print("\n\n\n\n\n\n")
         if res.status_code >= 200 or res.status_code < 300:
             try:
                 foreign_friend = res.json()
