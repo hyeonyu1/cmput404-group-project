@@ -72,7 +72,6 @@ def retrieve_friends_of_author(authorid):
                     node = Node.objects.get(pk=foreign_server_hostname)
                     url = "http://{}/author/{}".format(
                         node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[2])
-
                     res = requests.get(url)
 
                     if res.status_code == 200 or res.status_code == 201:

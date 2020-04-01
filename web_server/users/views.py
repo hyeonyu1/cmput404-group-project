@@ -38,8 +38,8 @@ def profile(request, user_id):
     """
     if Author.is_uid_local(user_id):
         # @todo , this template expects a uuid in order to render, it should be able to handle a uid
-        #invalidate_friends(request.get_host(), user_id)
-        # invalidate_friend_requests(user_id)
+        invalidate_friends(request.get_host(), user_id)
+        invalidate_friend_requests(user_id)
         return render(request, 'users/profile.html', {
             'user_id': Author.extract_uuid_from_uid(user_id),  # uuid
             'user_full_id': url_regex.sub("", user_id),  # uid
