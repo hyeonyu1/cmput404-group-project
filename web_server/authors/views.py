@@ -765,7 +765,7 @@ def post_edit_and_delete(request, post_id):
 @validate_remote_server_authentication()
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
 
-   def api_response(request, posts, pager, pagination_uris):
+    def api_response(request, posts, pager, pagination_uris):
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
         output = {
             "query": "posts",
@@ -1091,11 +1091,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "message": "Post and image sharing is turned off"
             }, status=403)
 
-
-   return Endpoint(request, query, [
+    return Endpoint(request, query, [
         PagingHandler("GET", "application/json", api_response)
     ]).resolve()
-
 
 
 # Ida Hou
