@@ -16,8 +16,8 @@
                     </div>
                     <div class="col-sm-9 my-auto">
                         <div class="row justify-content-center">
-                            <h1 v-if="is_visitor" style="color: #362dff"> [[user.firstName ]]'s Profile </h1>
-                            <h1 v-else style="color: #22b315"> [[user.firstName ]], Welcome to Mandala </h1>
+                            <h1 v-if="is_visitor" style="color: #362dff"> [[user.displayName ]]'s Profile </h1>
+                            <h1 v-else style="color: #22b315"> [[user.displayName ]], Welcome to Mandala </h1>
                         </div>
                         <div class="row justify-content-center">
                             <button v-if="is_visitor && !is_already_friend" class="btn btn-light"
@@ -31,14 +31,19 @@
         </div>
 
         <div class="row justify-content-center">
-            <button class="btn" v-bind:class="show['info']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('info')">Info</button>
-            <button class="btn" v-bind:class="show['friend']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend')">Friends</button>
-            <button class="btn" v-bind:class="show['friend_request']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('friend_request')">Friend Requests</button>
+            <button class="btn" v-bind:class="show['info']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('info')">Info</button>
+            <button class="btn" v-bind:class="show['friend']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('friend')">Friends</button>
+            <button class="btn" v-bind:class="show['friend_request']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('friend_request')">Friend Requests</button>
 
             {% if user.uid == user_full_id %}
-            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('post')">My Stream</button>
+            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('post')">My Stream</button>
             {% else %}
-            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'" @click="app.show_page('post')">Their Stream</button>
+            <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('post')">Their Stream</button>
             {% endif %}
         </div>
 
@@ -86,13 +91,13 @@
 <template id="user-posts">
 
     <a :href="'{{ post_view_url }}' + [[post.source_host]] + '/posts/' + [[post.id]]"
-       class="list-group-item list-group-item-action flex-column align-items-start">
+        class="list-group-item list-group-item-action flex-column align-items-start">
         <div class="d-flex w-100 justify-content-between">
             <h5 class="mb-1">[[post.title]]</h5>
             <small>[[post.published]]</small>
         </div>
         <p class="mb-1">[[post.content]]</p>
-        <small>[[post.author.firstName]] [[post.author.lastName]]</small>
+        <small>[[post.author.displayName]]</small>
     </a>
 
     <div>
@@ -104,7 +109,7 @@
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'/user/profile/' + friend.id">[[friend.firstName + ' ' + friend.lastName]]</a>
+                <a v-bind:href="'/user/profile/' + friend.uid">[[friend.displayName]] [[friend.uid]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
                     @click="app.unfriend(friend.uid, '{{ user.uid }}', index)">Delete</button>
 
@@ -118,7 +123,7 @@
     <div v-if="!sender.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'/user/profile/' + sender.uid">[[sender.firstName + ' ' + sender.lastName]]</a>
+                <a v-bind:href="'/user/profile/' + sender.uid">[[sender.displayName]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
                     @click="app.accept(sender, '{{ user.uid }}', '{{ user.host }}','{{ user.display_name}}', index)">Accept</button>
                 <button class="btn btn-warning" v-if="!is_visitor"
@@ -184,13 +189,12 @@
         props: ['post', 'myposts'],
         template: '#user-posts'
     });
-    
-    class Friend{
-        constructor(uid,firstName,lastName){
-            this.uid=uid;
-            this.firstName=firstName;
-            this.lastName=lastName;
-            this.isDeleted=false;
+
+    class Friend {
+        constructor(uid, displayName) {
+            this.uid = uid;
+            this.displayName = displayName;
+            this.isDeleted = false;
         }
     }
 
@@ -218,18 +222,15 @@
         methods: {
             // Retrieve users' friends and info
             get_user(id) {
-                let url = '/author/' + id;
+                let url = '/author/profile/' + id;
                 window.axios.get(url).then((response) => {
                     this.user = response.data;
-                    let alist = this.user.id.split('/');
-                    let user_id = alist[alist.length - 1];
-                    // console.log(user_id);
-                    // console.log('{{user.id.hex}}');
-                    if ('{{user.id.hex}}' === user_id) {
+                    if ('{{user.uid}}' === this.user.url) {
                         this.is_visitor = false
                     }
                     for (let friend of response.data['friends']) {
-                        let afriend= new Friend(friend.id, friend.firstName, friend.lastName);
+                        let afriend = new Friend(friend.id, friend.displayName);
+                        console.log(afriend)
                         this.friends.push(afriend);
                     }
                 })
@@ -240,13 +241,9 @@
                 window.axios.get(url).then((response) => {
                     let data = response.data;
                     let from_ids = data['request'];
-
                     for (var uid of from_ids) {
-                        let idlist = uid.split('/');
-                        let from_id = idlist[idlist.length - 1];
-                        window.axios.get('/author/' + from_id).then((response) => {
-                            //let username = response.data['firstName'] +' '+ response.data['lastName'];
-                            response.data['uid'] = idlist[idlist.length - 1];
+                        window.axios.get('/author/profile/' + uid).then((response) => {
+                            //console.log(response.data);
                             response.data['isDeleted'] = false;
                             this.request_senders.push(response.data);
                         })
@@ -256,7 +253,22 @@
             // checked 
             // Accept users' friend requests
             accept: function (sender, user_uid, user_host, user_display_name, index) {
-
+                // console.log({
+                //     // Author id is from_id (Other's id)
+                //     "author": {
+                //         "id": sender.id,
+                //         "host": sender.host,
+                //         "displayName": sender.displayName,
+                //         "url": sender.url
+                //     },
+                //     // Friend id is to_id (Your id)
+                //     "friend": {
+                //         "id": user_uid,
+                //         "host": user_host,
+                //         "displayName": user_display_name,
+                //         "url": user_uid
+                //     }
+                // });
                 window.axios.post("/friendrequest/handle", {
                     // Author id is from_id (Other's id)
                     "author": {
@@ -276,7 +288,7 @@
                     if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
-                        let afriend=new Friend(sender.id,sender.firstName,sender.lastName);
+                        let afriend = new Friend(sender.id, sender.displayName);
                         this.friends.push(afriend);
                     }
                 }).catch(error => {
@@ -410,8 +422,8 @@
                     for (let post of response.data["posts"]) {
                         // Find the host of the post so we can fetch the post from them
                         let source_host = post['source'];
-                        if(source_host.slice(0,8) === 'https://') {source_host = source_host.slice(8)}
-                        if(source_host.slice(0,7) === 'http://') {source_host = source_host.slice(7)}
+                        if (source_host.slice(0, 8) === 'https://') { source_host = source_host.slice(8) }
+                        if (source_host.slice(0, 7) === 'http://') { source_host = source_host.slice(7) }
                         source_host = source_host.split('/')[0];
                         post['source_host'] = source_host;
                         this.myposts.push(post);
@@ -424,11 +436,10 @@
         },
 
         created() {
-            this.get_user("{{user_id}}");
+            this.get_user("{{user_full_id}}");
             this.get_request('/friendrequest/{{user_id}}');
-
-            this.check_already_friend("{{user_id}}", "{{user.uid}}");
-            this.get_mypost("{{user_id}}");
+            //this.check_already_friend("{{user_id}}", "{{user.uid}}");
+            this.get_mypost("{{user_full_id}}");
         }
     });
 
