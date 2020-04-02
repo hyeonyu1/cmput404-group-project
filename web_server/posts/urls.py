@@ -8,6 +8,6 @@ urlpatterns = [
 
     #Internal use only
     path("fetch_public_posts", views.fetch_public_posts_from_nodes),
-    path("proxy_image/<path:img_url>", views.proxy_foreign_server_image, name='proxy_image')
+    path("proxy_image/<path:image_url>", views.proxy_foreign_server_image, name='proxy_image')
 
 ]
