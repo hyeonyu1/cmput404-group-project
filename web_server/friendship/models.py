@@ -63,6 +63,17 @@ class FriendRequest(models.Model):
     from_id = models.CharField(max_length=500)
     to_id = models.CharField(max_length=500)
 
+    def save(self, *args, **kwargs):
+
+        from_splits = self.from_id.rsplit("/", 1)
+        self.from_id = from_splits[0] + \
+            "/" + from_splits[1].replace("-", "")
+        to_splits = self.to_id.rsplit("/", 1)
+        self.to_id = to_splits[0] + \
+            "/" + to_splits[1].replace("-", "")
+
+        super(FriendRequest, self).save(*args, **kwargs)
+
     class Meta:
         unique_together = (("from_id", "to_id"),)
 
