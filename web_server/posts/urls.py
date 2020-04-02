@@ -7,6 +7,7 @@ urlpatterns = [
     path('<str:post_id>/comments/',  views.comments_retrieval_and_creation_to_post_id, name="get_or_add_comment"),
 
     #Internal use only
-    path("fetch_public_posts", views.fetch_public_posts_from_nodes)
+    path("fetch_public_posts", views.fetch_public_posts_from_nodes),
+    path("proxy_image/<path:img_url>", views.proxy_foreign_server_image, name='proxy_image')
 
 ]

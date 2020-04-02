@@ -107,30 +107,3 @@ def validate_remote_server_authentication(realm=""):
                                                       realm, *args, **kwargs)
         return wrapper
     return view_decorator
-
-
-def server_basic_auth_required(realm=""):
-    """
-    A simple decorator that accepts incoming request only if the server that the request
-    is sent from is pre-authenticated. i.e: has an entry in Node table. Reject requests otherwise.
-
-    If the header is present it is tested for basic authentication
-
-    If the header is not present a http 401 is sent back to the
-    requestor to provide credentials.
-
-    Use is simple:
-
-    @validate_remote_server_authentication()
-    def your_view:
-        ...
-
-    You can provide the name of the realm to ask for authentication within.
-    """
-    def view_decorator(func):
-        def wrapper(request, *args, **kwargs):
-            return handle_incoming_request_or_request(func, request,
-                                                      lambda u: False,  # Disable local user log in check
-                                                      realm, *args, **kwargs)
-        return wrapper
-    return view_decorator

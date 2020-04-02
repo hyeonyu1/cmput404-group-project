@@ -54,13 +54,7 @@ def retrieve_single_post_with_id(request, post_id):
     """
     For endpoint http://service/posts/{POST_ID}
     Access the single specified post.
-    For consistency, it maintains the same pageable format as http://service/posts
-
-    There are 2 reasons someone might want to access the post:
-    - This is an API call from a foreign server, and they expect a JSON response,
-        since they are root we always give it to them, but we should check their credentials
-    - This is a browser, wanting to view an image we are hosting. They WONT be authenticated, but we should still
-    if JSON is requested
+    For consistency, it maintains the same pageable format as http://service/posts if JSON is requested
     If HTML is requested it will return a page that will view the post details, or if the post is an image it
     will respond directly with image data for use in hosting images.
     Methods: GET
@@ -253,3 +247,29 @@ def fetch_public_posts_from_nodes(request):
             break
 
     return JsonResponse(output, status=200)
+
+@login_required
+def proxy_foreign_server_image(request, image_url):
+    """
+    For markdown posts that contain images in them, we need to proxy the request through our server.
+    This is because foreign servers require authorization. Requires an image url, which should NOT include the protocol
+    """
+    image_url_parts = image_url.split('/')
+    credentials = None
+    try:
+        node = Node.objects.get(foreign_server_hostname=image_url_parts[0])
+        credentials = (node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
+    except Node.DoesNotExist as e:
+        pass
+
+    request_args = dict()
+    if credentials is not None:
+        request_args['auth'] = credentials
+    # Make a request to the url, and pass in the credentials if they exist
+    response = requests.get(image_url, *request_args)
+    if response.status_code != 200:
+        # Return the original server response as an HTTP response
+        return HttpResponse(f'The server failed to deliver an image. The response was {response.content}', status=response.status_code)
+
+    # Otherwise read the image data and return the image
+    return HttpResponse(response.content, content_type='image/png')
