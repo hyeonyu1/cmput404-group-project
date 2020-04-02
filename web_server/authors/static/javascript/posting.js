@@ -17,7 +17,7 @@ function visibilityChanged(selectedUsers){
  * you can pick users when making a private post
  */
 function get_all_users(selectedUsers){
-	fetch("/author")
+	fetch("/author/available/")
 		.then(response => {
 			return response.json()
 		})
@@ -25,21 +25,35 @@ function get_all_users(selectedUsers){
 			let select = document.querySelector('#visibleFor');
 			select.multiple = true;
 			select.innerHTML = ''; // Clear out the current options
-			for(let author of data.data){
-				if(!author.uid) continue;
-				//console.log("AUTHOR ID", author.uid, author)
+			for(let uid of data.data){
 				let opt = document.createElement('option');
-				opt.value = author.uid;
-				opt.innerText = (author.display_name || author.first_name + author.last_name || "NO NAME")
-					+ " [" + author.uid.replace(/http[s]+:\/\//,'').slice(0, 10) + '...' + author.uid.slice(-5) + "]";
+				opt.value = uid;
+				opt.innerText = uid;
 				if (selectedUsers != undefined) {
-					if (selectedUsers.includes(author.uid)){
+					if (selectedUsers.includes(uid)){
 						opt.selected = 'selected';
 					}
 				}
-				select.appendChild(opt)
+				select.appendChild(opt);
 			}
+			get_visible_to_names(select);
 		})
+}
+
+/**
+ * For the given select element, will cycle through all of it's options and if the
+ * inner text is a valid profile link, then it will replace the inner text with the users display name and host
+ * @param select_element
+ */
+function get_visible_to_names(select_element){
+	let options = select_element.querySelectorAll('option');
+	for(let option of options){
+		fetch('/author/profile/' + option.innerText)
+			.then(response => response.json())
+			.then(data => {
+				option.innerText = data.displayName + ' (' + option.innerText + ')'
+			})
+	}
 }
 
 
