@@ -478,7 +478,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         # visibility = PRIVATE
         private_post = Post.objects.filter(
-            visibleTo=request.user.uid, unlisted=False)
+            visibleTo__author_uid__contains=request.user.uid,
+            unlisted=False)
 
         # visibility = SERVERONLY
         local_host = request.user.host
@@ -690,25 +691,8 @@ def post_edit_and_delete(request, post_id):
         return HttpResponse("Forbidden: you must be the original author of the post in order to change it.", status=403)
 
     def get_edit_dialog(request):
-        # REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
-
-        # Obtain the context from the HTTP request.
-        context = RequestContext(request)
-
-        # Query the database for a list of ALL categories currently stored.
-        # Place the list in our context_dict dictionary which will be passed to the template engine.
-        # @todo the above is not done, but if we implement a search or autocomplete it is unnecessary
-
-        # Fill the context with the post in the request
-        context_dict = {'post': post}
-
-        # @todo THIS IS A HACK
-        # The navigation template now requires the user object to be passed in to every view, but for some reason it
-        # is not passed in unless we explicitly pass it in here.
-        context_dict['user'] = request.user
-
         # Render the response and send it back!
-        return render_to_response('editPost.html', context_dict, context)
+        return render(request, 'editPost.html', {'post':post})
 
     def edit_post(request):
         """
@@ -716,10 +700,14 @@ def post_edit_and_delete(request, post_id):
         :param request:
         :return:
         """
+        visible_to_list = []
         vars = request.POST
         for key in vars:
             if hasattr(post, key):
-                if len(vars.getlist(key)) <= 1:  # Simple value or empty
+                if key == 'visibleTo':
+                    #  Must create visible to objects to add to the post after it is saved
+                    visible_to_list = [VisibleTo(author_uid=author_uid) for author_uid in vars.getlist(key)]
+                elif len(vars.getlist(key)) <= 1:  # Simple value or empty
                     try:
                         # Special fields
                         if key == 'categories':
@@ -743,6 +731,13 @@ def post_edit_and_delete(request, post_id):
                     # @todo implement handling multiple values for key
                     print("NOT IMPLEMENTED: Unable to handle multiple values for key")
         post.save()
+
+        # Set the visibleTo if it was passed, start by removing all the visibleTo that currently exist
+        post.visibleTo.all().delete()
+        for vt in visible_to_list:
+            vt.accessed_post = post
+            vt.save()
+
         return JsonResponse({"success": "Post updated"})
 
     def delete_post(request):
@@ -948,7 +943,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
                 # visibility = PRIVATE
                 private_post = Post.objects.filter(
-                    author=author, visibleTo=request.user.uid, unlisted=False)
+                    author=author, visibleTo__author_uid__contains=request.user.uid, unlisted=False)
 
                 # visibility = SERVERONLY
                 if request.user.host == author.host:
@@ -1187,16 +1182,19 @@ def post_creation_page(request):
         'post_retrieval_url': settings.HOST_URI + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
     })
 
-
-def get_all_authors(request):
+@login_required
+def get_all_available_authors_ids(request):
     """
-    API to get a JSON of all authors in the system. To save space it will only provide:
-    First, last and display names
-    uid
+    API to get a JSON of all authors ids in the system.
+
+    Will include the ids of foreign friends of the logged in user
     :param request:
     :return:
     """
+    current_user = request.user
+    local_author_ids = [author.uid for author in Author.objects.all()]
+    foreign_friend_ids = [friend.friend_id for friend in Friend.objects.filter(author_id=current_user.uid)]
     return JsonResponse({
         'success': True,
-        'data': [author for author in Author.objects.values('first_name', 'last_name', 'display_name', 'uid')]
+        'data': list(set(local_author_ids + foreign_friend_ids))
     })

@@ -102,7 +102,7 @@ class Post(models.Model):
         visible_to = self.visibleTo.all()
         visible_to_list = []
         for visible in visible_to:
-            visible_to_list.append("http://"+visible.uid)
+            visible_to_list.append("http://"+visible.author_uid)
 
         return {
             "title": self.title,
