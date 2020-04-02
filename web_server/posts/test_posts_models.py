@@ -40,6 +40,24 @@ class TestPostsModels(TestCase):
         post.visibleTo.set([author_test])
 
 
+
+    def test_data(self):
+        post_id = uuid.uuid5(uuid.NAMESPACE_DNS, 'post').hex
+        post_test = Post.objects.get(id=post_id)
+
+        self.assertEqual(post_test.id.hex, post_id)
+        self.assertEqual(post_test.contentType, "text/plain")
+        self.assertEqual(post_test.title, "Post Unit Test")
+        self.assertEqual(post_test.source,"post@unittest.ca")
+        self.assertEqual(post_test.password, "post@unittest.ca")
+        self.assertEqual(post_test.origin, "post@unittest.ca")
+        self.assertEqual(post_test.description, "This is a unit test.")
+        self.assertEqual(post_test.content, "This is a unit test of Post model.")
+        self.assertEqual(post_test.visibility, "FRIENDS")
+        self.assertEqual(post_test.author.id.hex,uuid.uuid5(uuid.NAMESPACE_DNS, 'test1').hex)
+        self.assertEqual(post_test.size, 1)
+
+
     def test_to_api_object(self):
         post_id = uuid.uuid5(uuid.NAMESPACE_DNS, 'post').hex
         post_test=Post.objects.get(id=post_id)
