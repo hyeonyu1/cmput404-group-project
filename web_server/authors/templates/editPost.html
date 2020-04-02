@@ -28,12 +28,12 @@
         <div id="section2">
             <label for="contentType">Choose your content type:</label>
             <select id="contentType" form="postForm" name="contentType">
-                {% if post.contentType == "TYPE_PLAIN" %}
-                    <option value="TYPE_PLAIN" selected>Plain Text</option>
-                    <option value="TYPE_MARKDOWN">Markdown</option>
+                {% if post.contentType == "test/plain" %}
+                    <option value="text/plain" selected>Plain Text</option>
+                    <option value="text/markdown">Markdown</option>
                 {% else %}
-                    <option value="TYPE_PLAIN">Plain Text</option>
-                    <option value="TYPE_MARKDOWN" selected>Markdown</option>
+                    <option value="text/plain">Plain Text</option>
+                    <option value="text/markdown" selected>Markdown</option>
                 {% endif %}
             </select>
 
