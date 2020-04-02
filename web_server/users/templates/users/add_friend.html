@@ -57,7 +57,7 @@
             // Retrieve users' potential friends
             get_potential_friends(author_id) {
                 let url = '/author/' + author_id + '/addfriend/';
-                console.log(url);
+                //console.log(url);
                 window.axios.get(url).then((response) => {
                     this.friends = response.data.available_authors_to_befriend;
                 }).catch((error) => {

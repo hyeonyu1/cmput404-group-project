@@ -13,9 +13,13 @@ from users.models import Author
 from django.conf import settings
 
 from nodes.models import Node
-
+from friendship.views import invalidate_friend_requests
 import requests
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
+import re
+# used for stripping url protocol
+url_regex = re.compile(r"(http(s?))?://")
+
 
 class CustomLogin(auth_views.LoginView):
     def form_valid(self, form):
@@ -32,25 +36,43 @@ def profile(request, user_id):
     Local handler for viewing author profiles, the author in question might be local or foreign,
     both should be supported
     """
-    if Author.is_uid_local(user_id):
+    stripped_user_id = url_regex.sub("", user_id).rstrip("/")
+
+    if Author.is_uid_local(stripped_user_id):
         # @todo , this template expects a uuid in order to render, it should be able to handle a uid
-        invalidate_friends(request.get_host(), user_id)
+        invalidate_friends(request.get_host(), stripped_user_id)
+        invalidate_friend_requests(stripped_user_id)
         return render(request, 'users/profile.html', {
-            'user_id': Author.extract_uuid_from_uid(user_id),  # uuid
-            'user_full_id': user_id,  # uid
+            'user_id': Author.extract_uuid_from_uid(stripped_user_id),  # uuid
+            'user_full_id': stripped_user_id,  # uid
 
             'post_view_url': reverse('view_post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
         })
 
-    # @todo, see above, we dont yet have a profile viewing template that handles uids
-    return HttpResponse('The profile you are attempting to view is for a foreign author, which is unsupported at this time', status=404)
+    return render(request, 'users/profile.html', {
+        'user_id': Author.extract_uuid_from_uid(stripped_user_id),  # uuid
+        'user_full_id': stripped_user_id,  # uid
+        'post_view_url': reverse('view_post', args=[stripped_user_id])
+
+
+    })
 
 
 def invalidate_friends(host, user_id):
-    author_id = host + "/author/" + user_id
+    # print("\n\n\n\n\n\n\n\n")
+    # print("from invalidate_friends")
+
+    author_id = url_regex.sub('', user_id)
+    author_id = author_id.rstrip("/")
+    # print(author_id)
+    # print(host)
+    # print("\n\n\n\n\n\n\n\n")
     if not Friend.objects.filter(author_id=author_id).exists():
         return
     friends = Friend.objects.filter(author_id=author_id)
+    # print("\n\n\n\n\n\n\n\n")
+    # print(friends)
+    # print("\n\n\n\n\n\n\n\n")
     for friend in friends:
         splits = friend.friend_id.split("/")
         friend_host = splits[0]
@@ -65,9 +87,16 @@ def invalidate_friends(host, user_id):
                     friend.friend_id, author_id)
                 res = requests.get(url, headers=headers, auth=(
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+                # print("\n\n\n\n\n")
+                # print("this is in invalidate friends ")
+                # print(url)
+                # print(res.text, res.status_code)
+                # print("\n\n\n\n\n")
                 if res.status_code >= 200 and res.status_code < 300:
                     res = res.json()
-
+                    # print("\n\n\n\n\n")
+                    # print(res)
+                    # print("\n\n\n\n\n")
                     # if they are friends
                     if not res["friends"]:
                         if Friend.objects.filter(author_id=author_id).filter(friend_id=friend.friend_id).exists():
@@ -112,6 +141,7 @@ def view_post(request, post_path):
     except:
         return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
                             "We are unable to show the post at this time", status=500)
+
 
 @login_required
 def add_friend(request):
