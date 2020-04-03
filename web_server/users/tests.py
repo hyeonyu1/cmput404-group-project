@@ -70,7 +70,6 @@ class TestAuthorModels(TestCase):
         is_superuser = False
         is_staff = False
         uid = "127.0.0.1:8000/author/" + id_str
-        url = "http://127.0.0.1:8000/author/" + id_str,
         date_joined = datetime(year=2020, month=2, day=26, hour=8, minute=30)
 
         author_test = Author.objects.get(id=id)
@@ -114,7 +113,7 @@ class TestAuthorModels(TestCase):
         host = "127.0.0.1:8000"
         display_name = "TestAuthorModels"
         github = "github.com"
-        testdic = {
+        test_dic = {
             "id": uid,
             "host": host,
             "displayName": display_name,
@@ -122,10 +121,10 @@ class TestAuthorModels(TestCase):
             "github": github
         }
 
-        returndict = author_test.to_api_object()
-        self.assertEqual(returndict['id'], testdic['id'])
-        self.assertEqual(returndict['host'], testdic['host'])
-        self.assertEqual(returndict['displayName'], testdic['displayName'])
-        self.assertEqual(returndict['url'], testdic['url'])
-        self.assertEqual(returndict['github'], testdic['github'])
+        return_dict = author_test.to_api_object()
+        self.assertEqual(return_dict['id'], test_dic['id'])
+        self.assertEqual(return_dict['host'], test_dic['host'])
+        self.assertEqual(return_dict['displayName'], test_dic['displayName'])
+        self.assertEqual(return_dict['url'], test_dic['url'])
+        self.assertEqual(return_dict['github'], test_dic['github'])
 
