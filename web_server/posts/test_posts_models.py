@@ -49,7 +49,6 @@ class TestPostsModels(TestCase):
         self.assertEqual(post_test.contentType, "text/plain")
         self.assertEqual(post_test.title, "Post Unit Test")
         self.assertEqual(post_test.source,"post@unittest.ca")
-        self.assertEqual(post_test.password, "post@unittest.ca")
         self.assertEqual(post_test.origin, "post@unittest.ca")
         self.assertEqual(post_test.description, "This is a unit test.")
         self.assertEqual(post_test.content, "This is a unit test of Post model.")
