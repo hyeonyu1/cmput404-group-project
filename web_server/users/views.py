@@ -134,7 +134,7 @@ def view_post(request, post_path):
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
     req = node.make_api_get_request(f'posts/{post_id}')
-
+    print("\n\n\n\n\n\n", req.json())
     try:
         return render(request, 'posts/foreign_post.html', {
             'post': req.json()['posts'][0]
