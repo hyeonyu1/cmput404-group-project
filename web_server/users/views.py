@@ -116,7 +116,7 @@ def view_post(request, post_path):
     path = post_path.split('/')
     host = path[0]
     post_id = path[-1]
-    print("\n\n\n\n\n\n", path, host, post_id)
+    print("\n\n\n\n\n\n", post_path)
     # Assume local server if only uuid provided
     if len(path) == 1:
         return redirect('post', args=[path[0]])
@@ -132,7 +132,7 @@ def view_post(request, post_path):
         node = Node.objects.get(foreign_server_hostname=host)
     except Node.DoesNotExist as e:
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
-    if post_id == "comments/":
+    if post_id == "comments":
         req = node.make_api_get_request(f'posts/{path[-2]}/{post_id}')
     else:
         req = node.make_api_get_request(f'posts/{post_id}')
