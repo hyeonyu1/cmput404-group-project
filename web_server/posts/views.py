@@ -209,16 +209,103 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 def fetch_public_posts_from_nodes(request):
     """
     Fetches public posts from all the nodes available to the server
+
+    Due to the nature of this API, getting deep pages may take a really long time as random access is not possible
+
     :param request:
     :return:
     """
     output = {
         'query': "getPosts",
+        'page': 0,
         'size': 10,
         'count': 0,
         'posts': [],
         'errors': dict()
     }
+
+    # First we need to find out what page of results they are looking for, and how many
+    try:
+        output['page'] = int(request.GET.get('page', '0'))
+        output['size'] = int(request.GET.get('size', '10'))
+    except Exception as e:
+        output['errors'] = str(e)
+        # Bad request with invalid parameters
+        return JsonResponse(output, status=400)
+
+    # Then we need to track the pages of each Node, pull their results and merge them together
+    class NodePager:
+        def __init__(self, api_location, username, password, page, size):
+            self.api_location = api_location
+            self.username = username
+            self.password = password
+            self.page = page
+            self.size = size
+            self.results = None
+
+        def fetch_page(self):
+            """
+            Gets the current page of public posts from the node. Returns empty list if no results or error.
+            Caches the results so it will only fetch the page if the page has not already been fetched
+            """
+            if self.results is not None:
+                return self.results
+
+            response = requests.get(self.api_location,
+                                    auth=(self.username, self.password),
+                                    headers={
+                                        'Accept': 'application/json'
+                                    },
+                                    params={
+                                        'size': self.size,
+                                        'page': self.page
+                                    })
+            if response.status_code != 200:
+                self.results = []
+            else:
+                try:
+                    res_json = response.json()
+                    self.results = res_json['posts']
+                except:
+                    self.results = []
+            return self.results
+
+        def next_page(self):
+            self.page += 1
+            self.results = None
+
+    class NodeCollectionPager:
+        """
+        Manages a collection of node pagers, returning pages of their combined results
+        """
+        def __init__(self, page, size):
+            self.page = page
+            self.size = size
+            self.node_pagers = dict()
+            for node in Node.objects.all():
+                # Create a pager so we can handle paging through all the results
+                self.node_pagers[node.foreign_server_hostname] = NodePager(node.get_safe_api_url('posts'),
+                                                                           node.username_registered_on_foreign_server,
+                                                                           node.password_registered_on_foreign_server,
+                                                                           0,  # Always start on the first page, we have no other way to ensure all results are seen
+                                                                           size)
+
+        def get_page(self, page):
+            """
+            Gets the specified page by individually and sequentially querying each node and combining results until the
+            desired page is reached. Thus getting deep pages should be avoided if possible.
+            """
+            current_page = 0
+            current_results_queue = []
+            for node in self.node_pagers.keys():
+                pager = self.node_pagers[node]
+                for 
+
+
+
+
+
+
     for node in Node.objects.all():
         # Get the url of the api
         api_url = node.get_safe_api_url('posts')
