@@ -133,7 +133,7 @@ def view_post(request, post_path):
     except Node.DoesNotExist as e:
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
-    req = node.make_api_get_request(f'posts/{post_id}')
+    req = node.make_api_get_request(f'posts/{post_id}/comments')
     print("\n\n\n\n\n\n\n")
     print(req.json())
     try:
