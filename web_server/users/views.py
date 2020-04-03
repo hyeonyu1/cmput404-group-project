@@ -116,7 +116,7 @@ def view_post(request, post_path):
     path = post_path.split('/')
     host = path[0]
     post_id = path[-1]
-    print("\n\n\n\n\n\n", post_path)
+    print("\n\n\n\n\n\n post path = ", post_path)
     # Assume local server if only uuid provided
     if len(path) == 1:
         return redirect('post', args=[path[0]])
@@ -135,6 +135,9 @@ def view_post(request, post_path):
     if post_id == "comments":
         req = node.make_api_get_request(f'posts/{path[-2]}/{post_id}')
         try:
+
+            print("\n\n\n\n\n\n req json = ", req.json())
+            print("comment = ", req.json()["comments"])
             return render(request, 'posts/foreign_post.html', {
                 'comments': req.json()['comments']
             })
