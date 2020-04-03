@@ -134,22 +134,40 @@ def view_post(request, post_path):
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
     if post_id == "comments":
         req = node.make_api_get_request(f'posts/{path[-2]}/{post_id}')
+        try:
+            return render(request, 'posts/foreign_post.html', {
+                'comments': req.json()['comments']
+            })
+        except:
+            return HttpResponse(
+                "The foreign server returned a response, but it was not compliant with the specification. "
+                "We are unable to show the post at this time", status=500)
+
     else:
         req = node.make_api_get_request(f'posts/{post_id}')
-    try:
-        print("\n\n\n\n\n\n", req.json())
-    except:
-        print("\n\n\n\n\n\n", req)
-        print("\n\n\n\n\n\n", req.content)
-        print("\n\n\n\n\n\n", req.reason)
+        try:
+            return render(request, 'posts/foreign_post.html', {
+                'post': req.json()['posts'][0]
+            })
+        except:
+            return HttpResponse(
+                "The foreign server returned a response, but it was not compliant with the specification. "
+                "We are unable to show the post at this time", status=500)
 
-    try:
-        return render(request, 'posts/foreign_post.html', {
-            'post': req.json()['posts'][0]
-        })
-    except:
-        return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
-                            "We are unable to show the post at this time", status=500)
+    # try:
+    #     print("\n\n\n\n\n\n", req.json())
+    # except:
+    #     print("\n\n\n\n\n\n", req)
+    #     print("\n\n\n\n\n\n", req.content)
+    #     print("\n\n\n\n\n\n", req.reason)
+
+    # try:
+    #     return render(request, 'posts/foreign_post.html', {
+    #         'post': req.json()['posts'][0]
+    #     })
+    # except:
+    #     return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
+    #                         "We are unable to show the post at this time", status=500)
 
 
 @login_required
