@@ -190,48 +190,48 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "message": "Comment not allowed"
                     }
                 )
-            # - auth user comments on local post
-            # - foreign user comments on local post
-            if request.user.is_authenticated or request.remote_server_authenticated:
-                # change body = request.POST to body = request.body.decode('utf-8'),
-                # because request.POST only accepts form, but here is json format.
-                # change new_comment.comment to new_comment.content,
-                # because that's how it defined in comment model.
-                try:
-                    body = request.body.decode('utf-8')
-                    comment_info = loads(body)
-                    comment_info = comment_info['comment']
-                    new_comment = Comment()
-                    new_comment.contentType = comment_info['contentType']
-                    new_comment.content = comment_info['comment']
-                    new_comment.published = comment_info['published']
-                    # Need to change
-                    # new_comment.author = Author.objects.filter(
-                    #     id=comment_info['author']['id']).first()
-                    new_comment.author = comment_info['author']['id']
-                    new_comment.parentPost = Post.objects.filter(id=post_id).first()
-                    new_comment.save()
-                    output['type'] = True
-                    output['message'] = "Comment added"
-                except Exception as e:
-                    output['type'] = False
-                    output['message'] = "Comment not allowed"
-                    output['error'] = str(e)
-                finally:
-                    return JsonResponse(output)
-        # foreign post
-        else:
-            # getting the node with the post
-            for node in Node.objects.all():
-                username = node.username_registered_on_foreign_server
-                password = node.password_registered_on_foreign_server
-                api = node.foreign_server_api_location
-                if node.append_slash:
-                    api = api + "/"
-                response = requests.get("http://{}/posts/{POST_ID}/comments".format(api, post_id),
-                                        auth=(username, password))
-                if response.status_code == 200:
-                    break
+    # - auth user comments on local post
+    # - foreign user comments on local post
+    # if request.user.is_authenticated or request.remote_server_authenticated:
+        # change body = request.POST to body = request.body.decode('utf-8'),
+        # because request.POST only accepts form, but here is json format.
+        # change new_comment.comment to new_comment.content,
+        # because that's how it defined in comment model.
+        try:
+            body = request.body.decode('utf-8')
+            comment_info = loads(body)
+            comment_info = comment_info['comment']
+            new_comment = Comment()
+            new_comment.contentType = comment_info['contentType']
+            new_comment.content = comment_info['comment']
+            new_comment.published = comment_info['published']
+            # Need to change
+            # new_comment.author = Author.objects.filter(
+            #     id=comment_info['author']['id']).first()
+            new_comment.author = comment_info['author']['id']
+            new_comment.parentPost = Post.objects.filter(id=post_id).first()
+            new_comment.save()
+            output['type'] = True
+            output['message'] = "Comment added"
+        except Exception as e:
+            output['type'] = False
+            output['message'] = "Comment not allowed"
+            output['error'] = str(e)
+        finally:
+            return JsonResponse(output)
+        # # foreign post
+        # else:
+        #     # getting the node with the post
+        #     for node in Node.objects.all():
+        #         username = node.username_registered_on_foreign_server
+        #         password = node.password_registered_on_foreign_server
+        #         api = node.foreign_server_api_location
+        #         if node.append_slash:
+        #             api = api + "/"
+        #         response = requests.get("http://{}/posts/{POST_ID}/comments".format(api, post_id),
+        #                                 auth=(username, password))
+        #         if response.status_code == 200:
+        #             break
 
     #
     #
