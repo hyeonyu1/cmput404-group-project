@@ -375,7 +375,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             new_post.contentType = post['contentType']  # : "text/plain",
             new_post.content = post['content']      #: "stuffs",
 
-        new_post.author = request.user         # the authenticated user
+        new_post.author = request.user        # the authenticated user
 
         # Categories added after new post is saved
 
@@ -644,28 +644,9 @@ def get_comments(post_id):
     comments = Comment.objects.filter(
         parentPost=post_id).order_by("-published")[:5]
     size = comments.count()
-
     for comment in comments:
-        author = Author.objects.get(username=comment.author)
-        c = {
-            "id": str(comment.id),
-            "contentType": str(comment.contentType),
-            "comment": str(comment.content),
-            "published": "{}+{}".format(comment.published.strftime('%Y-%m-%dT%H:%M:%S'),
-                                        str(comment.published).split("+")[-1]),
-            "author": {
-                "id": "http://" + str(author.uid),
-                "email": str(author.email),
-                "bio": str(author.bio),
-                "host": str(author.host),
-                "firstName": str(author.first_name),
-                "lastName": str(author.last_name),
-                "displayName": str(author.display_name),
-                "url": str(author.url),
-                "github": str(author.github)
-            }
-        }
-        comments_list.append(c)
+        comments_list.append(comment.to_api_object())
+        # comments_list.append(c)
 
     return size, comments_list
 

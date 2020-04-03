@@ -1,6 +1,9 @@
 from django.db import models
 from users.models import Author
 from posts.models import Post
+from nodes.models import Node
+import requests
+
 
 from django.conf import settings
 
@@ -29,7 +32,10 @@ class Comment(models.Model):
     # @todo Are comments editable? Should we allow this and if so would this field update to match?
     published = models.DateTimeField(auto_now_add=True)
 
-    author = models.ForeignKey(Author, on_delete=models.PROTECT)
+    # author = models.ForeignKey(Author, on_delete=models.PROTECT)
+    #uid of author
+    author = models.CharField(max_length=500)
+
 
     parentPost = models.ForeignKey(Post, on_delete=models.CASCADE)
 
@@ -42,10 +48,42 @@ class Comment(models.Model):
         """
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
-        return {
-                    "author": self.author.to_api_object(),
-                    "comment": self.content,
-                    "contentType": self.contentType,
-                    "published": self.published,
-                    "id": str(self.id.hex)
-                }
+        try:
+            author = Author.objects.get(id=self.author)
+            return {
+                "author": author.to_api_object(),
+                "comment": self.content,
+                "contentType": self.contentType,
+                "published": self.published,
+                "id": str(self.id.hex)
+            }
+        except Author.DoesNotExist:
+            node = author.split("/author/")[0]
+            username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+            password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+            api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+            if Node.objects.get(foreign_server_hostname=node).append_slash:
+                api = api + "/"
+            response = requests.get(
+                "http://{}/author/{}".format(api, author),
+                auth=(username, password)
+            )
+            if response.status_code == 200:
+                author_info = response.json()
+
+            return {
+                "author": {
+                    "id": author_info["id"],
+                    "host": author_info["host"],
+                    "displayName": author_info["display_name"],
+                    "first_name": author_info["first_name"],
+                    "last_name": author_info["last_name"],
+                    "url": author_info["uid"],
+                    "github": author_info["github"]
+                },
+                "comment": self.content,
+                "contentType": self.contentType,
+                "published": self.published,
+                "id": str(self.id.hex)
+            }
+

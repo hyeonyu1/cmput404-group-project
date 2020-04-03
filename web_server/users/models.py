@@ -68,6 +68,8 @@ class Author(AbstractUser):
                 "id": self.uid,
                 "host": self.host,
                 "displayName": self.display_name,
+                "first_name": self.first_name,
+                "last_name": self.last_name,
                 "url": self.uid,
                 "github": self.github
             }
