@@ -132,8 +132,10 @@ def retrieve_single_post_with_id(request, post_id):
 
 @validate_remote_server_authentication()
 def comments_retrieval_and_creation_to_post_id(request, post_id):
-
+    print("\n\n\n\n\n\n\n")
+    print("request ", requests)
     def get_handler(request, comments, pager, pagination_uris):
+        print("get_handler")
         if not Post.objects.filter(id=post_id).exists():
 
             return JsonResponse({
@@ -282,6 +284,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     # ]).resolve()
 
     def api_response(request, comments, pager, pagination_uris):
+        print("\n\n\n\n\n\n\n")
+        print("request ", requests)
         size = min(int(request.GET.get('size', 10)), 50)
         output = {
             "query": "comments",
@@ -289,12 +293,14 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             "size": size,
             "comments": [comment.to_api_object() for comment in comments]
         }
+        print("output", output)
+        print("\n\n\n\n\n\n\n")
+
         (prev_uri, next_uri) = pagination_uris
         if prev_uri:
             output['prev'] = prev_uri
         if next_uri:
             output['next'] = next_uri
-        print(output)
         return JsonResponse(output)
 
     if request.user.is_authenticated:
