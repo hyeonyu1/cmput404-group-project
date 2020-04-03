@@ -181,6 +181,7 @@
             get_comments(post_id){
                 let url = 'comments/';
                 window.axios.get(url).then((response) =>{
+                    console.info(respone)
                     for(let item of response.data['comments']){
                         let comment = new Comment(item);
                         comment.published=moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
