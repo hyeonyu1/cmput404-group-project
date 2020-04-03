@@ -137,7 +137,9 @@ def view_post(request, post_path):
     try:
         print("\n\n\n\n\n\n", req.json())
     except:
-        print("\n\n\n\n\n\n", req.body)
+        print("\n\n\n\n\n\n", req)
+        print("\n\n\n\n\n\n", req.header())
+        print("\n\n\n\n\n\n", req.body())
 
     try:
         return render(request, 'posts/foreign_post.html', {
