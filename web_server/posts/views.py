@@ -14,6 +14,8 @@ from json import loads
 from django.core import serializers
 from django.contrib.auth.models import AnonymousUser
 
+import re
+
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
@@ -86,7 +88,9 @@ def retrieve_single_post_with_id(request, post_id):
             if request.user.host == Author.objects.get(id=author_id).host:
                 return True
         elif visibility == Post.PRIVATE:
-            if user_id in api_object_post["visibleTo"]:
+            # The visibleTo list contains protocols, which we dont want
+            no_protocol_visible_to = [re.sub(r'http(s)*://', '', vt) for vt in api_object_post["visibleTo"]]
+            if user_id in no_protocol_visible_to:
                 return True
         elif visibility == Post.FRIENDS:
             author_friends = Friend.objects.filter(author_id=author_id)
