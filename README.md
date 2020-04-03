@@ -19,3 +19,10 @@ The following command will create a copy of your database and dump it into a fil
 The following command will load the file created in the above command into your database
 
     python manage.py loaddata test_data.yaml
+
+# Testcases
+## Model Class Unittest
+    python3 manage.py test friendship.test_friendship_models
+    python3 manage.py test comments.test_comment_models
+    python3 manage.py test users.tests.TestAuthorModels
+    python3 manage.py test posts.test_posts_models
