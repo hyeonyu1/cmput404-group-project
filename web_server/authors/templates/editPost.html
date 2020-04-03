@@ -31,9 +31,13 @@
                 {% if post.contentType == "text/plain" %}
                     <option value="text/plain" selected>Plain Text</option>
                     <option value="text/markdown">Markdown</option>
+                    <option value="image/png;">PNG</option>
+                    <option value="image/jpeg;">JPEG</option>
                 {% else %}
                     <option value="text/plain">Plain Text</option>
                     <option value="text/markdown" selected>Markdown</option>
+                    <option value="image/png;">PNG</option>
+                    <option value="image/jpeg;">JPEG</option>
                 {% endif %}
             </select>
 
@@ -81,6 +85,10 @@
                 <select id="visibleFor" form="postForm" name="visibleTo">
                     <option>No users available to choose from</option>
                 </select>
+            </div>
+
+            <div id="unlisted">
+                Unlisted <input type="checkbox" name="unlisted" form="postForm"> 
             </div>
 
             <!-- type="submit" form="postForm" -->
