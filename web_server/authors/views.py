@@ -724,8 +724,10 @@ def post_edit_and_delete(request, post_id):
                                     name=category)
                                 post.categories.add(c)
                         elif key == 'unlisted':
-                            if vars.get(key) == 'on':
+                            if vars.get(key) == 'true':
                                 setattr(post, key, True)
+                            elif vars.get(key) == 'false':
+                                setattr(post, key, False)
                         else:
                             # All other fields
                             setattr(post, key, vars.get(key))

@@ -94,7 +94,10 @@
 
                 // Validation is successful
                 // This is the name of the file
-                alert('You have chosen the file ' + file.name);
+                alert('You have chosen the file ' + file.name +
+                    '. To protect your privacy the image has had it\'s permissions set to ' +
+                    document.querySelector('visibility').value +
+                    '. If you need it set to a different visibility you will need to edit this post after it is created.');
 
                 var data = new FormData();
 
@@ -108,7 +111,7 @@
                 data.append('description', '');
                 data.append('content', '');
                 data.append('contentType', file.type);
-                data.append('visibility', "PRIVATE");
+                data.append('visibility', document.querySelector('visibility').value);
                 data.append('visibleTo', "");
                 data.append('categories', "");
                 data.append('unlisted', "true");
