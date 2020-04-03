@@ -281,7 +281,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     #     PagingHandler("GET", "application/json", get_handler)
     # ]).resolve()
 
-
     def api_response(request, comments, pager, pagination_uris):
         size = min(int(request.GET.get('size', 10)), 50)
         output = {
@@ -295,6 +294,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             output['prev'] = prev_uri
         if next_uri:
             output['next'] = next_uri
+        print(output)
         return JsonResponse(output)
 
     if request.user.is_authenticated:
