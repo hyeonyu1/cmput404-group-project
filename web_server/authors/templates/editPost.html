@@ -85,6 +85,9 @@
 
             <!-- type="submit" form="postForm" -->
             <button id="editButton" onclick="editPost()">Edit</button>
+
+            <!-- If links to editable images are detected then they will be displayed here -->
+            <div id="image_edit_links"></div>
         </div>
         
             
@@ -107,11 +110,40 @@
         <script type="text/javascript" src="{% static 'javascript/posting.js' %}"></script>
         <script type="text/javascript">
             //creates list of uids of selected users the post is visibleTo
-            var people = []
+            var people = [];
             {% for visibleTo in post.visibleTo.all %}
-                people.push("{{ visibleTo.author_uid }}")
+                people.push("{{ visibleTo.author_uid }}");
             {% endfor %} 
             window.onload = visibilityChanged(people);
+        </script>
+        <script>
+            window.addEventListener('load', ()=>{
+                debugger;
+                let links = scan_for_image_edit_links(
+                    document.querySelector('#content').value,
+                    '{{ hostname }}',
+                    '{{ url_image_path}}',
+                    '{{ url_post_edit_path}}'
+                );
+
+                let node = document.querySelector('#image_edit_links');
+                node.innerHTML = '';
+                if(Object.keys(links).length > 0){
+                    let explanation = document.createElement('p');
+                    explanation.innerText = "It appears you have some links to hosted image posts in your new post. You can click these links to edit the posts:";
+                    let list = document.createElement('ul');
+                    for(let key of Object.keys(links)){
+                        let li = document.createElement('li');
+                        let a = document.createElement('a');
+                        a.href = 'http://' + links[key];
+                        a.innerText = key;
+                        li.appendChild(a);
+                        list.appendChild(li);
+                    }
+                    explanation.appendChild(list);
+                    node.appendChild(explanation);
+                }
+            })
         </script>
     </div>
 {% endblock %}

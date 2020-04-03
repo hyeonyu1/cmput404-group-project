@@ -692,7 +692,12 @@ def post_edit_and_delete(request, post_id):
 
     def get_edit_dialog(request):
         # Render the response and send it back!
-        return render(request, 'editPost.html', {'post':post})
+        return render(request, 'editPost.html', {
+            'post':post,
+            'hostname':settings.HOSTNAME,
+            'url_image_path': 'posts',  # The API path for viewing an image
+            'url_post_edit_path': 'author/posts'  # The API path for editing an image
+        })
 
     def edit_post(request):
         """

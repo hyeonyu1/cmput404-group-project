@@ -1,4 +1,3 @@
-
 //Check when changing visibility if its set to private show a list of users
 function visibilityChanged(selectedUsers){
 	var visibility = document.getElementById("visi");
@@ -54,6 +53,32 @@ function get_visible_to_names(select_element){
 				option.innerText = data.displayName + ' (' + option.innerText + ')'
 			})
 	}
+}
+
+/**
+ * Given some text, scans the text for any markdown links that appear in the form {hostname}/{path}/{rest of the path}
+ * and then returns a list of links that will be of form {hostname}/{replaced_path}/{rest of path}
+ * @param content
+ */
+function scan_for_image_edit_links(content, hostname, path, replaced_path){
+	// Get all markdown links
+	let links = content.matchAll(/!\[([^\]]*)]\(https?:\/\/([^)]*)\)/g);
+
+	// Filter for the ones that are for our own server
+	let own_server_links = {};
+	for(let link of links){
+		// There are some capturing groups defined in the above regex that are useful
+		let link_name = link[1];
+		let link_uri = link[2];
+
+		let prefix = hostname + '/' + path + '/';
+
+		if(link_uri.startsWith(prefix)){
+			// This is a link we need to extract and return a replacement version for
+			own_server_links[link_name] = link_uri.replace(path, replaced_path)
+		}
+	}
+	return own_server_links
 }
 
 
