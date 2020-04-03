@@ -14,7 +14,7 @@
              <div class="form-inline">
                  <div class="d-flex w-100 justify-content-between">
 
-                 	{% if post.contentType == "TYPE_MARKDOWN" %}
+                 	{% if post.contentType == "text/markdown" %}
                         <h2>{{post.title|show_markdown|safe}}</h2>
                     {% else %}
                         <h2>{{post.title}}</h2>
@@ -41,7 +41,7 @@
              </div>
 
             <div class="form-inline">
-            	{% if post.contentType == "TYPE_MARKDOWN" %}
+            	{% if post.contentType == "text/markdown" %}
                 	<h3>{{post.description|show_markdown|safe}}</h3>
                 {% else %}
                 	<h3>{{post.description}}</h3>
@@ -68,7 +68,7 @@
              <br>
 
              <div>
-                {% if post.contentType == "TYPE_MARKDOWN" %}
+                {% if post.contentType == "text/markdown" %}
                     <p>{{post.content|show_markdown|safe}}</p>
                 {% else %}
                     <p>{{post.content}}</p>
