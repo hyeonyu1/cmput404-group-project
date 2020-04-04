@@ -261,18 +261,19 @@ def invalidate_friend_requests(author_id):
 
 def FOAF_verification(request, author):
 
+    print("\n\n\n\n\nFOAF")
     auth_user = request.user.uid
     auth_user = url_regex.sub("", auth_user).rstrip("/")
-
-
+    print("auth_user = ", auth_user)
     own_node = request.get_host()
 
     nodes = [own_node]
     for node in Node.objects.all():
         nodes.append(node.foreign_server_hostname)
 
+    print("all nodes = ", nodes)
     for node in nodes:
-
+        print("node = ", node)
         # If the author is a friend of auth user return True
         if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
             return True
