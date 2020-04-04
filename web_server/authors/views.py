@@ -17,7 +17,7 @@ from django.template import RequestContext
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
-from friendship.views import FOAF_verification
+from friendship.views import FOAF_verification, sanitize_author_id
 
 import math
 from django.conf import settings
@@ -454,7 +454,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             visible_to = VisibleTo(author_uid=uid, accessed_post=new_post)
             visible_to.save()
 
-
         # Categories is commented out because it's not yet in the post data, uncomment once available
         for category in post['categories'].split('\r\n'):
             try:
@@ -735,7 +734,7 @@ def post_edit_and_delete(request, post_id):
 
     def get_edit_dialog(request):
         # Render the response and send it back!
-        return render(request, 'editPost.html', {'post':post})
+        return render(request, 'editPost.html', {'post': post})
 
     def edit_post(request):
         """
@@ -749,7 +748,8 @@ def post_edit_and_delete(request, post_id):
             if hasattr(post, key):
                 if key == 'visibleTo':
                     #  Must create visible to objects to add to the post after it is saved
-                    visible_to_list = [VisibleTo(author_uid=author_uid) for author_uid in vars.getlist(key)]
+                    visible_to_list = [
+                        VisibleTo(author_uid=author_uid) for author_uid in vars.getlist(key)]
                 elif len(vars.getlist(key)) <= 1:  # Simple value or empty
                     try:
                         # Special fields
@@ -1195,9 +1195,9 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
         # compose author id from author uid
 
         host = request.get_host()
-        author1_id = host + "/author/" + str(author1_id)
+        author1_id = host + "/author/" + UUID(author1_id).hex
         # decode + strip url protocol
-        author2_id = url_regex.sub('', author2_id)
+        author2_id = sanitize_author_id(author2_id)
 
         # compose response data
         response_data = {}
@@ -1225,6 +1225,7 @@ def post_creation_page(request):
         'post_retrieval_url': settings.HOST_URI + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
     })
 
+
 @login_required
 def get_all_available_authors_ids(request):
     """
@@ -1236,7 +1237,8 @@ def get_all_available_authors_ids(request):
     """
     current_user = request.user
     local_author_ids = [author.uid for author in Author.objects.all()]
-    foreign_friend_ids = [friend.friend_id for friend in Friend.objects.filter(author_id=current_user.uid)]
+    foreign_friend_ids = [friend.friend_id for friend in Friend.objects.filter(
+        author_id=current_user.uid)]
     return JsonResponse({
         'success': True,
         'data': list(set(local_author_ids + foreign_friend_ids))
