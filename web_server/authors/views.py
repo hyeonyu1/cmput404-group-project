@@ -57,10 +57,24 @@ def retrieve_friends_of_author(authorid):
                 try:
                     foreign_authors = res.json()
                     for foreign_author in foreign_authors:
+                        # strip protocol and trailing slash
                         stripped_foreign_author_id = url_regex.sub(
                             "", foreign_author["id"].rstrip("/"))
+
+                        # remove - from UUID
+                        try:
+                            stripped_foreign_author_id_splits = stripped_foreign_author_id.rsplit(
+                                "/", 1)
+                            stripped_foreign_author_id = stripped_foreign_author_id_splits[0] + \
+                                "/" + \
+                                UUID(stripped_foreign_author_id_splits[1]).hex
+
+                        except:
+                            pass
+
                         if stripped_foreign_author_id not in foreign_author_dict:
                             foreign_author_dict[stripped_foreign_author_id] = foreign_author
+
                 except:
                     continue
 
@@ -264,21 +278,50 @@ def retrieve_universal_author_profile(request, author_id):
     # it's foreign author
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
-        url = "http://{}".format(author_id)
+        try:
+            author_id_splits = author_id.rsplit("/", 1)
+            author_uuid = UUID(author_id_splits[1])
+            # first try /author/authorid with UUID dash
+            url = "http://{}/{}".format(author_id_splits[0], str(author_uuid))
+            res = requests.get(url)
+            # print("\n\n\n\n\n\n")
+            # print(author_id)
+            # print(url)
+            # print("inside universla author profile")
+            # print(res.text, res.status_code)
+            # print("\n\n\n\n\n\n")
+            if res.status_code >= 200 and res.status_code < 300:
+                try:
+                    foreign_friend = res.json()
+                    return JsonResponse(foreign_friend, status=200)
+                except:
+                    return HttpResponse("Wrong Format Foreign Server Response", status=404)
+            else:
+                # try /author/authorid without UUID dash
+                url = "http://{}/{}".format(
+                    author_id_splits[0], author_uuid.hex)
+                res = requests.get(url)
+                # print("\n\n\n\n\n\n")
 
-        res = requests.get(url)
-        # print("\n\n\n\n\n\n")
-        # print(author_id)
-        # print(url)
-        # print("inside universla author profile")
-        # print(res.text, res.status_code)
-        # print("\n\n\n\n\n\n")
-        if res.status_code >= 200 or res.status_code < 300:
-            try:
-                foreign_friend = res.json()
-                return JsonResponse(foreign_friend, status=200)
-            except:
-                return HttpResponse("Wrong Format Foreign Server Response", status=404)
+                # print(url)
+                # print("inside universla author profile second try ")
+                # print(res.text, res.status_code)
+                # print("\n\n\n\n\n\n")
+                if res.status_code >= 200 and res.status_code < 300:
+                    try:
+                        foreign_friend = res.json()
+                        return JsonResponse(foreign_friend, status=200)
+                    except:
+                        return HttpResponse("Wrong Format Foreign Server Response", status=404)
+        except:
+            url = "http://{}".format(author_id)
+            res = requests.get(url)
+            if res.status_code >= 200 and res.status_code < 300:
+                try:
+                    foreign_friend = res.json()
+                    return JsonResponse(foreign_friend, status=200)
+                except:
+                    return HttpResponse("Wrong Format Foreign Server Response", status=404)
 
     return HttpResponse("Can't Retrieve Foreign Author's Information", status=404)
 # Ida Hou

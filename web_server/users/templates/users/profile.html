@@ -231,6 +231,7 @@
                     }
                     for (let friend of response.data['friends']) {
                         let afriend = new Friend(friend.id, friend.displayName, friend.host);
+                        console.log(afriend);
                         this.friends.push(afriend);
                     }
                 })

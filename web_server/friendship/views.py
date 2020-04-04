@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from friendship.models import FriendRequest, Friend, Follow
+from friendship.models import FriendRequest, Friend
 from nodes.models import Node
 from django.contrib.auth.decorators import login_required
 import json
@@ -8,9 +8,24 @@ import re
 from nodes.models import Node
 import base64
 import requests
+from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 from urllib.parse import quote
 url_regex = re.compile(r"(http(s?))?://")
+
+# strip protocol, trailing slash and remove dashes uuid
+
+
+def sanitize_author_id(author_id):
+    author_id = url_regex.sub('', author_id).rstrip("/")
+    splits = author_id.rsplit("/", 1)
+    try:
+        author_id_formatted = splits[0] + "/" + UUID(splits[1]).hex
+        return author_id_formatted
+    except:
+        return author_id
+
+
 # author: Ida Hou
 # http://service/friendrequest/handle endpoint handler
 # POST requests accepts the friend request
@@ -30,22 +45,17 @@ def handle_friend_request(request):
     from_id = body.get("author", {}).get("id", None)
     from_host = body.get("author", {}).get("host", None)
     from_host = url_regex.sub("", from_host).rstrip("/").split("/")[0]
-    # print("\n\n\n\n")
-    # print("in handle_friend_request ")
-    # print(from_host)
-    # print("\n\n\n\n")
-
     to_id = body.get("friend", {}).get("id", None)
     to_host = body.get("friend", {}).get("host", None)
+    to_host = url_regex.sub('', to_host).rstrip("/")
     if not from_id or not to_id or not from_host or not to_host:
         # Unprocessable Entity
         return HttpResponse("post request body missing fields", status=422)
 
     # strip protocol
-    from_id = url_regex.sub('', from_id)
-    to_id = url_regex.sub('', to_id)
-    from_host = url_regex.sub('', from_host).rstrip("/")
-    to_host = url_regex.sub('', to_host).rstrip("/")
+    from_id = sanitize_author_id(from_id)
+    to_id = sanitize_author_id(to_id)
+
     if request.method == 'POST':
 
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
@@ -63,9 +73,9 @@ def handle_friend_request(request):
             new_friend.save()
             # if request is from remote author
             # we need to send friend request back as "confirmation"
-            if from_host != request.get_host():
+            # if from_host != request.get_host():
 
-                return send_friend_request_to_foreign_friend(body.get("author"), body.get("friend"), from_host)
+            # return send_friend_request_to_foreign_friend(body.get("author"), body.get("friend"), from_host)
 
             return HttpResponse("Friend successfully added", status=201)
         else:
@@ -126,9 +136,9 @@ def send_friend_request(request):
         if not from_id or not to_id or not from_host or not to_host:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
-        # strip protocol
-        from_id = url_regex.sub('', from_id)
-        to_id = url_regex.sub('', to_id)
+        # strip protocol and remove dash
+        from_id = sanitize_author_id(from_id)
+        to_id = sanitize_author_id(to_id)
 
         # if friend request already existed
         if FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
@@ -142,12 +152,24 @@ def send_friend_request(request):
             return HttpResponse("Friendship already exists!", status=409)
         # handle outgoing request from local author
         if from_host == request.get_host():
-            new_request = FriendRequest(from_id=from_id, to_id=to_id)
-            new_request.save()
             # friend request from local author to local author
             if to_host != request.get_host():
                 # retrieve basic auth credential from Node table
-                return send_friend_request_to_foreign_friend(body.get("friend"), body.get("author"), to_host)
+                http_response = send_friend_request_to_foreign_friend(
+                    body.get("friend"), body.get("author"), to_host)
+                if http_response.status_code >= 200 and http_response.status_code < 300:
+                    if not FriendRequest.objects.filter(from_id=from_id).filter(to_id=to_id).exists():
+                        new_request = FriendRequest(
+                            from_id=from_id, to_id=to_id)
+                        new_request.save()
+                        return HttpResponse("Friend Request Successfully sent", status=201)
+                    return HttpResponse("Friend Request Already Sent", status=409)
+                else:
+                    return http_response
+            else:
+                new_request = FriendRequest(from_id=from_id, to_id=to_id)
+                new_request.save()
+
             return HttpResponse("Friend Request Successfully sent", status=201)
         # handle incoming friend request from remote server
         else:
@@ -253,6 +275,11 @@ def invalidate_friend_requests(author_id):
                                 new_friend = Friend(
                                     author_id=request.to_id, friend_id=author_id)
                                 new_friend.save()
+                    # # delete if they are not friends yet
+                    # else:
+                    #     if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
+                    #         FriendRequest.objects.filter(from_id=author_id).filter(
+                    #             to_id=request.to_id).delete()
 
 
 # FOAF verification involves the 3 hosts of the 3 friends A->B->C
@@ -295,13 +322,17 @@ def FOAF_verification(request, author):
                     # Since the friend is not on the same host as the auth user make a request to get friends from the other node
                     # A -> A -> B
                     else:
-                        username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-                        password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-                        api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                        username = Node.objects.get(
+                            foreign_server_hostname=node).username_registered_on_foreign_server
+                        password = Node.objects.get(
+                            foreign_server_hostname=node).password_registered_on_foreign_server
+                        api = Node.objects.get(
+                            foreign_server_hostname=node).foreign_server_api_location
                         if Node.objects.get(foreign_server_hostname=node).append_slash:
                             api = api + "/"
                         response = requests.get(
-                            "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author)),
+                            "http://{}/author/{}/friends".format(
+                                node, "{}/author/{}".format(api, author)),
                             auth=(username, password)
                         )
                         if response.status_code == 200:
@@ -315,9 +346,12 @@ def FOAF_verification(request, author):
 
             # author's host is different from auth user
             else:
-                username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-                password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-                api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                username = Node.objects.get(
+                    foreign_server_hostname=node).username_registered_on_foreign_server
+                password = Node.objects.get(
+                    foreign_server_hostname=node).password_registered_on_foreign_server
+                api = Node.objects.get(
+                    foreign_server_hostname=node).foreign_server_api_location
                 if Node.objects.get(foreign_server_hostname=node).append_slash:
                     api = api + "/"
                 response = requests.get(
