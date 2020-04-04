@@ -32,8 +32,10 @@
         <div id="section2">
             <label for="contentType">Choose your content type:</label>
             <select id="contentType" form="postForm" name="contentType">
-                <option value="text/markdown">Markdown</option>
-                <option value="text/plain">Plain Text</option>
+                <option value="text/plain" >Plain Text</option>
+                    <option value="text/markdown">Markdown</option>
+                    <option value="image/png;">PNG</option>
+                    <option value="image/jpeg;">JPEG</option>
             </select>
 
             <!-- Select for choosing visibility of post -->
@@ -46,13 +48,19 @@
                 <option value="SERVERONLY">Server Only</option>
             </select>
 
-            <!-- Only appears when visibility is set to private.
-                this will have to be implemented later when we know all the users on
-                the server and can specify certain people -->
+            <!-- Only appears when visibility is set to private.-->
             <div id="visibleTo" style="visibility: hidden;">
                 <label for="visibleFor">Who can view your post:(ctrl+click to select multiple)</label>
                 <select id="visibleFor" form="postForm" name="visibleTo" multiple>
                     <option>No users available to choose from</option>
+                </select>
+            </div>
+
+            <div id="unlisted">
+                Unlisted
+                <select name="unlisted" form="postForm">
+                    <option value="false">False - Visible in streams</option>
+                    <option value="true">True - Only visible by direct link</option>
                 </select>
             </div>
 
@@ -86,9 +94,14 @@
                     return;
                 }
 
+                let post_visibility = document.querySelector('[name=visibility] option:checked').value;
+
                 // Validation is successful
                 // This is the name of the file
-                alert('You have chosen the file ' + file.name);
+                alert('You have chosen the file ' + file.name +
+                    '. To protect your privacy the image has had it\'s permissions set to ' +
+                    post_visibility +
+                    '. If you need it set to a different visibility you will need to edit this post after it is created.');
 
                 var data = new FormData();
 
@@ -102,8 +115,23 @@
                 data.append('description', '');
                 data.append('content', '');
                 data.append('contentType', file.type);
-                data.append('visibility', "PRIVATE");
-                data.append('visibleTo', "");
+                data.append('visibility', post_visibility);
+
+                if (post_visibility === 'PRIVATE'){
+                    /**
+                     * One liner provided by
+                     * Original Question: https://stackoverflow.com/questions/11821261/how-to-get-all-selected-values-from-select-multiple-multiple
+                     * Original Asker: Kyle https://stackoverflow.com/users/1308743/kyle
+                     * Original Responder: Tomáš Zato - Reinstate Monica https://stackoverflow.com/users/607407/tom%c3%a1%c5%a1-zato-reinstate-monica
+                     */
+                    let selected_options = [...document.querySelector('[name=visibleTo]').options].filter(opt=>opt.selected);
+                    for(let opt of selected_options){
+                        data.append('visibleTo', opt.value);
+                    }
+                } else {
+                    data.append('visibleTo', '');
+                }
+
                 data.append('categories', "");
                 data.append('unlisted', "true");
 
