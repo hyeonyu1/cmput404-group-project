@@ -178,7 +178,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     # - auth user comments on foreign post
     # - foreign user comments on local post
     def post_handler(request):
-        print("\n\n\n\n\n\n request", requests, request.body)
+        print("\n\n\n\n\n\n")
         print("post id = ", post_id)
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
@@ -187,17 +187,17 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         }
 
         # checks if local host
-        if Post.objects.filter(id=post_id).exists():
-            # checks visibility of the post
-            if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
-                return JsonResponse(
-                    {
-                        "query": "addComment",
-                        "success": False,
-                        "message": "Comment not allowed"
-                    },
-                    status=403
-                )
+        # if Post.objects.filter(id=post_id).exists():
+        #     # checks visibility of the post
+        #     if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
+        #         return JsonResponse(
+        #             {
+        #                 "query": "addComment",
+        #                 "success": False,
+        #                 "message": "Comment not allowed"
+        #             },
+        #             status=403
+        #         )
     # - auth user comments on local post
     # - foreign user comments on local post
     # if request.user.is_authenticated or request.remote_server_authenticated:
@@ -208,6 +208,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         print("trying to add")
         try:
             body = request.body.decode('utf-8')
+            print("body= ",body)
             comment_info = loads(body)
             comment_info = comment_info['comment']
             print("comment_info = ", comment_info)
