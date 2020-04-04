@@ -176,6 +176,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     # - auth user comments on foreign post
     # - foreign user comments on local post
     def post_handler(request):
+        print("\n\n\n\n\n\n request", requests, request.body)
+        print("post id = ", post_id)
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
         output = {
@@ -285,8 +287,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     # ]).resolve()
 
     def api_response(request, comments, pager, pagination_uris):
-        print("\n\n\n\n\n\n\n")
-        print("request ", requests)
         size = min(int(request.GET.get('size', 10)), 50)
         output = {
             "query": "comments",
@@ -294,8 +294,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             "size": size,
             "comments": [comment.to_api_object() for comment in comments]
         }
-        print("output", output)
-        print("\n\n\n\n\n\n\n")
 
         (prev_uri, next_uri) = pagination_uris
         if prev_uri:
