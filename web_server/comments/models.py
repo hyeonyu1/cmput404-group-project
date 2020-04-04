@@ -66,7 +66,7 @@ class Comment(models.Model):
             if Node.objects.get(foreign_server_hostname=node).append_slash:
                 api = api + "/"
             response = requests.get(
-                "http://{}/author/{}".format(api, self.author),
+                "http://{}/author/{}".format(api, self.author.split("/author/")[-1]),
                 auth=(username, password)
             )
             if response.status_code == 200:
