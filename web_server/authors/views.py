@@ -452,16 +452,17 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
+        user_uid = url_regex.sub("", request.user.uid).rstrip("/")
         # own post
         own_post = Post.objects.filter(
-            author_id=request.user.uid, unlisted=False)
+            author_id=user_uid, unlisted=False)
 
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC", unlisted=False)
 
         # visibility = FRIENDS
         users_friends = []
-        friends = Friend.objects.filter(author_id=request.user.uid)
+        friends = Friend.objects.filter(author_id=user_uid)
         for friend in friends:
             users_friends.append(friend.friend_id)
         friend_post = Post.objects.filter(
@@ -477,7 +478,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         # visibility = PRIVATE
         private_post = Post.objects.filter(
-            visibleTo=request.user.uid, unlisted=False)
+            visibleTo=user_uid, unlisted=False)
 
         # visibility = SERVERONLY
         local_host = request.user.host
