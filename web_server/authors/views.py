@@ -764,8 +764,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
     def retrieve_author_posts(request):
         node = author_id.split("/author/")[0]
         id_of_author = author_id.split("/author/")[-1]
-        id_of_author = url_regex.sub("", id_of_author).rstrip("/")
-        print("\n\n\n\n\n\nid_of_author =  ", id_of_author)
         try:
             valid_uuid = UUID(id_of_author, version=4)
 
@@ -905,10 +903,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             host = request.get_host()
             author_uid = host + "/author/" + str(id_of_author)
-            user_uid = url_regex.sub("", request.user.uid).rstrip("/")
 
-
-            if author_uid == user_uid:
+            if author_uid == request.user.uid:
                 visible_post = Post.objects.filter(
                     author=author_uid, unlisted=False)
 
@@ -918,7 +914,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                     author=author, visibility="PUBLIC", unlisted=False)
 
                 # visibility = FRIENDS
-                if Friend.objects.filter(author_id=author_uid).filter(friend_id=user_uid).exists():
+                if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
                     friend_post = Post.objects.filter(
                         author=author, visibility__in=["FRIENDS", "FOAF"], unlisted=False)
                 else:
@@ -932,7 +928,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
                 # visibility = PRIVATE
                 private_post = Post.objects.filter(
-                    author=author, visibleTo=user_uid, unlisted=False)
+                    author=author, visibleTo=request.user.uid, unlisted=False)
 
                 # visibility = SERVERONLY
                 if request.user.host == author.host:
