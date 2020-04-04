@@ -373,7 +373,11 @@ def proxy_foreign_server_image(request, image_url):
         # This url is not for a node that we have credentials for, we have to return the url as is
         return HttpResponse('https://' + image_url)
 
-    request_args = dict()
+    request_args = {
+        'headers': {
+            'Accept': 'application/json'
+        }
+    }
     if credentials is not None:
         request_args['auth'] = credentials
     # Make a request to the url, and pass in the credentials if they exist
