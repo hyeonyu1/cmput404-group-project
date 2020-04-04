@@ -286,6 +286,7 @@ def FOAF_verification(request, author):
             # if the author is on the same host as auth user
             if node == own_node:
                 author_friends = Friend.objects.filter(author_id=author)
+                print("same node, author_friends  = ", author_friends)
                 for friend in author_friends:
                     # getting the node of the friend
                     friend_node = friend.friend_id.split("/author/")[0]
@@ -302,6 +303,7 @@ def FOAF_verification(request, author):
                     # Since the friend is not on the same host as the auth user make a request to get friends from the other node
                     # A -> A -> B
                     else:
+                        print("friends has a diff node")
                         username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
                         password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
                         api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
@@ -311,6 +313,7 @@ def FOAF_verification(request, author):
                             "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author)),
                             auth=(username, password)
                         )
+                        print("back from response")
                         if response.status_code == 200:
                             friends_list = response.json()
 
