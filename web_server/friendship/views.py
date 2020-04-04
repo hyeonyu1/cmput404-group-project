@@ -264,7 +264,10 @@ def FOAF_verification(request, author):
     print("\n\n\n\n\nFOAF")
     auth_user = request.user.uid
     auth_user = url_regex.sub("", auth_user).rstrip("/")
+    author = url_regex.sub("", author).rstrip("/")
+
     print("auth_user = ", auth_user)
+    print("author", author)
     own_node = request.get_host()
 
     nodes = [own_node]
