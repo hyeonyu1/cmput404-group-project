@@ -85,7 +85,7 @@ def retrieve_single_post_with_id(request, post_id):
             # getting the friends of the author
             return FOAF_verification(request, author_id)
         elif visibility == Post.SERVERONLY:
-            if request.user.host == Author.objects.get(id=author_id).host:
+            if request.user.host == Author.objects.get(uid=author_id).host:
                 return True
         elif visibility == Post.PRIVATE:
             # The visibleTo list contains protocols, which we dont want
