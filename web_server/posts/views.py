@@ -311,6 +311,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             return False
 
         author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
+        user_id = url_regex.sub("", user_id).rstrip("/")
 
         if user_id == author_id or visibility == Post.PUBLIC:
             return True
