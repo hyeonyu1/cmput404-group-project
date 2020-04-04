@@ -204,7 +204,7 @@ def invalidate_friends(host, user_id):
 #     #
 
 @login_required
-def view_post_comment(request, post_path):
+def view_post(request, post_path):
     """
     Local handler for viewing a post, the post might be local or foreign, and the path should determine that.
     The first part of the path should be a hostname, and the last part should be the post id
