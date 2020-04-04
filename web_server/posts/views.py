@@ -279,5 +279,5 @@ def proxy_foreign_server_image(request, image_url):
     uri = ("data:" + 
        response.headers['Content-Type'] + ";" +
        "base64," + base64.b64encode(response.content).decode("utf-8"))
-    print(uri)
+
     return HttpResponse(uri, content_type=response.headers['Content-Type'])
