@@ -148,7 +148,7 @@ def view_post_comment(request, post_path):
     The first part of the path should be a hostname, and the last part should be the post id
     If no hostname is provided (no path, only a uuid), then the local server is assumed
     """
-    print("\n\n\n\n\n\n\nview_post_commentt\n", post_path)
+    print("\n\n\n\n\n\n\nview_post_comment\n", post_path)
     path = post_path.split('/')
     host = path[0]
     post_id = path[-1]
