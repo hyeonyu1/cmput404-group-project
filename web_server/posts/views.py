@@ -276,4 +276,8 @@ def proxy_foreign_server_image(request, image_url):
         return HttpResponse(f'The server failed to deliver an image. The response was {response.content}', status=response.status_code)
 
     # Otherwise read the image data and return the image
-    return HttpResponse(response.content, content_type=response.headers['Content-Type'])
+    uri = ("data:" + 
+       response.headers['Content-Type'] + ";" +
+       "base64," + base64.b64encode(response.content).decode("utf-8"))
+    print(uri)
+    return HttpResponse(uri, content_type=response.headers['Content-Type'])
