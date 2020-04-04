@@ -360,6 +360,9 @@ def proxy_foreign_server_image(request, image_url):
     """
     For markdown posts that contain images in them, we need to proxy the request through our server.
     This is because foreign servers require authorization. Requires an image url, which should NOT include the protocol
+
+    If the url passed is not for a specific node we have connections for, it will be returned with the https protocol
+    appended so that other img urls are not affected and resolve as normal.
     """
     image_url_parts = image_url.split('/')
     credentials = None
@@ -367,7 +370,8 @@ def proxy_foreign_server_image(request, image_url):
         node = Node.objects.get(foreign_server_hostname=image_url_parts[0])
         credentials = (node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
     except Node.DoesNotExist as e:
-        pass
+        # This url is not for a node that we have credentials for, we have to return the url as is
+        return HttpResponse('https://' + image_url)
 
     request_args = dict()
     if credentials is not None:
@@ -376,11 +380,15 @@ def proxy_foreign_server_image(request, image_url):
     response = requests.get('http://' + image_url, *request_args)
     if response.status_code != 200:
         # Return the original server response as an HTTP response
-        return HttpResponse(f'The server failed to deliver an image. The response was {response.content}', status=response.status_code)
+        return HttpResponse(f'The server failed to deliver a valid response. The response was {response.content}', status=response.status_code)
+
+    try:
+        # Decode the json response to get the post
+        post = response.json()['posts'][0]
+    except Exception as e:
+        return HttpResponse(f'The foreign server responded, but the post returned was invalid: {e}', status=500)
 
     # Otherwise read the image data and return the image
-    uri = ("data:" + 
-       response.headers['Content-Type'] + ";" +
-       "base64," + base64.b64encode(response.content).decode("utf-8"))
+    uri = ("data:" + post['contentType'] + ", " + post['content'])
 
     return HttpResponse(uri, content_type=response.headers['Content-Type'])
