@@ -65,7 +65,7 @@ class Author(AbstractUser):
 
         """
         return {
-                "id": self.uid,
+                "id": "http://"+self.uid,
                 "host": self.host,
                 "displayName": self.display_name,
                 "first_name": self.first_name,

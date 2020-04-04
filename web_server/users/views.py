@@ -221,13 +221,14 @@ def view_post_comment(request, post_path):
         # 	}
         # }
         print(comment_info["author"]["id"])
-        # author = Author.objects.filter(uid=comment_info["author"]["id"])
-        # print(author)
+        author_uid = "{}/author/{}".format(settings.HOSTNAME, comment_info["author"]["id"].replace("-", ""))
+        author = Author.objects.filter(uid=author_uid)
+        print(author)
         output = {
             "query": "addComment",
             "post": post_path,
             "comment": {
-                # "author": author.to_api_object(),
+                "author": author.to_api_object(),
                 "comment": comment_info["comment"],
                 "contentType": comment_info['contentType'],
                 "published": comment_info['published'],
