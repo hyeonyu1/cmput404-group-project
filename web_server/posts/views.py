@@ -85,7 +85,7 @@ def retrieve_single_post_with_id(request, post_id):
             # getting the friends of the author
             return FOAF_verification(request, author_id)
         elif visibility == Post.SERVERONLY:
-            if request.user.host == Author.objects.get(id=author_id).host:
+            if request.user.host == Author.objects.get(uid=author_id).host:
                 return True
         elif visibility == Post.PRIVATE:
             # The visibleTo list contains protocols, which we dont want
@@ -211,44 +211,147 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 def fetch_public_posts_from_nodes(request):
     """
     Fetches public posts from all the nodes available to the server
+
+    Due to the nature of this API, getting deep pages may take a really long time as random access is not possible
+
     :param request:
     :return:
     """
     output = {
         'query': "getPosts",
+        'page': 0,
         'size': 10,
         'count': 0,
         'posts': [],
         'errors': dict()
     }
-    for node in Node.objects.all():
-        # Get the url of the api
-        api_url = node.get_safe_api_url('posts')
 
-        response = requests.get(api_url,
-                                auth=(node.username_registered_on_foreign_server,
-                                      node.password_registered_on_foreign_server),
-                                headers={'Accept': 'application/json'})
-        if response.status_code != 200:
-            output['errors'][node.foreign_server_hostname] = f"Received response code {response.status_code} " \
-                                                             f"at api endpoint: {api_url}"
-            continue
+    # First we need to find out what page of results they are looking for, and how many
+    try:
+        output['page'] = int(request.GET.get('page', '0'))
+        output['size'] = int(request.GET.get('size', '10'))
+    except Exception as e:
+        output['errors'] = str(e)
+        # Bad request with invalid parameters
+        return JsonResponse(output, status=400)
 
-        try:
-            json = response.json()
-        except Exception as e:
-            output['errors'][node.foreign_server_hostname] = f"During JSON decode got {e} for response like " \
-                                                             f"'{response.content[:20]}...'"
-            continue
+    # Then we need to track the pages of each Node, pull their results and merge them together
+    class NodePager:
+        def __init__(self, api_location, username, password, page, size):
+            self.api_location = api_location
+            self.username = username
+            self.password = password
+            self.page = page
+            self.size = size
+            self.results = None
 
-        for post in json['posts']:
-            output['count'] += 1
-            output['posts'].append(post)
-            if output['count'] >= output['size']:
-                break
+        def fetch_page(self):
+            """
+            Gets the current page of public posts from the node. Returns empty list if no results or error.
+            Caches the results so it will only fetch the page if the page has not already been fetched
+            """
+            if self.results is not None:
+                return self.results
 
-        if output['count'] >= output['size']:
-            break
+            response = requests.get(self.api_location,
+                                    auth=(self.username, self.password),
+                                    headers={
+                                        'Accept': 'application/json'
+                                    },
+                                    params={
+                                        'size': self.size,
+                                        'page': self.page
+                                    })
+            if response.status_code != 200:
+                self.results = []
+            else:
+                try:
+                    res_json = response.json()
+                    self.results = res_json['posts']
+                except:
+                    self.results = []
+            return self.results
+
+        def next_page(self):
+            self.page += 1
+            self.results = None
+
+    class NodeCollectionPager:
+        """
+        Manages a collection of node pagers, returning pages of their combined results
+        """
+        def __init__(self, size):
+            self.size = size
+            self.node_pagers = dict()
+            for node in Node.objects.all():
+                # Create a pager so we can handle paging through all the results
+                self.node_pagers[node.foreign_server_hostname] = NodePager(node.get_safe_api_url('posts'),
+                                                                           node.username_registered_on_foreign_server,
+                                                                           node.password_registered_on_foreign_server,
+                                                                           0,  # Always start on the first page, we have no other way to ensure all results are seen
+                                                                           size)
+
+        def get_page(self, page):
+            """
+            Gets the specified page by individually and sequentially querying each node and combining results until the
+            desired page is reached. Thus getting deep pages should be avoided if possible.
+            """
+            current_page = 0
+            current_results_queue = []
+            while len(self.node_pagers) > 0 and len(current_results_queue) < ((page+1) * self.size):
+                # make an array from the keys so that we can delete keys during the loop
+                for node in [*self.node_pagers.keys()]:
+                    pager = self.node_pagers[node]
+                    pager_page = pager.fetch_page()
+                    if len(pager_page) == 0:
+                        # This node has exhausted it's pages
+                        del self.node_pagers[node]
+                    current_results_queue += pager_page
+                    pager.next_page()
+
+
+            return current_results_queue[page*self.size:(page+1)*self.size]
+
+
+    manager = NodeCollectionPager(10)
+    output['posts'] = manager.get_page(output['page'])
+
+    return JsonResponse(output)
+
+
+
+
+
+
+
+    # for node in Node.objects.all():
+    #     # Get the url of the api
+    #     api_url = node.get_safe_api_url('posts')
+    #
+    #     response = requests.get(api_url,
+    #                             auth=(node.username_registered_on_foreign_server,
+    #                                   node.password_registered_on_foreign_server),
+    #                             headers={'Accept': 'application/json'})
+    #     if response.status_code != 200:
+    #         output['errors'][node.foreign_server_hostname] = f"Received response code {response.status_code} " \
+    #                                                          f"at api endpoint: {api_url}"
+    #         continue
+    #
+    #     try:
+    #         json = response.json()
+    #     except Exception as e:
+    #         output['errors'][node.foreign_server_hostname] = f"During JSON decode got {e} for response like " \
+    #                                                          f"'{response.content[:20]}...'"
+    #         continue
+    #
+    #     for post in json['posts']:
+    #         output['count'] += 1
+    #         output['posts'].append(post)
+    #         if output['count'] >= output['size']:
+    #             break
+    #
+    #     if output['count'] >= output['size']:
+    #         break
 
     return JsonResponse(output, status=200)
 
@@ -257,6 +360,9 @@ def proxy_foreign_server_image(request, image_url):
     """
     For markdown posts that contain images in them, we need to proxy the request through our server.
     This is because foreign servers require authorization. Requires an image url, which should NOT include the protocol
+
+    If the url passed is not for a specific node we have connections for, it will be returned with the https protocol
+    appended so that other img urls are not affected and resolve as normal.
     """
     image_url_parts = image_url.split('/')
     credentials = None
@@ -264,7 +370,8 @@ def proxy_foreign_server_image(request, image_url):
         node = Node.objects.get(foreign_server_hostname=image_url_parts[0])
         credentials = (node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
     except Node.DoesNotExist as e:
-        pass
+        # This url is not for a node that we have credentials for, we have to return the url as is
+        return HttpResponse('https://' + image_url)
 
     request_args = dict()
     if credentials is not None:
@@ -273,7 +380,15 @@ def proxy_foreign_server_image(request, image_url):
     response = requests.get('http://' + image_url, *request_args)
     if response.status_code != 200:
         # Return the original server response as an HTTP response
-        return HttpResponse(f'The server failed to deliver an image. The response was {response.content}', status=response.status_code)
+        return HttpResponse(f'The server failed to deliver a valid response. The response was {response.content}', status=response.status_code)
+
+    try:
+        # Decode the json response to get the post
+        post = response.json()['posts'][0]
+    except Exception as e:
+        return HttpResponse(f'The foreign server responded, but the post returned was invalid: {e}', status=500)
 
     # Otherwise read the image data and return the image
-    return HttpResponse(response.content, content_type=response.headers['Content-Type'])
+    uri = ("data:" + post['contentType'] + ", " + post['content'])
+
+    return HttpResponse(uri, content_type=response.headers['Content-Type'])
