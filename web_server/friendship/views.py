@@ -269,7 +269,9 @@ def FOAF_verification(request, author):
     print("auth_user = ", auth_user)
     print("author", author)
     own_node = request.get_host()
-
+    if auth_user == author:
+        return True
+    
     nodes = [own_node]
     for node in Node.objects.all():
         nodes.append(node.foreign_server_hostname)
