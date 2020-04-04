@@ -944,8 +944,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             page_num = int(request.GET.get('page', "1"))
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
+            print("\n\n\n\n\n\n\n\n\n\n\n\nGETTING POST INFOS")
             for post in visible_post.order_by("-published"):
                 author = Author.objects.get(uid=post.author_id)
+                print(author)
                 author_info = {
                     "id": "http://" + str(author.uid),
                     "email": str(author.email),
