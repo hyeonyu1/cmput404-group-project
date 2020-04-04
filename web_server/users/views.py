@@ -234,7 +234,7 @@ def view_post_comment(request, post_path):
                 "comment": comment_info["comment"],
                 "contentType": comment_info['contentType'],
                 "published": comment_info['published'],
-                "id": uuid4()
+                "id": str(uuid4())
             }
         }
         print(output)
