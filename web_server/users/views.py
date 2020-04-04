@@ -247,9 +247,9 @@ def view_post_comment(request, post_path):
         api = node.foreign_server_api_location
         if node.append_slash:
             api = api + "/"
-        print("http://{}/posts/{}/comments".format(api, post_id))
+        print("http://{}/posts/{}/comments/".format(api, post_id))
         response = requests.post(
-            "http://{}/posts/{}/comments".format(api, post_id),
+            "http://{}/posts/{}/comments/".format(api, post_id),
             {'Content-Type': 'application/json'},
             auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
             json=output
