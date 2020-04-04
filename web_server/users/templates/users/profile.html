@@ -43,7 +43,7 @@
                 @click="app.show_page('post')">My Stream</button>
             {% else %}
             <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'"
-                @click="app.show_page('post')">Their Stream</button>
+                @click="app.show_page('post')">[[user.displayName ]]'s Stream</button>
             {% endif %}
         </div>
 

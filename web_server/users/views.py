@@ -139,7 +139,7 @@ def view_post(request, post_path):
         return render(request, 'posts/foreign_post.html', {
             'post': req.json()['posts'][0]
         })
-    except:
+    except Exception as e:
         return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
                             "We are unable to show the post at this time", status=500)
 
