@@ -58,7 +58,7 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
-            print("foreign author")
+            print("\n\n\n\n\n\n\n\nforeign author=", self.author)
             node = self.author.split("/author/")[0]
             username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
             password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
