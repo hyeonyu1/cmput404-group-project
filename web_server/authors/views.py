@@ -452,6 +452,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
+
         # own post
         own_post = Post.objects.filter(
             author_id=request.user.uid, unlisted=False)
