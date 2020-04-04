@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
 from nodes.models import Node
 from friendship.models import Friend
-from posts.models import Post, Category
+from posts.models import Post, Category, VisibleTo
 from comments.models import Comment
 from django.db.models import Q
 from django.utils import timezone
@@ -448,11 +448,12 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.origin = settings.HOST_URI + "/posts/" + str(new_post.id.hex)
         new_post.save()
 
-        # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
+        # Take the user uid's passed in and convert them into visibleTo objects so we can fill out the list
         uids = post.getlist('visibleTo')
-        visible_authors = Author.objects.filter(uid__in=uids)
-        for author in visible_authors:
-            new_post.visibleTo.add(author)
+        for uid in uids:
+            visible_to = VisibleTo(author_uid=uid, accessed_post=new_post)
+            visible_to.save()
+
 
         # Categories is commented out because it's not yet in the post data, uncomment once available
         for category in post['categories'].split('\r\n'):
@@ -520,7 +521,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         # visibility = PRIVATE
         private_post = Post.objects.filter(
-            visibleTo=request.user.uid, unlisted=False)
+            visibleTo__author_uid__contains=request.user.uid,
+            unlisted=False)
 
         # visibility = SERVERONLY
         local_host = request.user.host
@@ -560,7 +562,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             visible_to = post.visibleTo.all()
             visible_to_list = []
             for visible in visible_to:
-                visible_to_list.append(visible.username)
+                visible_to_list.append(visible.author_uid)
 
             host = request.get_host()
             if request.is_secure():
@@ -732,25 +734,8 @@ def post_edit_and_delete(request, post_id):
         return HttpResponse("Forbidden: you must be the original author of the post in order to change it.", status=403)
 
     def get_edit_dialog(request):
-        # REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
-
-        # Obtain the context from the HTTP request.
-        context = RequestContext(request)
-
-        # Query the database for a list of ALL categories currently stored.
-        # Place the list in our context_dict dictionary which will be passed to the template engine.
-        # @todo the above is not done, but if we implement a search or autocomplete it is unnecessary
-
-        # Fill the context with the post in the request
-        context_dict = {'post': post}
-
-        # @todo THIS IS A HACK
-        # The navigation template now requires the user object to be passed in to every view, but for some reason it
-        # is not passed in unless we explicitly pass it in here.
-        context_dict['user'] = request.user
-
         # Render the response and send it back!
-        return render_to_response('editPost.html', context_dict, context)
+        return render(request, 'editPost.html', {'post':post})
 
     def edit_post(request):
         """
@@ -758,10 +743,14 @@ def post_edit_and_delete(request, post_id):
         :param request:
         :return:
         """
+        visible_to_list = []
         vars = request.POST
         for key in vars:
             if hasattr(post, key):
-                if len(vars.getlist(key)) <= 1:  # Simple value or empty
+                if key == 'visibleTo':
+                    #  Must create visible to objects to add to the post after it is saved
+                    visible_to_list = [VisibleTo(author_uid=author_uid) for author_uid in vars.getlist(key)]
+                elif len(vars.getlist(key)) <= 1:  # Simple value or empty
                     try:
                         # Special fields
                         if key == 'categories':
@@ -785,6 +774,13 @@ def post_edit_and_delete(request, post_id):
                     # @todo implement handling multiple values for key
                     print("NOT IMPLEMENTED: Unable to handle multiple values for key")
         post.save()
+
+        # Set the visibleTo if it was passed, start by removing all the visibleTo that currently exist
+        post.visibleTo.all().delete()
+        for vt in visible_to_list:
+            vt.accessed_post = post
+            vt.save()
+
         return JsonResponse({"success": "Post updated"})
 
     def delete_post(request):
@@ -990,7 +986,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
                 # visibility = PRIVATE
                 private_post = Post.objects.filter(
-                    author=author, visibleTo=request.user.uid, unlisted=False)
+                    author=author, visibleTo__author_uid__contains=request.user.uid, unlisted=False)
 
                 # visibility = SERVERONLY
                 if request.user.host == author.host:
@@ -1028,7 +1024,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 visible_to = post.visibleTo.all()
                 visible_to_list = []
                 for visible in visible_to:
-                    visible_to_list.append("http://" + visible.uid)
+                    visible_to_list.append("http://" + visible.author_uid)
 
                 next_http = "http:/{}/posts/{}/comments".format(host, post.id)
 
@@ -1229,16 +1225,19 @@ def post_creation_page(request):
         'post_retrieval_url': settings.HOST_URI + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
     })
 
-
-def get_all_authors(request):
+@login_required
+def get_all_available_authors_ids(request):
     """
-    API to get a JSON of all authors in the system. To save space it will only provide:
-    First, last and display names
-    uid
+    API to get a JSON of all authors ids in the system.
+
+    Will include the ids of foreign friends of the logged in user
     :param request:
     :return:
     """
+    current_user = request.user
+    local_author_ids = [author.uid for author in Author.objects.all()]
+    foreign_friend_ids = [friend.friend_id for friend in Friend.objects.filter(author_id=current_user.uid)]
     return JsonResponse({
         'success': True,
-        'data': [author for author in Author.objects.values('first_name', 'last_name', 'display_name', 'uid')]
+        'data': list(set(local_author_ids + foreign_friend_ids))
     })
