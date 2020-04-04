@@ -2,6 +2,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.staticfiles import finders
+from django.conf import settings
+
 
 from .models import Post
 from comments.models import Comment
@@ -214,7 +216,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             # new_comment.author = Author.objects.filter(
             #     id=comment_info['author']['id']).first()
             print(comment_info['author']['id'])
-            new_comment.author = comment_info['author']['id']
+            new_comment.author = "{}/author/{}".format(settings.HOSTNAME,comment_info['author']['id'].replace("-",""))
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['type'] = True
