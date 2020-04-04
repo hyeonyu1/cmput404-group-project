@@ -115,6 +115,44 @@ def view_post(request, post_path):
     path = post_path.split('/')
     host = path[0]
     post_id = path[-1]
+
+    # Assume local server if only uuid provided
+    if len(path) == 1:
+        return redirect('post', args=[path[0]])
+
+    # Redirect if local post
+    if host == settings.HOSTNAME:
+        # Local post, handle as normal by redirecting them to the current post viewer
+        return redirect(reverse('post', args=[post_id]))
+
+    # Foreign post
+    # Find the node this post is associated with
+    try:
+        node = Node.objects.get(foreign_server_hostname=host)
+    except Node.DoesNotExist as e:
+        return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+
+    req = node.make_api_get_request(f'posts/{post_id}')
+    try:
+        return render(request, 'posts/foreign_post.html', {
+            'post': req.json()['posts'][0]
+        })
+    except:
+        return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
+                            "We are unable to show the post at this time", status=500)
+
+@login_required
+def view_post_comment(request, post_path):
+    """
+    Local handler for viewing a post, the post might be local or foreign, and the path should determine that.
+    The first part of the path should be a hostname, and the last part should be the post id
+    If no hostname is provided (no path, only a uuid), then the local server is assumed
+    """
+    print("\n\n\n\n\n\n\nview_post_commentt\n", post_path)
+    path = post_path.split('/')
+    host = path[0]
+    post_id = path[-1]
+    print("post_id = ", post_id)
     # Assume local server if only uuid provided
     if len(path) == 1:
         return redirect('post', args=[path[0]])
