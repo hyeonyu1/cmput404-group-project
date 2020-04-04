@@ -79,7 +79,7 @@ class Comment(models.Model):
                     "displayName": author_info["displayName"],
                     "first_name": author_info["firstName"],
                     "last_name": author_info["lastName"],
-                    "url": author_info["uid"],
+                    "url": author_info["url"],
                     "github": author_info["github"]
                 },
                 "comment": self.content,
