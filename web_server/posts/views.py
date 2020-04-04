@@ -70,6 +70,8 @@ def check_perm(request, api_object_post):
     user_id = request.user.uid
     author_id = api_object_post["author"]['id']
 
+
+    print("\n\n\n\nuser_id = {} \nauthor_id = {}".format(user_id, author_id))
     if user_id == author_id or visibility == Post.PUBLIC:
         return True
 
