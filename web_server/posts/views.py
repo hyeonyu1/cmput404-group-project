@@ -323,7 +323,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # because that's how it defined in comment model.
         print("trying to add")
         try:
-            print(requests.json())
+            print(request.json())
             body = request.body.decode('utf-8')
             comment_info = loads(body)
             print("body= ", body)
