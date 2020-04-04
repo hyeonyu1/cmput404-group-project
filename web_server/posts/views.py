@@ -302,7 +302,10 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         """
         Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
         """
+
         visibility = api_object_post["visibility"]
+        print("\n\n\n\n\nvisibility = ", visibility)
+
 
         if visibility == Post.SERVERONLY:
             return False
