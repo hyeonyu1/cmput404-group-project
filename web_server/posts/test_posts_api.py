@@ -1,3 +1,7 @@
+import base64
+import uuid
+
+from django.contrib.auth import authenticate
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse, resolve
 
@@ -6,41 +10,47 @@ from posts.models import Post
 
 # In order to avoid problems if static files get references, we can use this decorator during testing to automatically
 # reference static files
-@override_settings(STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage')
+@override_settings(STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage', HOST_NAME='127.0.0.1:8000')
 class TestPostsAPI(TestCase):
 
     def setUp(self):
         self.fixture_authors = [
+
+            Author.objects.create(id=uuid.uuid5(uuid.NAMESPACE_DNS, 'test_user_A'),
+                                  username="test_user_A", email="test_a@a.com", password="pass_a", first_name="A",
+                                  last_name="A", is_active=True, is_superuser=True)
             # Authors
-            Author(username="test_user_A", email="test_a@a.com", password="pass_a", first_name="A", last_name="A"),
-            Author(username="test_user_B", email="test_b@b.com", password="pass_b", first_name="B", last_name="B"),
-            Author(username="test_user_C", email="test_c@c.com", password="pass_c", first_name="C", last_name="C"),
-
-            # Super User
-            Author(username="admin", email="admin@admin.com", password="admin", first_name="admin", last_name="."),
+            #Author(username="test_user_A", email="test_a@a.com", password="pass_a", first_name="A", last_name="A"),
+            # Author(username="test_user_B", email="test_b@b.com", password="pass_b", first_name="B", last_name="B"),
+            # Author(username="test_user_C", email="test_c@c.com", password="pass_c", first_name="C", last_name="C"),
+            #
+            # # Super User
+            # Author(username="admin", email="admin@admin.com", password="admin", first_name="admin", last_name="."),
         ]
-        for author in self.fixture_authors:
-            author.is_active = 1
-            author.save()
+        # for author in self.fixture_authors:
+        #     author.is_active = 1
+        #     author.save()
 
+
+        print(authenticate(username="test_user_A", password="pass_a"))
         self.fixture_posts_public = [
             Post(title='A post 1 public', content="A1 content", author=self.fixture_authors[0]),
             Post(title='A post 2 public', content="A2 content", author=self.fixture_authors[0]),
             Post(title='A post 3 public', content="A3 content", author=self.fixture_authors[0]),
 
-            Post(title='B post 1 public', content="B1 content", author=self.fixture_authors[1]),
-            Post(title='B post 2 public', content="B2 content", author=self.fixture_authors[1]),
-            Post(title='B post 3 public', content="B3 content", author=self.fixture_authors[1]),
-
-            Post(title='C post 1 public', content="C1 content", author=self.fixture_authors[2]),
-            Post(title='C post 2 public', content="C2 content", author=self.fixture_authors[2]),
-            Post(title='C post 3 public', content="C3 content", author=self.fixture_authors[2]),
+            # Post(title='B post 1 public', content="B1 content", author=self.fixture_authors[1]),
+            # Post(title='B post 2 public', content="B2 content", author=self.fixture_authors[1]),
+            # Post(title='B post 3 public', content="B3 content", author=self.fixture_authors[1]),
+            #
+            # Post(title='C post 1 public', content="C1 content", author=self.fixture_authors[2]),
+            # Post(title='C post 2 public', content="C2 content", author=self.fixture_authors[2]),
+            # Post(title='C post 3 public', content="C3 content", author=self.fixture_authors[2]),
         ]
         for post in self.fixture_posts_public:
             post.size = 0
             post.visibility = Post.PUBLIC
             post.contentType = "text/plain"
-        print(self.fixture_posts_public)
+        #print(self.fixture_posts_public)
         for post in self.fixture_posts_public:
             post.save()
 
@@ -50,15 +60,15 @@ class TestPostsAPI(TestCase):
             Post(author=self.fixture_authors[0], content="A private content", visibility=Post.PRIVATE, title='A post private'),
             Post(author=self.fixture_authors[0], content="A server content", visibility=Post.SERVERONLY, title='A post server'),
 
-            Post(author=self.fixture_authors[1], content="B foaf content", visibility=Post.FOAF, title='B post foaf'),
-            Post(author=self.fixture_authors[1], content="B friend content", visibility=Post.FRIENDS, title='B post friends'),
-            Post(author=self.fixture_authors[1], content="B private content", visibility=Post.PRIVATE, title='B post private'),
-            Post(author=self.fixture_authors[1], content="B server content", visibility=Post.SERVERONLY, title='B post server'),
-
-            Post(author=self.fixture_authors[2], content="C foaf content", visibility=Post.FOAF, title='C post foaf'),
-            Post(author=self.fixture_authors[2], content="C friend content", visibility=Post.FRIENDS, title='C post friends'),
-            Post(author=self.fixture_authors[2], content="C private content", visibility=Post.PRIVATE, title='C post private'),
-            Post(author=self.fixture_authors[2], content="C server content", visibility=Post.SERVERONLY, title='C post server'),
+            # Post(author=self.fixture_authors[1], content="B foaf content", visibility=Post.FOAF, title='B post foaf'),
+            # Post(author=self.fixture_authors[1], content="B friend content", visibility=Post.FRIENDS, title='B post friends'),
+            # Post(author=self.fixture_authors[1], content="B private content", visibility=Post.PRIVATE, title='B post private'),
+            # Post(author=self.fixture_authors[1], content="B server content", visibility=Post.SERVERONLY, title='B post server'),
+            #
+            # Post(author=self.fixture_authors[2], content="C foaf content", visibility=Post.FOAF, title='C post foaf'),
+            # Post(author=self.fixture_authors[2], content="C friend content", visibility=Post.FRIENDS, title='C post friends'),
+            # Post(author=self.fixture_authors[2], content="C private content", visibility=Post.PRIVATE, title='C post private'),
+            # Post(author=self.fixture_authors[2], content="C server content", visibility=Post.SERVERONLY, title='C post server'),
         ]
         for post in self.fixture_posts_other:
             post.size = 0
@@ -123,9 +133,11 @@ class TestPostsAPI(TestCase):
     ################
     # Tests for service/posts/{post_id}
     ################
-    def test_get_single_post(self):
+    def test_retrieve_single_post_with_id(self):
         for post in self.fixture_posts_public:
-            response = self.client.get(self.url_get_post(post.id), follow=True)
+            response = self.client.get(self.url_get_post(post.id), follow=True,
+                                       HTTP_AUTHORIZATION=('Basic ' + base64.b64encode('test_user_A:pass_a'.encode()).decode()))
+            print(response.content)
             assert response.status_code == 200
             json = response.json()
             assert Post.objects.get(pk=json['post'][0]['id']) == post
