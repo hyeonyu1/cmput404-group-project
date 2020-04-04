@@ -235,16 +235,26 @@
          }
 
     });
-
-    //gets the image in the div and sends to the proxy image api
-    var image = document.getElementById('app').querySelector('img').src;
     
-    $.ajax({
-        url: "/posts/proxy_image/"+image.src.split("//")[1],
-        success: function(response){
-            image.src = response;
-        }
-    })
+    function replace_foreign_images() {
+        //gets the image in the div and sends to the proxy image api
+        let image = document.getElementById('app').querySelector('img');
+
+        fetch("/posts/proxy_image/"+image.src.split("//")[1])
+        .then(response => response.text())
+        .then(url => {
+            image.src=url
+        })
+
+        /*$.ajax({
+            url: "/posts/proxy_image/"+image.src.split("//")[1],
+            success: function(response){
+                image.src = response;
+            }
+        })*/
+    }
+
+    window.addEventListener('load', replace_foreign_images)
 
 </script>
 
