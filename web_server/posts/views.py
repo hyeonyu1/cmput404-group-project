@@ -195,7 +195,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "query": "addComment",
                         "success": False,
                         "message": "Comment not allowed"
-                    }
+                    },
+                    status=403
                 )
     # - auth user comments on local post
     # - foreign user comments on local post
@@ -204,10 +205,12 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # because request.POST only accepts form, but here is json format.
         # change new_comment.comment to new_comment.content,
         # because that's how it defined in comment model.
+        print("trying to add")
         try:
             body = request.body.decode('utf-8')
             comment_info = loads(body)
             comment_info = comment_info['comment']
+            print("comment_info = ", comment_info)
             new_comment = Comment()
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
@@ -215,7 +218,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             # Need to change
             # new_comment.author = Author.objects.filter(
             #     id=comment_info['author']['id']).first()
-            new_comment.author = "{}/author/{}".format(settings.HOSTNAME,comment_info['author']['id'].replace("-",""))
+            new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['type'] = True
