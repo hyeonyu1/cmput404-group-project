@@ -68,7 +68,7 @@ def check_perm(request, api_object_post):
             return False
 
     user_id = request.user.uid
-    author_id = api_object_post["author"]['id']
+    author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
 
 
     print("\n\n\n\nuser_id = {} \nauthor_id = {}".format(user_id, author_id))
@@ -307,7 +307,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         if visibility == Post.SERVERONLY:
             return False
 
-        author_id = api_object_post["author"]['id']
+        author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
 
         if user_id == author_id or visibility == Post.PUBLIC:
             return True
