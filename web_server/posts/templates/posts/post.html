@@ -14,10 +14,10 @@
              <div class="form-inline">
                  <div class="d-flex w-100 justify-content-between">
 
-                 	{% if post.contentType == "TYPE_MARKDOWN" %}
-                        <h2>{{post.title|show_markdown|safe}}</h2>
-                    {% else %}
+                 	{% if post.contentType == "text/plain" %}
                         <h2>{{post.title}}</h2>
+                    {% else %}
+                        <h2>{{post.title|show_markdown|safe}}</h2>
                     {% endif %}
 
                      {% if post.author.id == user.id %}
@@ -41,10 +41,10 @@
              </div>
 
             <div class="form-inline">
-            	{% if post.contentType == "TYPE_MARKDOWN" %}
-                	<h3>{{post.description|show_markdown|safe}}</h3>
-                {% else %}
+            	{% if post.contentType == "text/plain" %}
                 	<h3>{{post.description}}</h3>
+                {% else %}
+                	<h3>{{post.description|show_markdown|safe}}</h3>
                 {% endif %}
             </div>
 
@@ -68,10 +68,10 @@
              <br>
 
              <div>
-                {% if post.contentType == "TYPE_MARKDOWN" %}
-                    <p>{{post.content|show_markdown|safe}}</p>
-                {% else %}
+                {% if post.contentType == "text/plain" %}
                     <p>{{post.content}}</p>
+                {% else %}
+                    <p>{{post.content|show_markdown|safe}}</p>
                 {% endif %}
              </div>
 
@@ -118,7 +118,7 @@
 <template id="list-comment">
     <div>
         <div>
-            <a v-bind:href="'/user/profile/' + comment.author.url">[[comment.author.first_name + ' ' + comment.author.last_name]]</a>
+            <a v-bind:href="'/user/profile/' + comment.author.url">[[comment.author.display_name]]</a>
             <small>[[comment.published]]</small>
         </div>
         <vue-markdown v-if="comment.contentType === 'text/markdown'">[[comment.content]]</vue-markdown>

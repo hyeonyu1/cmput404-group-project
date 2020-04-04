@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
 from nodes.models import Node
 from friendship.models import Friend
-from posts.models import Post, Category
+from posts.models import Post, Category, VisibleTo
 from comments.models import Comment
 from django.db.models import Q
 from django.utils import timezone
@@ -42,15 +42,32 @@ DEFAULT_PAGE_SIZE = 10
 
 def retrieve_friends_of_author(authorid):
     response_data = []
+    foreign_author_dict = {}
     if Friend.objects.filter(author_id=authorid).exists():
         # get friend id from Friend table
         friends = Friend.objects.filter(author_id=authorid)
         # compose response data
-        for each in friends:
-            entry = {}
-            if Author.objects.filter(uid=each.friend_id).exists():
+        nodes = Node.objects.all()
+        for node in nodes:
+            url = "http://{}/author".format(
+                node.foreign_server_api_location.rstrip("/"))
+            res = requests.get(url, auth=(
+                node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
+            if res.status_code >= 200 and res.status_code < 300:
+                try:
+                    foreign_authors = res.json()
+                    for foreign_author in foreign_authors:
+                        stripped_foreign_author_id = url_regex.sub(
+                            "", foreign_author["id"].rstrip("/"))
+                        if stripped_foreign_author_id not in foreign_author_dict:
+                            foreign_author_dict[stripped_foreign_author_id] = foreign_author
+                except:
+                    continue
 
-                friend = Author.objects.get(pk=each.friend_id)
+        for friend in friends:
+            entry = {}
+            if Author.objects.filter(uid=friend.friend_id).exists():
+                friend = Author.objects.get(pk=friend.friend_id)
                 entry['id'] = friend.uid
                 entry['host'] = friend.host
                 entry['displayName'] = friend.display_name
@@ -58,25 +75,12 @@ def retrieve_friends_of_author(authorid):
                 entry['firstName'] = friend.first_name
                 entry['lastName'] = friend.last_name
                 response_data.append(entry)
-            # foreign friend
-            else:
-
-                foreign_server_hostname = each.friend_id.split("/")[0]
-                if Node.objects.filter(foreign_server_hostname=foreign_server_hostname).exists():
-                    node = Node.objects.get(pk=foreign_server_hostname)
-                    url = "http://{}/author/{}".format(
-                        node.foreign_server_api_location.rstrip("/"), each.friend_id.split("/")[2])
-
-                    res = requests.get(url)
-
-                    if res.status_code == 200 or res.status_code == 201:
-                        foreign_friend = res.json()
-                        entry['id'] = foreign_friend['id']
-                        entry['host'] = foreign_friend['host']
-                        entry['displayName'] = foreign_friend['displayName']
-                        entry['url'] = foreign_friend['url']
-                        response_data.append(entry)
-
+            elif friend.friend_id in foreign_author_dict:
+                entry['id'] = foreign_author_dict[friend.friend_id]['id']
+                entry['host'] = foreign_author_dict[friend.friend_id]['host']
+                entry['displayName'] = foreign_author_dict[friend.friend_id]['displayName']
+                entry['url'] = foreign_author_dict[friend.friend_id]['url']
+                response_data.append(entry)
     return response_data
 
 # http://service/author endpoint
@@ -132,13 +136,14 @@ def view_list_of_available_authors_to_befriend(request, author_id):
         url = "http://{}/author".format(node.foreign_server_api_location)
         res = requests.get(url, auth=(
             node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
-        if res.status_code == 200 or res.status_code == 201:
+        if res.status_code >= 200 and res.status_code < 300:
             # We cannot trust that the server will return a valid json list. Sanitize
             try:
                 res_json = res.json()
                 response_data["available_authors_to_befriend"] = response_data["available_authors_to_befriend"] + res.json()
             except Exception as e:
-                response_data['errors'][node.get_safe_api_url()] = f"Could not parse json response, exception: {e}"
+                response_data['errors'][node.get_safe_api_url(
+                )] = f"Could not parse json response, exception: {e}"
     # if author has no friends
     if not Friend.objects.filter(author_id=author_id).exists():
         return JsonResponse(response_data)
@@ -245,6 +250,7 @@ def update_author_profile(request, author_id):
 @login_required
 def retrieve_universal_author_profile(request, author_id):
     current_host = request.get_host()
+
     # strip protocol
     author_id = url_regex.sub("", author_id)
     # strip trailing slash
@@ -258,10 +264,15 @@ def retrieve_universal_author_profile(request, author_id):
     # it's foreign author
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
-        url = "http://{}/author/{}".format(
-            node.foreign_server_api_location.rstrip("/"), splits[2])
+        url = "http://{}".format(author_id)
 
         res = requests.get(url)
+        # print("\n\n\n\n\n\n")
+        # print(author_id)
+        # print(url)
+        # print("inside universla author profile")
+        # print(res.text, res.status_code)
+        # print("\n\n\n\n\n\n")
         if res.status_code >= 200 or res.status_code < 300:
             try:
                 foreign_friend = res.json()
@@ -300,6 +311,7 @@ def retrieve_author_profile(request, author_id):
 
     return HttpResponse("You can only GET the URL", status=405)
 
+
 @validate_remote_server_authentication()
 def post_creation_and_retrieval_to_curr_auth_user(request):
     """
@@ -319,10 +331,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # First get the information out of the request body
         size = len(request.body)
 
-        #body = json.load(body)
+        # body = json.load(body)
         # body = dict(x.split("=") for x in body.split("&"))
 
-        #post = body['post']
+        # post = body['post']
         post = request.POST
 
         new_post = Post()
@@ -384,7 +396,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         #: true
-        new_post.unlisted = True if 'unlisted' in post and post['unlisted'] == 'true' else False
+        new_post.unlisted = True if 'unlisted' in post and (post['unlisted'] == 'true' or post['unlisted'] == 'on') else False
 
         new_post.save()
 
@@ -393,11 +405,12 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.origin = settings.HOST_URI + "/posts/" + str(new_post.id.hex)
         new_post.save()
 
-        # Take the user uid's passed in and convert them into Authors to set as the visibleTo list
+        # Take the user uid's passed in and convert them into visibleTo objects so we can fill out the list
         uids = post.getlist('visibleTo')
-        visible_authors = Author.objects.filter(uid__in=uids)
-        for author in visible_authors:
-            new_post.visibleTo.add(author)
+        for uid in uids:
+            visible_to = VisibleTo(author_uid=uid, accessed_post=new_post)
+            visible_to.save()
+
 
         # Categories is commented out because it's not yet in the post data, uncomment once available
         for category in post['categories'].split('\r\n'):
@@ -465,13 +478,13 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         # visibility = PRIVATE
         private_post = Post.objects.filter(
-            visibleTo=request.user.uid, unlisted=False)
+            visibleTo__author_uid__contains=request.user.uid,
+            unlisted=False)
 
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
-
 
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
@@ -506,7 +519,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             visible_to = post.visibleTo.all()
             visible_to_list = []
             for visible in visible_to:
-                visible_to_list.append(visible.username)
+                visible_to_list.append(visible.author_uid)
 
             host = request.get_host()
             if request.is_secure():
@@ -604,10 +617,12 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         node = Node.objects.get(foreign_server_username=uname)
 
         if node.post_share and node.image_share:
-            query = Post.objects.filter(unlisted=False).exclude(visibility="SERVERONLY").order_by("-published")
+            query = Post.objects.filter(unlisted=False).exclude(
+                visibility="SERVERONLY").order_by("-published")
         elif node.post_share and not node.image_share:
             post_type = ["text/plain", "text/markdown"]
-            query = Post.objects.filter(contentType__in=post_type,unlisted=False).exclude(visibility="SERVERONLY").order_by("-published")
+            query = Post.objects.filter(contentType__in=post_type, unlisted=False).exclude(
+                visibility="SERVERONLY").order_by("-published")
         elif not node.post_share and node.image_share:
             post_type = ["image/png;base64", "image/jpeg;base64"]
             query = Post.objects.filter(contentType__in=post_type, unlisted=False).exclude(visibility="SERVERONLY").order_by(
@@ -619,10 +634,13 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             }, status=403)
 
         return Endpoint(request, query,
-                        [PagingHandler("GET", "application/json", api_response)]
+                        [PagingHandler(
+                            "GET", "application/json", api_response)]
                         ).resolve()
 
 # Returns 5 newest comment on the post
+
+
 def get_comments(post_id):
     comments_list = []
     comments = Comment.objects.filter(
@@ -673,25 +691,13 @@ def post_edit_and_delete(request, post_id):
         return HttpResponse("Forbidden: you must be the original author of the post in order to change it.", status=403)
 
     def get_edit_dialog(request):
-        # REF: https://www.tangowithdjango.com/book/chapters/models_templates.html
-
-        # Obtain the context from the HTTP request.
-        context = RequestContext(request)
-
-        # Query the database for a list of ALL categories currently stored.
-        # Place the list in our context_dict dictionary which will be passed to the template engine.
-        # @todo the above is not done, but if we implement a search or autocomplete it is unnecessary
-
-        # Fill the context with the post in the request
-        context_dict = {'post': post}
-
-        # @todo THIS IS A HACK
-        # The navigation template now requires the user object to be passed in to every view, but for some reason it
-        # is not passed in unless we explicitly pass it in here.
-        context_dict['user'] = request.user
-
         # Render the response and send it back!
-        return render_to_response('editPost.html', context_dict, context)
+        return render(request, 'editPost.html', {
+            'post':post,
+            'hostname':settings.HOSTNAME,
+            'url_image_path': 'posts',  # The API path for viewing an image
+            'url_post_edit_path': 'author/posts'  # The API path for editing an image
+        })
 
     def edit_post(request):
         """
@@ -699,10 +705,14 @@ def post_edit_and_delete(request, post_id):
         :param request:
         :return:
         """
+        visible_to_list = []
         vars = request.POST
         for key in vars:
             if hasattr(post, key):
-                if len(vars.getlist(key)) <= 1:  # Simple value or empty
+                if key == 'visibleTo':
+                    #  Must create visible to objects to add to the post after it is saved
+                    visible_to_list = [VisibleTo(author_uid=author_uid) for author_uid in vars.getlist(key)]
+                elif len(vars.getlist(key)) <= 1:  # Simple value or empty
                     try:
                         # Special fields
                         if key == 'categories':
@@ -713,6 +723,11 @@ def post_edit_and_delete(request, post_id):
                                 c, created = Category.objects.get_or_create(
                                     name=category)
                                 post.categories.add(c)
+                        elif key == 'unlisted':
+                            if vars.get(key) == 'true':
+                                setattr(post, key, True)
+                            elif vars.get(key) == 'false':
+                                setattr(post, key, False)
                         else:
                             # All other fields
                             setattr(post, key, vars.get(key))
@@ -726,6 +741,13 @@ def post_edit_and_delete(request, post_id):
                     # @todo implement handling multiple values for key
                     print("NOT IMPLEMENTED: Unable to handle multiple values for key")
         post.save()
+
+        # Set the visibleTo if it was passed, start by removing all the visibleTo that currently exist
+        post.visibleTo.all().delete()
+        for vt in visible_to_list:
+            vt.accessed_post = post
+            vt.save()
+
         return JsonResponse({"success": "Post updated"})
 
     def delete_post(request):
@@ -748,7 +770,6 @@ def post_edit_and_delete(request, post_id):
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
 @validate_remote_server_authentication()
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
-
 
     def api_response(request, posts, pager, pagination_uris):
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
@@ -792,7 +813,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 api = api + "/"
 
             response = requests.get(
-                "http://{}/author/{}/posts?size={}&page={}".format(api, author_id, request_size, page_num),
+                "http://{}/author/{}/posts?size={}&page={}".format(
+                    api, author_id, request_size, page_num),
                 auth=(username, password)
             )
 
@@ -820,7 +842,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             while page <= math.ceil(post_total_num/request_size):
                 response = requests.get(
-                    "http://{}/author/{}/posts?size={}&page={}".format(api, author_id, request_size, page),
+                    "http://{}/author/{}/posts?size={}&page={}".format(
+                        api, author_id, request_size, page),
                     auth=(username, password)
                 )
                 posts_list = response.json()
@@ -930,7 +953,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
                 # visibility = PRIVATE
                 private_post = Post.objects.filter(
-                    author=author, visibleTo=request.user.uid, unlisted=False)
+                    author=author, visibleTo__author_uid__contains=request.user.uid, unlisted=False)
 
                 # visibility = SERVERONLY
                 if request.user.host == author.host:
@@ -968,7 +991,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 visible_to = post.visibleTo.all()
                 visible_to_list = []
                 for visible in visible_to:
-                    visible_to_list.append("http://" + visible.uid)
+                    visible_to_list.append("http://" + visible.author_uid)
 
                 next_http = "http:/{}/posts/{}/comments".format(host, post.id)
 
@@ -1057,7 +1080,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         node = Node.objects.get(foreign_server_username=uname)
 
         if node.post_share and node.image_share:
-            query = Post.objects.filter(author=author_id, unlisted=False).exclude(visibility="SERVERONLY").order_by("-published")
+            query = Post.objects.filter(author=author_id, unlisted=False).exclude(
+                visibility="SERVERONLY").order_by("-published")
         elif node.post_share and not node.image_share:
             post_type = ["text/plain", "text/markdown"]
             query = Post.objects.filter(author=author_id, contentType__in=post_type, unlisted=False).exclude(
@@ -1073,9 +1097,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 "message": "Post and image sharing is turned off"
             }, status=403)
 
-        return Endpoint(request, query, [
-            PagingHandler("GET", "application/json", api_response)
-        ]).resolve()
+    return Endpoint(request, query, [
+        PagingHandler("GET", "application/json", api_response)
+    ]).resolve()
 
 
 # Ida Hou
@@ -1168,16 +1192,19 @@ def post_creation_page(request):
         'post_retrieval_url': settings.HOST_URI + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
     })
 
-
-def get_all_authors(request):
+@login_required
+def get_all_available_authors_ids(request):
     """
-    API to get a JSON of all authors in the system. To save space it will only provide:
-    First, last and display names
-    uid
+    API to get a JSON of all authors ids in the system.
+
+    Will include the ids of foreign friends of the logged in user
     :param request:
     :return:
     """
+    current_user = request.user
+    local_author_ids = [author.uid for author in Author.objects.all()]
+    foreign_friend_ids = [friend.friend_id for friend in Friend.objects.filter(author_id=current_user.uid)]
     return JsonResponse({
         'success': True,
-        'data': [author for author in Author.objects.values('first_name', 'last_name', 'display_name', 'uid')]
+        'data': list(set(local_author_ids + foreign_friend_ids))
     })

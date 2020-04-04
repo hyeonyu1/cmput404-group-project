@@ -14,6 +14,8 @@ from json import loads
 from django.core import serializers
 from django.contrib.auth.models import AnonymousUser
 
+import re
+
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
@@ -86,7 +88,9 @@ def retrieve_single_post_with_id(request, post_id):
             if request.user.host == Author.objects.get(id=author_id).host:
                 return True
         elif visibility == Post.PRIVATE:
-            if user_id in api_object_post["visibleTo"]:
+            # The visibleTo list contains protocols, which we dont want
+            no_protocol_visible_to = [re.sub(r'http(s)*://', '', vt) for vt in api_object_post["visibleTo"]]
+            if user_id in no_protocol_visible_to:
                 return True
         elif visibility == Post.FRIENDS:
             author_friends = Friend.objects.filter(author_id=author_id)
@@ -126,6 +130,8 @@ def retrieve_single_post_with_id(request, post_id):
         PagingHandler("GET", "text/html", html_handler),
         PagingHandler("GET", "application/json", json_handler)
     ]).resolve()
+
+
 
 
 def comments_retrieval_and_creation_to_post_id(request, post_id):
@@ -245,3 +251,29 @@ def fetch_public_posts_from_nodes(request):
             break
 
     return JsonResponse(output, status=200)
+
+@login_required
+def proxy_foreign_server_image(request, image_url):
+    """
+    For markdown posts that contain images in them, we need to proxy the request through our server.
+    This is because foreign servers require authorization. Requires an image url, which should NOT include the protocol
+    """
+    image_url_parts = image_url.split('/')
+    credentials = None
+    try:
+        node = Node.objects.get(foreign_server_hostname=image_url_parts[0])
+        credentials = (node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
+    except Node.DoesNotExist as e:
+        pass
+
+    request_args = dict()
+    if credentials is not None:
+        request_args['auth'] = credentials
+    # Make a request to the url, and pass in the credentials if they exist
+    response = requests.get('http://' + image_url, *request_args)
+    if response.status_code != 200:
+        # Return the original server response as an HTTP response
+        return HttpResponse(f'The server failed to deliver an image. The response was {response.content}', status=response.status_code)
+
+    # Otherwise read the image data and return the image
+    return HttpResponse(response.content, content_type=response.headers['Content-Type'])
