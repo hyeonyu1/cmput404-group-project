@@ -141,6 +141,7 @@ def view_post(request, post_path):
     except:
         return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
                             "We are unable to show the post at this time", status=500)
+
 @login_required
 def view_post_comment(request, post_path):
     """
@@ -171,7 +172,7 @@ def view_post_comment(request, post_path):
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
     req = node.make_api_get_request(f'posts/{post_id}/comment')
-    print(req.json())
+    print("\n\n\n\n\n\nrequest json = ",req.json())
 
     comments_list = []
     for comment in req.json()["comments"]:
@@ -191,7 +192,7 @@ def view_post_comment(request, post_path):
         "comments": comments_list
     }
 
-    print(output)
+    print("\n\n\n\n\n\n\n\noutput= ", output)
     return JsonResponse(output)
     # try:
     #     return render(request, 'posts/foreign_post.html', {
