@@ -382,7 +382,7 @@ def proxy_foreign_server_image(request, image_url):
     if credentials is not None:
         request_args['auth'] = credentials
     # Make a request to the url, and pass in the credentials if they exist
-    response = requests.get('http://' + image_url, *request_args)
+    response = requests.get('http://' + image_url, **request_args)
     if response.status_code != 200:
         # Return the original server response as an HTTP response
         return HttpResponse(f'The server failed to deliver a valid response. The response was {response.content}', status=response.status_code)
