@@ -299,7 +299,8 @@ def fetch_public_posts_from_nodes(request):
             current_page = 0
             current_results_queue = []
             while len(self.node_pagers) > 0 and len(current_results_queue) < ((page+1) * self.size):
-                for node in self.node_pagers.keys():
+                # make an array from the keys so that we can delete keys during the loop
+                for node in [*self.node_pagers.keys()]:
                     pager = self.node_pagers[node]
                     pager_page = pager.fetch_page()
                     if len(pager_page) == 0:
