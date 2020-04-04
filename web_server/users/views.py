@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect, JsonResponse
 from django.contrib.auth import login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -132,20 +132,21 @@ def view_post(request, post_path):
         node = Node.objects.get(foreign_server_hostname=host)
     except Node.DoesNotExist as e:
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+
     if post_id == "comments":
         req = node.make_api_get_request(f'posts/{path[-2]}/{post_id}')
-        try:
-
-            print("\n\n\n\n\n\n req json = ", req.json())
-            print("comment = ", req.json()["comments"])
-            return render(request, 'posts/foreign_post.html', {
-                'comments': req.json()['comments']
-            })
-        except:
-            return HttpResponse(
-                "The foreign server returned a response, but it was not compliant with the specification. "
-                "We are unable to show the post at this time", status=500)
-
+        # try:
+        #
+        #     print("\n\n\n\n\n\n req json = ", req.json())
+        #     print("comment = ", req.json()["comments"])
+        #     return render(request, 'posts/foreign_post.html', {
+        #         'comments': req.json()['comments']
+        #     })
+        # except:
+        #     return HttpResponse(
+        #         "The foreign server returned a response, but it was not compliant with the specification. "
+        #         "We are unable to show the post at this time", status=500)
+        return JsonResponse(req.json())
     else:
         req = node.make_api_get_request(f'posts/{post_id}')
         try:
