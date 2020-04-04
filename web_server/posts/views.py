@@ -275,5 +275,12 @@ def proxy_foreign_server_image(request, image_url):
         # Return the original server response as an HTTP response
         return HttpResponse(f'The server failed to deliver an image. The response was {response.content}', status=response.status_code)
 
-    # Otherwise read the image data and return the image
-    return HttpResponse(response.content, content_type=response.headers['Content-Type'])
+    try:
+        resp_json = response.json()
+    except Exception as e:
+        return HttpResponse("The server returned a malformed JSON response", status=404)
+
+
+
+    # Return the JSON
+    return JsonResponse(response.content, content_type=response.headers['Content-Type'])
