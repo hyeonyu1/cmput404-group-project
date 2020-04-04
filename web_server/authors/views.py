@@ -289,8 +289,8 @@ def retrieve_universal_author_profile(request, author_id):
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
-        host = request.get_host()
-        author_id = host + "/author/" + str(author_id)
+        # host = request.get_host()
+        # author_id = host + "/author/" + str(author_id)
 
         # only active authors are retrivable
         author = get_object_or_404(
@@ -452,6 +452,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
+
         # own post
         own_post = Post.objects.filter(
             author_id=request.user.uid, unlisted=False)
@@ -944,8 +945,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             page_num = int(request.GET.get('page', "1"))
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
+            print("\n\n\n\n\n\n\n\n\n\n\n\nGETTING POST INFOS")
             for post in visible_post.order_by("-published"):
                 author = Author.objects.get(uid=post.author_id)
+                print(author)
                 author_info = {
                     "id": "http://" + str(author.uid),
                     "email": str(author.email),

@@ -49,7 +49,7 @@ class Comment(models.Model):
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
         try:
-            author = Author.objects.get(id=self.author)
+            author = Author.objects.get(uid=self.author)
             return {
                 "author": author.to_api_object(),
                 "comment": self.content,
@@ -58,14 +58,15 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
-            node = author.split("/author/")[0]
+            # print("\n\n\n\n\n\n\n\nforeign author=", self.author)
+            node = self.author.split("/author/")[0]
             username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
             password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
             api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
             if Node.objects.get(foreign_server_hostname=node).append_slash:
                 api = api + "/"
             response = requests.get(
-                "http://{}/author/{}".format(api, author),
+                "http://{}/author/{}".format(api, self.author),
                 auth=(username, password)
             )
             if response.status_code == 200:
@@ -75,10 +76,10 @@ class Comment(models.Model):
                 "author": {
                     "id": author_info["id"],
                     "host": author_info["host"],
-                    "displayName": author_info["display_name"],
-                    "first_name": author_info["first_name"],
-                    "last_name": author_info["last_name"],
-                    "url": author_info["uid"],
+                    "displayName": author_info["displayName"],
+                    "first_name": author_info["firstName"],
+                    "last_name": author_info["lastName"],
+                    "url": author_info["url"],
                     "github": author_info["github"]
                 },
                 "comment": self.content,
