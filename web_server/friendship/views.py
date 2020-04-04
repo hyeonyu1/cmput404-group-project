@@ -261,13 +261,8 @@ def invalidate_friend_requests(author_id):
 
 def FOAF_verification(request, author):
 
-    print("\n\n\n\n\nFOAF")
     auth_user = request.user.uid
-    auth_user = url_regex.sub("", auth_user).rstrip("/")
-    author = url_regex.sub("", author).rstrip("/")
 
-    print("auth_user = ", auth_user)
-    print("author", author)
     own_node = request.get_host()
     if auth_user == author:
         return True
@@ -306,13 +301,13 @@ def FOAF_verification(request, author):
                     # A -> A -> B
                     else:
                         print("friends has a diff node")
-                        username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-                        password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-                        api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
-                        if Node.objects.get(foreign_server_hostname=node).append_slash:
+                        username = Node.objects.get(foreign_server_hostname=friend_node).username_registered_on_foreign_server
+                        password = Node.objects.get(foreign_server_hostname=friend_node).password_registered_on_foreign_server
+                        api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
+                        if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                             api = api + "/"
                         response = requests.get(
-                            "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author)),
+                            "http://{}/author/{}/friends".format(friend_node, "{}/author/{}".format(api, author)),
                             auth=(username, password)
                         )
                         print("back from response")

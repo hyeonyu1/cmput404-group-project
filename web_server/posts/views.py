@@ -70,8 +70,6 @@ def check_perm(request, api_object_post):
     user_id = request.user.uid
     author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
 
-
-    print("\n\n\n\nuser_id = {} \nauthor_id = {}".format(user_id, author_id))
     if user_id == author_id or visibility == Post.PUBLIC:
         return True
 
@@ -224,6 +222,13 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
     def FOAF_verification_post(auth_user, author):
 
+        print("\n\n\n\n\nFOAF")
+        auth_user = url_regex.sub("", auth_user).rstrip("/")
+        author = url_regex.sub("", author).rstrip("/")
+
+        print("auth_user = ", auth_user)
+        print("author", author)
+
         own_node = settings.HOSTNAME
         nodes = [own_node]
         for node in Node.objects.all():
@@ -255,6 +260,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         # Since the friend is not on the same host as the auth user make a request to get friends from the other node
                         # A -> A -> B
                         else:
+                            print("friend_node = ", friend_node)
                             username = Node.objects.get(
                                 foreign_server_hostname=friend_node).username_registered_on_foreign_server
                             password = Node.objects.get(
@@ -305,7 +311,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         visibility = api_object_post["visibility"]
         print("\n\n\n\n\nvisibility = ", visibility)
 
-
         if visibility == Post.SERVERONLY:
             return False
 
@@ -318,9 +323,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         elif visibility == Post.FOAF:
             # getting the friends of the author
             return FOAF_verification_post(user_id, author_id)
-        elif visibility == Post.SERVERONLY:
-            if request.user.host == Author.objects.get(id=author_id).host:
-                return True
         elif visibility == Post.PRIVATE:
             if user_id in api_object_post["visibleTo"]:
                 return True
