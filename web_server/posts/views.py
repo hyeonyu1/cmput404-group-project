@@ -187,17 +187,17 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         }
 
         # checks if local host
-        # if Post.objects.filter(id=post_id).exists():
-        #     # checks visibility of the post
-        #     if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
-        #         return JsonResponse(
-        #             {
-        #                 "query": "addComment",
-        #                 "success": False,
-        #                 "message": "Comment not allowed"
-        #             },
-        #             status=403
-        #         )
+        if Post.objects.filter(id=post_id).exists():
+            # checks visibility of the post
+            if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
+                return JsonResponse(
+                    {
+                        "query": "addComment",
+                        "success": False,
+                        "message": "Comment not allowed"
+                    },
+                    status=403
+                )
     # - auth user comments on local post
     # - foreign user comments on local post
     # if request.user.is_authenticated or request.remote_server_authenticated:
@@ -293,6 +293,61 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     #     PagingHandler("GET", "application/json", get_handler)
     # ]).resolve()
 
+    def foreign_post_handler(request):
+        print("\n\n\n\n\n\n")
+        print("post id = ", post_id)
+        # JSON post body of what you post to a posts' comemnts
+        # POST to http://service/posts/{POST_ID}/comments
+        output = {
+            "query": "addComment",
+        }
+
+        # checks if local host
+        if Post.objects.filter(id=post_id).exists():
+            # checks visibility of the post
+            if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
+                return JsonResponse(
+                    {
+                        "query": "addComment",
+                        "success": False,
+                        "message": "Comment not allowed"
+                    },
+                    status=403
+                )
+    # - auth user comments on local post
+    # - foreign user comments on local post
+    # if request.user.is_authenticated or request.remote_server_authenticated:
+        # change body = request.POST to body = request.body.decode('utf-8'),
+        # because request.POST only accepts form, but here is json format.
+        # change new_comment.comment to new_comment.content,
+        # because that's how it defined in comment model.
+        print("trying to add")
+        try:
+            print(requests.json())
+            body = request.body.decode('utf-8')
+            comment_info = loads(body)
+            print("body= ", body)
+
+            comment_info = comment_info['comment']
+            print("comment_info = ", comment_info)
+            new_comment = Comment()
+            new_comment.contentType = comment_info['contentType']
+            new_comment.content = comment_info['comment']
+            new_comment.published = comment_info['published']
+            # Need to change
+            # new_comment.author = Author.objects.filter(
+            #     id=comment_info['author']['id']).first()
+            new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
+            new_comment.parentPost = Post.objects.filter(id=post_id).first()
+            new_comment.save()
+            output['type'] = True
+            output['message'] = "Comment added"
+        except Exception as e:
+            output['type'] = False
+            output['message'] = "Comment not allowed"
+            output['error'] = str(e)
+        finally:
+            return JsonResponse(output)
     def api_response(request, comments, pager, pagination_uris):
         size = min(int(request.GET.get('size', 10)), 50)
         output = {
@@ -316,7 +371,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         ).resolve()
     else:
         return Endpoint(request, Comment.objects.filter(parentPost=post_id).order_by("-published"),
-                        [Handler("POST", "application/json", post_handler, False),
+                        [Handler("POST", "application/json", foreign_post_handler, False),
                         PagingHandler("GET", "application/json", api_response)]
                         ).resolve()
 
