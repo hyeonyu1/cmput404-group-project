@@ -21,6 +21,10 @@ from social_distribution.utils.basic_auth import validate_remote_server_authenti
 
 import requests
 import base64
+import re
+# used for stripping url protocol
+url_regex = re.compile(r"(http(s?))?://")
+
 
 
 # No Authentication Required
@@ -337,7 +341,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             # Need to change
             # new_comment.author = Author.objects.filter(
             #     id=comment_info['author']['id']).first()
-            new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
+            # new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
+            new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['type'] = True
