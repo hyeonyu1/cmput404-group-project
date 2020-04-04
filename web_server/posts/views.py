@@ -229,81 +229,33 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         print("auth_user = ", auth_user)
         print("author", author)
 
-        own_node = settings.HOSTNAME
-        nodes = [own_node]
-        for node in Node.objects.all():
-            nodes.append(node.foreign_server_hostname)
+        # If the author is a friend of auth user return True
+        if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
+            return True
 
-        for node in nodes:
-
-            # If the author is a friend of auth user return True
-            if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
-                return True
-
-            # not friends so check for FOAF
-            else:
-                # if the author is on the same host as auth user
-                if node == own_node:
-                    author_friends = Friend.objects.filter(author_id=author)
-                    for friend in author_friends:
-                        # getting the node of the friend
-                        friend_node = friend.friend_id.split("/author/")[0]
-                        # if friend of the author is on the same host as the auth user
-                        # A -> A -> A
-                        if friend_node == own_node:
-                            # E.g Test <-> Lara <-> Bob
-                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
-                                return True
-                            else:
-                                return False
-
-                        # Since the friend is not on the same host as the auth user make a request to get friends from the other node
-                        # A -> A -> B
-                        else:
-                            print("friend_node = ", friend_node)
-                            username = Node.objects.get(
-                                foreign_server_hostname=friend_node).username_registered_on_foreign_server
-                            password = Node.objects.get(
-                                foreign_server_hostname=friend_node).password_registered_on_foreign_server
-                            api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
-                            if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
-                                api = api + "/"
-                            print("http://{}/author/{}/friends".format(api, author))
-                            response = requests.get(
-                                "http://{}/author/{}/friends".format(api, author),
-                                auth=(username, password)
-                            )
-                            print("response" ,response)
-                            if response.status_code == 200:
-                                friends_list = response.json()
-
-                                for user in friends_list["authors"]:
-                                    print(user)
-                                    if Friend.objects.filter(author_id=author).filter(friend_id=user).exists():
-                                        return True
-                                    else:
-                                        return False
-
-                # author's host is different from auth user
-                else:
-                    username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-                    password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-                    api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
-                    if Node.objects.get(foreign_server_hostname=node).append_slash:
-                        api = api + "/"
-                    response = requests.get(
-                        "http://{}/author/{}/friends".format(api, author),
-                        auth=(username, password)
-                    )
-                    if response.status_code == 200:
-                        friends_list = response.json()
-                        for user in friends_list["authors"]:
-                            # E.g Test <-> Lara <-> User
-                            if Friend.objects.filter(author_id=author).filter(friend_id=user).exists():
-                                return True
-                            else:
-                                return False
-
+        else:
+            author_friends = Friend.objects.filter(author_id=author)
+            author_friends_list = []
+            for friends in author_friends:
+                print(friends)
+                author_friends_list.append(friends.friend_id)
+            node = Node.objects.get(foreign_server_hostname=auth_user.split("/author")[0])
+            username = node.username_registered_on_foreign_server
+            password = node.password_registered_on_foreign_server
+            api = node.foreign_server_api_location
+            if node.append_slash:
+                api = api + "/"
+            print("http://{}/author/{}/friends".format(api, auth_user))
+            response = requests.get(
+                "http://{}/author/{}/friends".format(api, auth_user),
+                auth=(username, password)
+            )
+            if response.status_code == 200:
+                friends_list = response.json()
+                for user in friends_list["authors"]:
+                    print(user)
+                    if user in author_friends_list:
+                        return True
         return False
 
     def check_perm_foreign_user(user_id, api_object_post):
