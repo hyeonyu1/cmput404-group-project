@@ -191,7 +191,7 @@ def view_post_comment(request, post_path):
 
         return JsonResponse(output)
 
-    elif request.methof == "POST" and host != settings.HOSTNAME:
+    elif request.method == "POST" and host != settings.HOSTNAME:
         body = request.body
         print("\n\n\n\n\nPOST",body)
         # return JsonResponse(req.json())
