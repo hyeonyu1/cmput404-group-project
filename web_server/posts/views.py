@@ -208,8 +208,9 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         print("trying to add")
         try:
             body = request.body.decode('utf-8')
-            print("body= ",body)
             comment_info = loads(body)
+            print("body= ", body)
+
             comment_info = comment_info['comment']
             print("comment_info = ", comment_info)
             new_comment = Comment()
