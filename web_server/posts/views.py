@@ -278,8 +278,7 @@ def fetch_public_posts_from_nodes(request):
         """
         Manages a collection of node pagers, returning pages of their combined results
         """
-        def __init__(self, page, size):
-            self.page = page
+        def __init__(self, size):
             self.size = size
             self.node_pagers = dict()
             for node in Node.objects.all():
@@ -297,42 +296,58 @@ def fetch_public_posts_from_nodes(request):
             """
             current_page = 0
             current_results_queue = []
-            for node in self.node_pagers.keys():
-                pager = self.node_pagers[node]
-                for 
+            while len(self.node_pagers) > 0 and len(current_results_queue) < ((page+1) * self.size):
+                for node in self.node_pagers.keys():
+                    pager = self.node_pagers[node]
+                    pager_page = pager.fetch_page()
+                    if len(pager_page) == 0:
+                        # This node has exhausted it's pages
+                        del self.node_pagers[node]
+                    current_results_queue += pager_page
+                    pager.next_page()
+
+
+            return current_results_queue[page*self.size:(page+1)*self.size]
+
+
+    manager = NodeCollectionPager(10)
+    output['posts'] = manager.get_page(output['page'])
+
+    return JsonResponse(output)
 
 
 
 
 
 
-    for node in Node.objects.all():
-        # Get the url of the api
-        api_url = node.get_safe_api_url('posts')
 
-        response = requests.get(api_url,
-                                auth=(node.username_registered_on_foreign_server,
-                                      node.password_registered_on_foreign_server),
-                                headers={'Accept': 'application/json'})
-        if response.status_code != 200:
-            output['errors'][node.foreign_server_hostname] = f"Received response code {response.status_code} " \
-                                                             f"at api endpoint: {api_url}"
-            continue
-
-        try:
-            json = response.json()
-        except Exception as e:
-            output['errors'][node.foreign_server_hostname] = f"During JSON decode got {e} for response like " \
-                                                             f"'{response.content[:20]}...'"
-            continue
-
-        for post in json['posts']:
-            output['count'] += 1
-            output['posts'].append(post)
-            if output['count'] >= output['size']:
-                break
-
-        if output['count'] >= output['size']:
-            break
+    # for node in Node.objects.all():
+    #     # Get the url of the api
+    #     api_url = node.get_safe_api_url('posts')
+    #
+    #     response = requests.get(api_url,
+    #                             auth=(node.username_registered_on_foreign_server,
+    #                                   node.password_registered_on_foreign_server),
+    #                             headers={'Accept': 'application/json'})
+    #     if response.status_code != 200:
+    #         output['errors'][node.foreign_server_hostname] = f"Received response code {response.status_code} " \
+    #                                                          f"at api endpoint: {api_url}"
+    #         continue
+    #
+    #     try:
+    #         json = response.json()
+    #     except Exception as e:
+    #         output['errors'][node.foreign_server_hostname] = f"During JSON decode got {e} for response like " \
+    #                                                          f"'{response.content[:20]}...'"
+    #         continue
+    #
+    #     for post in json['posts']:
+    #         output['count'] += 1
+    #         output['posts'].append(post)
+    #         if output['count'] >= output['size']:
+    #             break
+    #
+    #     if output['count'] >= output['size']:
+    #         break
 
     return JsonResponse(output, status=200)
