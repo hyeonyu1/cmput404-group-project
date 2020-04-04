@@ -11,6 +11,7 @@ from nodes.models import Node
 import requests
 from users.models import Author
 from django.conf import settings
+from uuid import uuid4
 
 from json import loads
 
@@ -227,16 +228,33 @@ def view_post_comment(request, post_path):
         print(author.to_api_object())
         output = {
             "query": "addComment",
-            "post": post_path,
+            "post": "http://"+post_path,
             "comment": {
                 "author": author.to_api_object(),
                 "comment": comment_info["comment"],
                 "contentType": comment_info['contentType'],
                 "published": comment_info['published'],
+                "id": uuid4()
             }
         }
         print(output)
 
+        try:
+            node = Node.objects.get(foreign_server_hostname=host)
+        except Node.DoesNotExist as e:
+            return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+
+        api = node.foreign_server_api_location
+        if node.append_slash:
+            api = api + "/"
+
+        response = requests.post(
+            "http://{}/posts/{}/comments".format(api, post_id),
+            auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
+            body=output
+        )
+
+        print(response.status_code)
         # return JsonResponse(req.json())
     # else:
     #     req = node.make_api_get_request(f'posts/{post_id}')
