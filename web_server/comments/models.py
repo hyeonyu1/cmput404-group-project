@@ -58,14 +58,15 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
-            node = author.split("/author/")[0]
+            print("foreign author")
+            node = self.author.split("/author/")[0]
             username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
             password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
             api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
             if Node.objects.get(foreign_server_hostname=node).append_slash:
                 api = api + "/"
             response = requests.get(
-                "http://{}/author/{}".format(api, author),
+                "http://{}/author/{}".format(api, self.author),
                 auth=(username, password)
             )
             if response.status_code == 200:
