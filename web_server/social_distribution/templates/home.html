@@ -32,17 +32,9 @@
                     v-bind:post="post">
                     </foreign_posts-list>
                 </div>
+                <button class="btn btn-primary" @click="app.get_foreign_posts()">Load More</button>
             </div>
 
-            <!--
-            <div class="row justify-content-between">
-                <a class="ml-3" :href="previous" v-if="previous">PREVIOUS</a>
-                <p class="ml-3" v-else>PREVIOUS</p>
-
-                <a class="mr-3" :href="next" v-if="next">NEXT</a>
-                <p class="mr-3" v-else>NEXT</p>
-            </div>
-            -->
 
         </div>
         <div class="col-sm-3">
@@ -116,7 +108,6 @@
 </template>
 
 
-
 <script>
 
     Vue.component('post-list', {
@@ -136,6 +127,7 @@
         delimiters: ['[[', ']]'],
         data() {
             return {
+                'page' : 0,
                 'posts': [],
                 'next': undefined,
                 'foreign_posts':[]
@@ -170,30 +162,43 @@
                         })
                     })
                 } else {
-                    alert("There are no more posts here");
+                    alert("There are no more posts here.");
                 }
             },
 
-            //Retrieve all foreign posts
+            //Retrieve all foreign posts and load more
             get_foreign_posts(){
-                let url = "/posts/fetch_public_posts";
-                window.axios.get(url).then((response) =>{
-                    console.log(response.data);
-                    const posts_list = response.data['posts'];
-                    posts_list.forEach((post)=>{
-                        const date = new Date(post.published);
-                        post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
-                        // Calculate the foreign hostname
-                        // Strip protocol
-                        post.host = post.origin;
-                        post.host = post.host.replace('http://', '');
-                        post.host = post.host.replace('https://', '');
-                        // Strip all trailing slashes
-                        post.host = post.host.replace(/(\/)+$/, '');
-                        this.foreign_posts.push(post);
+                if(this.page===-1){
+                    alert("There are no more posts here.");
+                }else{
+                    let url = "/posts/fetch_public_posts";
+                    window.axios.get(url,{
+                        'page':this.page,
+                        'size':10
+                    }).then((response) =>{
+                        console.log(response.data);
+                        const posts_list = response.data['posts'];
+                        //If it is the last page of posts, set page=-1
+                        if(posts_list.length<10){
+                            this.page=-1;
+                        }
+                        posts_list.forEach((post)=>{
+                            const date = new Date(post.published);
+                            post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
+                            // Calculate the foreign hostname
+                            // Strip protocol
+                            post.host = post.origin;
+                            post.host = post.host.replace('http://', '');
+                            post.host = post.host.replace('https://', '');
+                            // Strip all trailing slashes
+                            post.host = post.host.replace(/(\/)+$/, '');
+                            this.foreign_posts.push(post);
+                        });
+                        this.page++;
                     })
 
-                })
+                }
+
             }
 
 
