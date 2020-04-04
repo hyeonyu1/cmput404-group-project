@@ -220,7 +220,7 @@ def view_post_comment(request, post_path):
         # 	   "id":"de305d54-75b4-431b-adb2-eb6b9e546013"
         # 	}
         # }
-        author = Author.objects.filter(id=comment_info["author"]["id"])
+        author = Author.objects.filter(uid=comment_info["author"]["id"])
         output = {
             "query": "addComment",
             "post": post_path,
