@@ -173,8 +173,10 @@
                 }else{
                     let url = "/posts/fetch_public_posts";
                     window.axios.get(url,{
-                        'page':this.page,
-                        'size':10
+                        params: {
+                            'page':this.page,
+                            'size':10
+                        }
                     }).then((response) =>{
                         console.log(response.data);
                         const posts_list = response.data['posts'];
