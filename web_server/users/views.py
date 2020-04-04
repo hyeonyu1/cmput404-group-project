@@ -11,6 +11,7 @@ from nodes.models import Node
 import requests
 from users.models import Author
 from django.conf import settings
+from json import loads
 
 from nodes.models import Node
 from friendship.views import invalidate_friend_requests
@@ -192,8 +193,46 @@ def view_post_comment(request, post_path):
         return JsonResponse(output)
 
     elif request.method == "POST" and host != settings.HOSTNAME:
-        body = request.body
-        print("\n\n\n\n\nPOST",body)
+        body = request.body.decode('utf-8')
+        comment_info = loads(body)
+        comment_info = comment_info['comment']
+        print("\n\n\n\n\nPOST", comment_info)
+
+        # {
+        # 	"query": "addComment",
+        # 	"post":"http://whereitcamefrom.com/posts/zzzzz",
+        # 	"comment":{
+        # 	    "author":{
+        # 	           # ID of the Author
+        #                    "id":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+        # 		   "host":"http://127.0.0.1:5454/",
+        # 		   "displayName":"Greg Johnson",
+        # 		   # url to the authors information
+        #                    "url":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+        # 		   # HATEOS url for Github API
+        # 		   "github": "http://github.com/gjohnson"
+        # 	   },
+        # 	   "comment":"Sick Olde English",
+        # 	   "contentType":"text/markdown",
+        # 	   # ISO 8601 TIMESTAMP
+        # 	   "published":"2015-03-09T13:07:04+00:00",
+        # 	   # ID of the Comment (UUID)
+        # 	   "id":"de305d54-75b4-431b-adb2-eb6b9e546013"
+        # 	}
+        # }
+        author = Author.objects.filter(id=comment_info["author"]["id"])
+        output = {
+            "query": "addComment",
+            "post": post_path,
+            "comment": {
+                "author": author.to_api_object(),
+                "comment": comment_info["comment"],
+                "contentType": comment_info['contentType'],
+                "published": comment_info['published'],
+            }
+        }
+        print(output)
+
         # return JsonResponse(req.json())
     # else:
     #     req = node.make_api_get_request(f'posts/{post_id}')
