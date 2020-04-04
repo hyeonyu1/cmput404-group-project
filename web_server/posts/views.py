@@ -134,6 +134,7 @@ def retrieve_single_post_with_id(request, post_id):
 def comments_retrieval_and_creation_to_post_id(request, post_id):
     print("\n\n\n\n\n\n\n")
     print("request ", requests)
+
     def get_handler(request, comments, pager, pagination_uris):
         print("get_handler")
         if not Post.objects.filter(id=post_id).exists():

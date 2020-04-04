@@ -116,7 +116,7 @@ def view_post(request, post_path):
     path = post_path.split('/')
     host = path[0]
     post_id = path[-1]
-    print("\n\n\n\n\n\n post path = ", post_path)
+
     # Assume local server if only uuid provided
     if len(path) == 1:
         return redirect('post', args=[path[0]])
@@ -133,38 +133,66 @@ def view_post(request, post_path):
     except Node.DoesNotExist as e:
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
-    if post_id == "comments":
-        req = node.make_api_get_request(f'posts/{path[-2]}/{post_id}')
-        # try:
-        #
-        #     print("\n\n\n\n\n\n req json = ", req.json())
-        #     print("comment = ", req.json()["comments"])
-        #     return render(request, 'posts/foreign_post.html', {
-        #         'comments': req.json()['comments']
-        #     })
-        # except:
-        #     return HttpResponse(
-        #         "The foreign server returned a response, but it was not compliant with the specification. "
-        #         "We are unable to show the post at this time", status=500)
-        return JsonResponse(req.json())
-    else:
-        req = node.make_api_get_request(f'posts/{post_id}')
-        try:
-            return render(request, 'posts/foreign_post.html', {
-                'post': req.json()['posts'][0]
-            })
-        except:
-            return HttpResponse(
-                "The foreign server returned a response, but it was not compliant with the specification. "
-                "We are unable to show the post at this time", status=500)
+    req = node.make_api_get_request(f'posts/{post_id}')
+    try:
+        return render(request, 'posts/foreign_post.html', {
+            'post': req.json()['posts'][0]
+        })
+    except:
+        return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
+                            "We are unable to show the post at this time", status=500)
+@login_required
+def view_post_comment(request, post_path):
+    """
+    Local handler for viewing a post, the post might be local or foreign, and the path should determine that.
+    The first part of the path should be a hostname, and the last part should be the post id
+    If no hostname is provided (no path, only a uuid), then the local server is assumed
+    """
+    path = post_path.split('/')
+    host = path[0]
+    post_id = path[-1]
 
-    # try:
-    #     print("\n\n\n\n\n\n", req.json())
-    # except:
-    #     print("\n\n\n\n\n\n", req)
-    #     print("\n\n\n\n\n\n", req.content)
-    #     print("\n\n\n\n\n\n", req.reason)
+    print("\n\n\n\n\n\n post path = ", post_path)
 
+    # Assume local server if only uuid provided
+    if len(path) == 1:
+        return redirect('post', args=[path[0]])
+
+    # Redirect if local post
+    if host == settings.HOSTNAME:
+        # Local post, handle as normal by redirecting them to the current post viewer
+        return redirect(reverse('post', args=[post_id]))
+
+    # Foreign post
+    # Find the node this post is associated with
+    try:
+        node = Node.objects.get(foreign_server_hostname=host)
+    except Node.DoesNotExist as e:
+        return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+
+    req = node.make_api_get_request(f'posts/{post_id}/comment')
+    print(req.json())
+
+    comments_list = []
+    for comment in req.json()["comments"]:
+        content = {
+            "author": comment["author"],
+            "content": comment["comment"],
+            "contentType": comment["contentType"],
+            "published": comment["published"],
+            "id": comment["id"]
+        }
+        comments_list.append(content)
+
+    output = {
+        "query": "comments",
+        "count": req.json()["count"],
+        "size": req.json()["size"],
+        "comments": comments_list
+    }
+
+    print(output)
+    return JsonResponse(output)
     # try:
     #     return render(request, 'posts/foreign_post.html', {
     #         'post': req.json()['posts'][0]
@@ -172,7 +200,75 @@ def view_post(request, post_path):
     # except:
     #     return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
     #                         "We are unable to show the post at this time", status=500)
+    #
 
+# @login_required
+# def view_post_comment(request, post_path):
+#     """
+#     Local handler for viewing a post, the post might be local or foreign, and the path should determine that.
+#     The first part of the path should be a hostname, and the last part should be the post id
+#     If no hostname is provided (no path, only a uuid), then the local server is assumed
+#     """
+#     path = post_path.split('/')
+#     host = path[0]
+#     post_id = path[-1]
+#     print("\n\n\n\n\n\n post path = ", post_path)
+#     # Assume local server if only uuid provided
+#     if len(path) == 1:
+#         return redirect('post', args=[path[0]])
+#
+#     # Redirect if local post
+#     if host == settings.HOSTNAME:
+#         # Local post, handle as normal by redirecting them to the current post viewer
+#         return redirect(reverse('post', args=[post_id]))
+#
+#     # Foreign post
+#     # Find the node this post is associated with
+#     try:
+#         node = Node.objects.get(foreign_server_hostname=host)
+#     except Node.DoesNotExist as e:
+#         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+#
+#     if post_id == "comments":
+#         req = node.make_api_get_request(f'posts/{path[-2]}/{post_id}')
+#         # try:
+#         #
+#         #     print("\n\n\n\n\n\n req json = ", req.json())
+#         #     print("comment = ", req.json()["comments"])
+#         #     return render(request, 'posts/foreign_post.html', {
+#         #         'comments': req.json()['comments']
+#         #     })
+#         # except:
+#         #     return HttpResponse(
+#         #         "The foreign server returned a response, but it was not compliant with the specification. "
+#         #         "We are unable to show the post at this time", status=500)
+#         return JsonResponse(req.json())
+#     else:
+#         req = node.make_api_get_request(f'posts/{post_id}')
+#         try:
+#             return render(request, 'posts/foreign_post.html', {
+#                 'post': req.json()['posts'][0]
+#             })
+#         except:
+#             return HttpResponse(
+#                 "The foreign server returned a response, but it was not compliant with the specification. "
+#                 "We are unable to show the post at this time", status=500)
+#
+#     # try:
+#     #     print("\n\n\n\n\n\n", req.json())
+#     # except:
+#     #     print("\n\n\n\n\n\n", req)
+#     #     print("\n\n\n\n\n\n", req.content)
+#     #     print("\n\n\n\n\n\n", req.reason)
+#
+#     # try:
+#     #     return render(request, 'posts/foreign_post.html', {
+#     #         'post': req.json()['posts'][0]
+#     #     })
+#     # except:
+#     #     return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
+#     #                         "We are unable to show the post at this time", status=500)
+#
 
 @login_required
 def add_friend(request):
