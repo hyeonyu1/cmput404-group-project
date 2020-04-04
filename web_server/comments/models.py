@@ -49,7 +49,7 @@ class Comment(models.Model):
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
         try:
-            author = Author.objects.get(id=self.author)
+            author = Author.objects.get(uid=self.author)
             return {
                 "author": author.to_api_object(),
                 "comment": self.content,
