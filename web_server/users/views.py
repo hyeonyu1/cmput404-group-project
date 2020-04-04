@@ -250,7 +250,6 @@ def view_post_comment(request, post_path):
         print("http://{}/posts/{}/comments/".format(api, post_id))
         response = requests.post(
             "http://{}/posts/{}/comments/".format(api, post_id),
-            {'Content-Type': 'application/json'},
             auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
             json=output
         )
