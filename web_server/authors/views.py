@@ -396,7 +396,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         #: true
-        new_post.unlisted = True if 'unlisted' in post and post['unlisted'] == 'true' else False
+        new_post.unlisted = True if 'unlisted' in post and (post['unlisted'] == 'true' or post['unlisted'] == 'on') else False
 
         new_post.save()
 
@@ -692,7 +692,12 @@ def post_edit_and_delete(request, post_id):
 
     def get_edit_dialog(request):
         # Render the response and send it back!
-        return render(request, 'editPost.html', {'post':post})
+        return render(request, 'editPost.html', {
+            'post':post,
+            'hostname':settings.HOSTNAME,
+            'url_image_path': 'posts',  # The API path for viewing an image
+            'url_post_edit_path': 'author/posts'  # The API path for editing an image
+        })
 
     def edit_post(request):
         """
@@ -718,6 +723,11 @@ def post_edit_and_delete(request, post_id):
                                 c, created = Category.objects.get_or_create(
                                     name=category)
                                 post.categories.add(c)
+                        elif key == 'unlisted':
+                            if vars.get(key) == 'true':
+                                setattr(post, key, True)
+                            elif vars.get(key) == 'false':
+                                setattr(post, key, False)
                         else:
                             # All other fields
                             setattr(post, key, vars.get(key))
