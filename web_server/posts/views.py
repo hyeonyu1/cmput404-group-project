@@ -222,12 +222,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
     def FOAF_verification_post(auth_user, author):
 
-        print("\n\n\n\n\nFOAF")
         auth_user = url_regex.sub("", auth_user).rstrip("/")
         author = url_regex.sub("", author).rstrip("/")
-
-        print("auth_user = ", auth_user)
-        print("author", author)
 
         # If the author is a friend of auth user return True
         if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
@@ -237,7 +233,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             author_friends = Friend.objects.filter(author_id=author)
             author_friends_list = []
             for friends in author_friends:
-                print(friends)
                 author_friends_list.append(friends.friend_id)
             node = Node.objects.get(foreign_server_hostname=auth_user.split("/author")[0])
             username = node.username_registered_on_foreign_server
@@ -245,7 +240,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             api = node.foreign_server_api_location
             if node.append_slash:
                 api = api + "/"
-            print("http://{}/author/{}/friends".format(api, auth_user))
             response = requests.get(
                 "http://{}/author/{}/friends".format(api, auth_user),
                 auth=(username, password)
@@ -264,7 +258,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         """
 
         visibility = api_object_post["visibility"]
-        print("\n\n\n\n\nvisibility = ", visibility)
 
         if visibility == Post.SERVERONLY:
             return False
