@@ -278,6 +278,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                                 friends_list = response.json()
 
                                 for user in friends_list["authors"]:
+                                    print(user)
                                     if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
                                         return True
                                     else:
