@@ -252,7 +252,7 @@ def view_post_comment(request, post_path):
             "http://{}/posts/{}/comments".format(api, post_id),
             {'Content-Type': 'application/json'},
             auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
-            data=output
+            json=output
         )
 
         print("http://{}/posts/{}/comments".format(api, post_id))
