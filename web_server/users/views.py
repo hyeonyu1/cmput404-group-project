@@ -169,8 +169,8 @@ def view_post_comment(request, post_path):
     except Node.DoesNotExist as e:
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
-    if post_id == "comments":
-        req = node.make_api_get_request(f'posts/{path[-2]}/{post_id}')
+    if request.method == "GET":
+        req = node.make_api_get_request(f'posts/{post_id}/comments')
         comments_list = []
         for comment in req.json()["comments"]:
             content = {
@@ -190,17 +190,18 @@ def view_post_comment(request, post_path):
         }
 
         return JsonResponse(output)
+
         # return JsonResponse(req.json())
-    else:
-        req = node.make_api_get_request(f'posts/{post_id}')
-        try:
-            return render(request, 'posts/foreign_post.html', {
-                'post': req.json()['posts'][0]
-            })
-        except:
-            return HttpResponse(
-                "The foreign server returned a response, but it was not compliant with the specification. "
-                "We are unable to show the post at this time", status=500)
+    # else:
+    #     req = node.make_api_get_request(f'posts/{post_id}')
+    #     try:
+    #         return render(request, 'posts/foreign_post.html', {
+    #             'post': req.json()['posts'][0]
+    #         })
+    #     except:
+    #         return HttpResponse(
+    #             "The foreign server returned a response, but it was not compliant with the specification. "
+    #             "We are unable to show the post at this time", status=500)
 
 
 
