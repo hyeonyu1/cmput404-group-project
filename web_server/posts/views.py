@@ -314,7 +314,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         ).resolve()
     else:
         return Endpoint(request, Comment.objects.filter(parentPost=post_id).order_by("-published"),
-                        [PagingHandler("GET", "application/json", api_response)]
+                        [Handler("POST", "application/json", post_handler),
+                        PagingHandler("GET", "application/json", api_response)]
                         ).resolve()
 
 
