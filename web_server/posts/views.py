@@ -225,7 +225,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def FOAF_verification_post(auth_user, author):
 
         own_node = settings.HOSTNAME
-
         nodes = [own_node]
         for node in Node.objects.all():
             nodes.append(node.foreign_server_hostname)
@@ -257,14 +256,14 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         # A -> A -> B
                         else:
                             username = Node.objects.get(
-                                foreign_server_hostname=node).username_registered_on_foreign_server
+                                foreign_server_hostname=friend_node).username_registered_on_foreign_server
                             password = Node.objects.get(
-                                foreign_server_hostname=node).password_registered_on_foreign_server
-                            api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
-                            if Node.objects.get(foreign_server_hostname=node).append_slash:
+                                foreign_server_hostname=friend_node).password_registered_on_foreign_server
+                            api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
+                            if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                                 api = api + "/"
                             response = requests.get(
-                                "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author)),
+                                "http://{}/author/{}/friends".format(friend_node, "{}/author/{}".format(api, author)),
                                 auth=(username, password)
                             )
                             if response.status_code == 200:
