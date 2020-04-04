@@ -89,6 +89,7 @@ def check_perm(request, api_object_post):
                 return True
     else:
         return False
+
 @validate_remote_server_authentication()
 def retrieve_single_post_with_id(request, post_id):
     """
@@ -138,13 +139,9 @@ def retrieve_single_post_with_id(request, post_id):
 
 @validate_remote_server_authentication()
 def comments_retrieval_and_creation_to_post_id(request, post_id):
-    print("\n\n\n\n\n\n\n")
-    print("request ", requests)
 
     def get_handler(request, comments, pager, pagination_uris):
-        print("get_handler")
         if not Post.objects.filter(id=post_id).exists():
-
             return JsonResponse({
                 "success": False,
                 "message": "Post Does Not Exists"
@@ -177,13 +174,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
         return JsonResponse(output)
 
-    # 3 cases
-    # - auth user comments on local post
-    # - auth user comments on foreign post
-    # - foreign user comments on local post
+
     def post_handler(request):
-        print("\n\n\n\n\n\n")
-        print("post id = ", post_id)
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
         output = {
@@ -202,28 +194,20 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                     },
                     status=403
                 )
-    # - auth user comments on local post
-    # - foreign user comments on local post
-    # if request.user.is_authenticated or request.remote_server_authenticated:
+
         # change body = request.POST to body = request.body.decode('utf-8'),
         # because request.POST only accepts form, but here is json format.
         # change new_comment.comment to new_comment.content,
         # because that's how it defined in comment model.
-        print("trying to add")
         try:
             body = request.body.decode('utf-8')
             comment_info = loads(body)
-            print("body= ", body)
-
             comment_info = comment_info['comment']
-            print("comment_info = ", comment_info)
             new_comment = Comment()
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
-            # Need to change
-            # new_comment.author = Author.objects.filter(
-            #     id=comment_info['author']['id']).first()
+
             new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
@@ -235,81 +219,130 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             output['error'] = str(e)
         finally:
             return JsonResponse(output)
-        # # foreign post
-        # else:
-        #     # getting the node with the post
-        #     for node in Node.objects.all():
-        #         username = node.username_registered_on_foreign_server
-        #         password = node.password_registered_on_foreign_server
-        #         api = node.foreign_server_api_location
-        #         if node.append_slash:
-        #             api = api + "/"
-        #         response = requests.get("http://{}/posts/{POST_ID}/comments".format(api, post_id),
-        #                                 auth=(username, password))
-        #         if response.status_code == 200:
-        #             break
 
-    #
-    #
-    #         # "comment":{
-    #         # 	    "author":{
-    #         # 	           # ID of the Author
-    #         #                    "id":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
-    #         # 		   "host":"http://127.0.0.1:5454/",
-    #         # 		   "displayName":"Greg Johnson",
-    #         # 		   # url to the authors information
-    #         #                    "url":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
-    #         # 		   # HATEOS url for Github API
-    #         # 		   "github": "http://github.com/gjohnson"
-    #         # 	   },
-    #         # 	   "comment":"Sick Olde English",
-    #         # 	   "contentType":"text/markdown",
-    #         # 	   # ISO 8601 TIMESTAMP
-    #         # 	   "published":"2015-03-09T13:07:04+00:00",
-    #         # 	   # ID of the Comment (UUID)
-    #         # 	   "id":"de305d54-75b4-431b-adb2-eb6b9e546013"
-    #         # 	}
-    #
-    #         # our own user making a comment to foreign post
-    #         else:
-    #             print("AHDASFSAOFJSAOFJAS")
-    #             print(request.body.decode('utf-8'))
-    #
-    #             # # Find the node that contains the post
-    #
-    #             #
-    #             # output = {
-    #             #     "query": "addComment",
-    #             #     "post":
-    #             # }
-    #             # response = requests.post("http://{}/posts/{POST_ID}/comments".format(api, post_id),
-    #             #                          auth=(username, password), data=output)
-    #             #
-    #
-    #
-    #     # else:
-    #     #
-    #     #     output = {
-    #     #         "query": "addComment",
-    #     #     }
-    # return Endpoint(request, Post.objects.filter(id=post_id), [
-    #     # Handler("POST", "application/json", post_handler),
-    #     PagingHandler("GET", "application/json", get_handler)
-    # ]).resolve()
+    def FOAF_verification_post(auth_user, author):
+
+        own_node = settings.HOSTNAME
+
+        nodes = [own_node]
+        for node in Node.objects.all():
+            nodes.append(node.foreign_server_hostname)
+
+        for node in nodes:
+
+            # If the author is a friend of auth user return True
+            if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
+                return True
+
+            # not friends so check for FOAF
+            else:
+                # if the author is on the same host as auth user
+                if node == own_node:
+                    author_friends = Friend.objects.filter(author_id=author)
+                    for friend in author_friends:
+                        # getting the node of the friend
+                        friend_node = friend.friend_id.split("/author/")[0]
+                        # if friend of the author is on the same host as the auth user
+                        # A -> A -> A
+                        if friend_node == own_node:
+                            # E.g Test <-> Lara <-> Bob
+                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
+                                return True
+                            else:
+                                return False
+
+                        # Since the friend is not on the same host as the auth user make a request to get friends from the other node
+                        # A -> A -> B
+                        else:
+                            username = Node.objects.get(
+                                foreign_server_hostname=node).username_registered_on_foreign_server
+                            password = Node.objects.get(
+                                foreign_server_hostname=node).password_registered_on_foreign_server
+                            api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                            if Node.objects.get(foreign_server_hostname=node).append_slash:
+                                api = api + "/"
+                            response = requests.get(
+                                "http://{}/author/{}/friends".format(node, "{}/author/{}".format(api, author)),
+                                auth=(username, password)
+                            )
+                            if response.status_code == 200:
+                                friends_list = response.json()
+
+                                for user in friends_list["authors"]:
+                                    if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                        return True
+                                    else:
+                                        return False
+
+                # author's host is different from auth user
+                else:
+                    username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+                    password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+                    api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                    if Node.objects.get(foreign_server_hostname=node).append_slash:
+                        api = api + "/"
+                    response = requests.get(
+                        "http://{}/author/{}/friends".format(api, author),
+                        auth=(username, password)
+                    )
+                    if response.status_code == 200:
+                        friends_list = response.json()
+                        for user in friends_list["authors"]:
+                            # E.g Test <-> Lara <-> User
+                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                return True
+                            else:
+                                return False
+
+        return False
+
+    def check_perm_foreign_user(user_id, api_object_post):
+        """
+        Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
+        """
+        visibility = api_object_post["visibility"]
+
+        if visibility == Post.SERVERONLY:
+            return False
+
+        author_id = api_object_post["author"]['id']
+
+        if user_id == author_id or visibility == Post.PUBLIC:
+            return True
+
+        elif visibility == Post.FOAF:
+            # getting the friends of the author
+            return FOAF_verification_post(user_id, author_id)
+        elif visibility == Post.SERVERONLY:
+            if request.user.host == Author.objects.get(id=author_id).host:
+                return True
+        elif visibility == Post.PRIVATE:
+            if user_id in api_object_post["visibleTo"]:
+                return True
+        elif visibility == Post.FRIENDS:
+            author_friends = Friend.objects.filter(author_id=author_id)
+            for friend in author_friends:
+                if user_id == friend.friend_id:
+                    return True
+        else:
+            return False
 
     def foreign_post_handler(request):
-        print("\n\n\n\n\n\n")
-        print("post id = ", post_id)
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
         output = {
             "query": "addComment",
         }
 
+        body = request.body.decode('utf-8')
+        comment_info = loads(body)
+        comment_info = comment_info['comment']
+
+
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
-            if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
+            if not check_perm_foreign_user(url_regex.sub('', comment_info['author']['id']).rstrip("/"), Post.objects.get(id=post_id).to_api_object()):
                 return JsonResponse(
                     {
                         "query": "addComment",
@@ -318,30 +351,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                     },
                     status=403
                 )
-    # - auth user comments on local post
-    # - foreign user comments on local post
-    # if request.user.is_authenticated or request.remote_server_authenticated:
-        # change body = request.POST to body = request.body.decode('utf-8'),
-        # because request.POST only accepts form, but here is json format.
-        # change new_comment.comment to new_comment.content,
-        # because that's how it defined in comment model.
-        print("trying to add")
         try:
-            print(request.body)
-            body = request.body.decode('utf-8')
-            comment_info = loads(body)
-            print("comment_info= ", comment_info)
-
-            comment_info = comment_info['comment']
-            print("comment_info = ", comment_info)
             new_comment = Comment()
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
-            # Need to change
-            # new_comment.author = Author.objects.filter(
-            #     id=comment_info['author']['id']).first()
-            # new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
             new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
@@ -353,6 +367,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             output['error'] = str(e)
         finally:
             return JsonResponse(output)
+
     def api_response(request, comments, pager, pagination_uris):
         size = min(int(request.GET.get('size', 10)), 50)
         output = {
