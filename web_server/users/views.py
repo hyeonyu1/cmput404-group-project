@@ -222,8 +222,8 @@ def view_post_comment(request, post_path):
         # }
         print(comment_info["author"]["id"])
         author_uid = "{}/author/{}".format(settings.HOSTNAME, comment_info["author"]["id"].replace("-", ""))
-        author = Author.objects.filter(uid=author_uid)
-        print(author)
+        author = Author.objects.get(uid=author_uid)
+        print(author.to_api_object())
         output = {
             "query": "addComment",
             "post": post_path,

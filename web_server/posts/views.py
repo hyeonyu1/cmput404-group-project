@@ -213,6 +213,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             # Need to change
             # new_comment.author = Author.objects.filter(
             #     id=comment_info['author']['id']).first()
+            print(comment_info['author']['id'])
             new_comment.author = comment_info['author']['id']
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
