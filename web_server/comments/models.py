@@ -76,9 +76,9 @@ class Comment(models.Model):
                 "author": {
                     "id": author_info["id"],
                     "host": author_info["host"],
-                    "displayName": author_info["display_name"],
-                    "first_name": author_info["first_name"],
-                    "last_name": author_info["last_name"],
+                    "displayName": author_info["displayName"],
+                    "first_name": author_info["firstName"],
+                    "last_name": author_info["lastName"],
                     "url": author_info["uid"],
                     "github": author_info["github"]
                 },
