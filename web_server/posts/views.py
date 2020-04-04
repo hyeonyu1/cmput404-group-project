@@ -269,9 +269,10 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                             if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                                 api = api + "/"
                             response = requests.get(
-                                "http://{}/author/{}/friends".format(friend_node, "{}/author/{}".format(api, author)),
+                                "http://{}/author/{}/friends".format(api, author),
                                 auth=(username, password)
                             )
+                            print("response")
                             if response.status_code == 200:
                                 friends_list = response.json()
 

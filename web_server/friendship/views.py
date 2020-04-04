@@ -307,7 +307,7 @@ def FOAF_verification(request, author):
                         if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                             api = api + "/"
                         response = requests.get(
-                            "http://{}/author/{}/friends".format(friend_node, "{}/author/{}".format(api, author)),
+                            "http://{}/author/{}/friends".format(api, "{}/author/{}".format(api, author)),
                             auth=(username, password)
                         )
                         print("back from response")
