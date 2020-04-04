@@ -7,7 +7,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
 from nodes.models import Node
-from friendship.models import Friend
+from friendship.models import Friend, FriendRequest
 from posts.models import Post, Category, VisibleTo
 from comments.models import Comment
 from django.db.models import Q
@@ -191,8 +191,17 @@ def unfriend(request):
         body = request.body.decode('utf-8')
         body = json.loads(body)
         # strip protocol from url
-        author_id = url_regex.sub('', body.get("author_id", ""))
-        friend_id = url_regex.sub('', body.get("friend_id", ""))
+        author_id = body.get("author_id", "")
+        friend_id = body.get("friend_id", "")
+
+        # print("\n\n\n\n\n\n")
+        # print(author_id)
+        # print(friend_id)
+        author_id = sanitize_author_id(author_id)
+        friend_id = sanitize_author_id(friend_id)
+        # print(author_id)
+        # print(friend_id)
+        # print("\n\n\n\n\n\n")
         if not author_id or not friend_id:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
@@ -1141,11 +1150,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
 @validate_remote_server_authentication()
 def friend_checking_and_retrieval_of_author_id(request, author_id):
+    author_id = sanitize_author_id(author_id)
     if request.method == 'POST':
         # ask a service if anyone in the list is a friend
         # POST to http://service/author/<authorid>/friends
-        author_id = url_regex.sub('', author_id)
-
         body_unicode = str(request.body, 'utf-8')
         body = json.loads(body_unicode)
 
@@ -1159,7 +1167,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
         response_data["authors"] = []
         if Friend.objects.filter(author_id=author_id).exists():
             for potential_friend in potential_friends:
-                potential_friend = url_regex.sub('', potential_friend)
+                potential_friend = sanitize_author_id(potential_friend)
                 if Friend.objects.filter(author_id=author_id).filter(friend_id=potential_friend).exists():
                     response_data["authors"].append(potential_friend)
 
@@ -1206,11 +1214,26 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
         # query friend table for friendship information
         if Friend.objects.filter(author_id=author1_id).filter(friend_id=author2_id).exists():
             response_data["friends"] = True
+            response_data["pending"] = False
         else:
             response_data["friends"] = False
-        # add optional information of current user
+            outgoing_request = FriendRequest.objects.filter(
+                from_id=author1_id).filter(to_id=author2_id).exists()
+            incoming_request = FriendRequest.objects.filter(
+                from_id=author2_id).filter(to_id=author1_id).exists()
 
-        return JsonResponse(response_data)
+            # add optional information of current user
+            # add pending field (not listed in example-article.json ..)
+            # but it's helpful when invalidate friendrequest / friends
+            if outgoing_request or incoming_request:
+                response_data["pending"] = True
+            else:
+                response_data["pending"] = False
+        # print("\n\n\n\n\n")
+        # print("in check friends")
+        # print(response_data)
+        # print("\n\n\n\n\n")
+        return JsonResponse(response_data, status=200)
 
     return HttpResponse("You can only GET the URL", status=405)
 

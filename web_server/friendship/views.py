@@ -275,11 +275,13 @@ def invalidate_friend_requests(author_id):
                                 new_friend = Friend(
                                     author_id=request.to_id, friend_id=author_id)
                                 new_friend.save()
-                    # # delete if they are not friends yet
-                    # else:
-                    #     if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
-                    #         FriendRequest.objects.filter(from_id=author_id).filter(
-                    #             to_id=request.to_id).delete()
+                    # delete if they are not friends yet
+                    else:
+                        pending = res.get("pending", None)
+                        if pending is False:
+                            if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
+                                FriendRequest.objects.filter(from_id=author_id).filter(
+                                    to_id=request.to_id).delete()
 
 
 # FOAF verification involves the 3 hosts of the 3 friends A->B->C

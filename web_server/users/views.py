@@ -98,7 +98,8 @@ def invalidate_friends(host, user_id):
                     # print(res)
                     # print("\n\n\n\n\n")
                     # if they are friends
-                    if not res["friends"]:
+                    pending = res.get("pending", None)
+                    if not pending and not res["friends"]:
                         if Friend.objects.filter(author_id=author_id).filter(friend_id=friend.friend_id).exists():
                             Friend.objects.filter(author_id=author_id).filter(
                                 friend_id=friend.friend_id).delete()
