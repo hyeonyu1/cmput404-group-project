@@ -191,7 +191,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "query": "addComment",
                         "success": False,
                         "message": "Comment not allowed"
-                    },
+                    }, status=403
                 )
 
         # change body = request.POST to body = request.body.decode('utf-8'),
@@ -217,7 +217,10 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             output['message'] = "Comment not allowed"
             output['error'] = str(e)
         finally:
-            return JsonResponse(output)
+            if output["success"]:
+                return JsonResponse(output, status=200)
+            else:
+                return JsonResponse(output, status=403)
 
     def FOAF_verification_post(auth_user, author):
 
@@ -246,7 +249,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             if response.status_code == 200:
                 friends_list = response.json()
                 for user in friends_list["authors"]:
-                    print(user)
                     if user in author_friends_list:
                         return True
         return False
@@ -302,7 +304,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "query": "addComment",
                         "success": False,
                         "message": "Comment not allowed"
-                    }
+                    }, status=403
                 )
         try:
             new_comment = Comment()
@@ -319,7 +321,10 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             output['message'] = "Comment not allowed"
             output['error'] = str(e)
         finally:
-            return JsonResponse(output)
+            if output["success"]:
+                return JsonResponse(output, status=200)
+            else:
+                return JsonResponse(output, status=403)
 
     def api_response(request, comments, pager, pagination_uris):
         size = min(int(request.GET.get('size', 10)), 50)
