@@ -96,7 +96,13 @@
             <h5 class="mb-1">[[post.title]]</h5>
             <small>[[post.published]]</small>
         </div>
-        <p class="mb-1">[[post.content]]</p>
+        <p v-if="post.contentType == 'image/png;base64'" class="mb-1">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]"> 
+        </p>
+        <p v-else-if="post.contentType == 'image/jpeg;base64'" class="mb-1">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]"> 
+        </p>
+        <p v-else class="mb-1">[[post.content]]</p>
         <small>[[post.author.displayName]]</small>
     </a>
 
