@@ -266,12 +266,12 @@ def retrieve_universal_author_profile(request, author_id):
         url = "http://{}".format(author_id)
 
         res = requests.get(url)
-        # print("\n\n\n\n\n\n")
-        # print(author_id)
-        # print(url)
-        # print("inside universla author profile")
-        # print(res.text, res.status_code)
-        # print("\n\n\n\n\n\n")
+        print("\n\n\n\n\n\n")
+        print(author_id)
+        print(url)
+        print("inside universla author profile")
+        print(res.text, res.status_code)
+        print("\n\n\n\n\n\n")
         if res.status_code >= 200 or res.status_code < 300:
             try:
                 foreign_friend = res.json()
