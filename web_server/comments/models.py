@@ -63,6 +63,7 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
+            print("FOREIGN AUTHOR")
             node = author_uid.split("/author/")[0]
             username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
             password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
