@@ -937,6 +937,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                     author=author, visibleTo=user_uid, unlisted=False)
 
                 # visibility = SERVERONLY
+                print("\n\n\n\n\n user host = ", request.user.host)
+                print(author.host)
                 if request.user.host == author.host:
                     server_only_post = Post.objects.filter(
                         author=author, visibility="SERVERONLY", unlisted=False)
