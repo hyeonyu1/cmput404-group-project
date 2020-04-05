@@ -192,7 +192,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "success": False,
                         "message": "Comment not allowed"
                     },
-                    status=403
                 )
 
         # change body = request.POST to body = request.body.decode('utf-8'),
@@ -214,7 +213,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             output['type'] = True
             output['message'] = "Comment added"
         except Exception as e:
-            output['type'] = False
+            output['success'] = False
             output['message'] = "Comment not allowed"
             output['error'] = str(e)
         finally:

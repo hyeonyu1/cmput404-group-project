@@ -218,11 +218,12 @@
                     }
                 }).then((response) => {
                     alert(response.data['message']);
-                    if( response.data['type']){
+                    if( response.data['success']){
                         comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
                         this.comments.push(comment);
                     }
                 })
+
             },
 
             //Set comments types: markdown/plaintext
