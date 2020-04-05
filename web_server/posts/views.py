@@ -216,6 +216,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 new_comment.author = comment_info['author']['id'].replace("-", "")
             else:
                 new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-", ""))
+            print(new_comment.author)
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['success'] = True
