@@ -45,6 +45,9 @@
             <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'"
                 @click="app.show_page('post')">[[user.displayName ]]'s Stream</button>
             {% endif %}
+
+            <button class="btn" v-bind:class="show['github']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('github')">Github</button>
         </div>
 
         <div class="row">
@@ -84,6 +87,10 @@
 
             <user-info v-bind:user="user" v-if="show['info']" :is_visitor="is_visitor">
             </user-info>
+
+            <div v-if="show['github']">
+                <div id="github-feed"></div>
+            </div>
         </div>
     </div>
 </template>
@@ -160,6 +167,7 @@
 </template>
 
 
+
 <script>
     Vue.component('request-list', {
         delimiters: ['[[', ']]'],
@@ -208,11 +216,13 @@
                 user: {},
                 friends: [],
                 myposts: [],
+                github: [],
                 show: {
                     'info': true,
                     'friend': false,
                     'friend_request': false,
                     'post': false,
+                    'github': false,
                 },
 
                 is_visitor: true,
@@ -233,6 +243,27 @@
                         let afriend = new Friend(friend.id, friend.displayName, friend.host);
                         console.log(afriend);
                         this.friends.push(afriend);
+                    }
+                })
+            },
+
+            // Retrieve users' recent github activity
+            get_github(id) {
+                let url = '/author/profile/' + id;
+                window.axios.get(url).then((response) => {
+                    this.user = response.data;
+                    try {
+                        GitHubActivity.feed({
+                            username: this.user.github.split("github.com/")[1],
+                            selector: "#github-feed",
+                            limit: 10
+                        });
+                    } catch(err) {
+                        console.log("Could not get github name: " + err);
+                        let p = document.createElement("p");
+                        p.innerText = "We couldn't load your github activity. Make sure your github URL is set " +
+                                "correctly in your profile. It should look like \"https://github.com/{your user name}\"";
+                        document.querySelector("#github-feed").appendChild(p);
                     }
                 })
             },
@@ -387,6 +418,9 @@
                         this.show[key] = false;
                     }
                 }
+                if(name==='github')
+                    this.get_github("{{user_full_id}}");
+
             },
 
             add_friend() {
