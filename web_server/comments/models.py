@@ -52,6 +52,7 @@ class Comment(models.Model):
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
         author_uid = url_regex.sub("", str(self.author)).rstrip("/")
+        print("author_uid = ", author_uid)
         try:
             author = Author.objects.get(uid=author_uid)
             return {
