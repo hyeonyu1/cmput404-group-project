@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.staticfiles import finders
 
-from .models import Post
+from .models import Post, VisibleTo, Category
 from comments.models import Comment
 from users.models import Author
 from nodes.models import Node
