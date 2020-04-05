@@ -46,8 +46,39 @@
 
         </div>
 
+        <div class="col-sm-3">
+            <div id="feed"></div>
+        </div>
+
     </div>
 </div>
+
+    <script>
+        function getGit() {
+            fetch("{% url 'github' %}", {
+                method: 'GET'
+            }).then(function(response) {
+                return response.json();
+            }).then(function(data) {
+                github(data['github']);
+            }).catch(function(ex) {
+                console.log("Could not get github name");
+                let p = document.createElement("p");
+                p.innerText = "We couldn't load your github activity. Make sure your github URL is set " +
+                        "correctly in your profile. It should look like \"https://github.com/{your user name}\"";
+                document.querySelector("#feed").appendChild(p);
+            });
+        }
+
+        function github(name) {
+            GitHubActivity.feed({
+                username: name,
+                selector: "#feed",
+                limit: 10
+            });
+        }
+        window.onload = getGit;
+    </script>
 
 
 <template id="list-post">
