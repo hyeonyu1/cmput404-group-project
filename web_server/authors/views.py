@@ -259,7 +259,8 @@ def retrieve_universal_author_profile(request, author_id):
 
     # if this is local author, redirect to /author/authorid
     if current_host == author_host:
-        return redirect('retrieve_author_profile', author_id=splits[2])
+        # return redirect('retrieve_author_profile', author_id=splits[2])
+        return redirect('retrieve_author_profile', author_id=author_id)
     # it's foreign author
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
