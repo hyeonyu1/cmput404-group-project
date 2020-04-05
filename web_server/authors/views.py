@@ -632,7 +632,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         else:
             return JsonResponse({
                 "success": False,
-                "message": "Post and image sharing is turned off"
+                "message": "Post or image sharing is turned off"
             }, status=403)
 
         return Endpoint(request, query,
@@ -1079,7 +1079,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         else:
             return JsonResponse({
                 "success": False,
-                "message": "Post and image sharing is turned off"
+                "message": "Post or image sharing is turned off"
             }, status=403)
 
     return Endpoint(request, query, [

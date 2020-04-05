@@ -404,6 +404,33 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         PagingHandler("GET", "application/json", get_handler)]
                         ).resolve()
     else:
+        auth = request.META['HTTP_AUTHORIZATION'].split()
+        if len(auth) == 2:
+            if auth[0].lower() == "basic":
+                uname, passwd = base64.b64decode(
+                    auth[1]).decode('utf-8').rsplit(':', 1)
+        node = Node.objects.get(foreign_server_username=uname)
+        print("\n\n\n\nPOST_ID = ", post_id)
+        image_type = ["image/png;base64", "image/jpeg;base64"]
+        post_type = ["text/plain", "text/markdown"]
+        if Post.objects.filter(id=post_id).exists():
+            type = Post.objects.get(id=post_id).content_type
+
+            if type in post_type and not node.post_share:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Post or image sharing is turned off"
+                    }, status=403
+                )
+            if type in image_type and not node.image_share:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Post or image sharing is turned off"
+                    }, status=403
+                )
+
         return Endpoint(request, Comment.objects.filter(parentPost=post_id).order_by("-published"),
                         [Handler("POST", "application/json", foreign_post_handler, False),
                         PagingHandler("GET", "application/json", api_response)]
