@@ -414,7 +414,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         image_type = ["image/png;base64", "image/jpeg;base64"]
         post_type = ["text/plain", "text/markdown"]
         if Post.objects.filter(id=post_id).exists():
-            type = Post.objects.get(id=post_id).content_type
+            type = Post.objects.get(id=post_id).contentType
 
             if type in post_type and not node.post_share:
                 return JsonResponse(
