@@ -55,13 +55,24 @@ def retrieve_all_public_posts_on_local_server(request):
 def retrieve_single_post_with_id(request, post_id):
     """
     For endpoint http://service/posts/{POST_ID}
-    Access the single specified post.
+
+    Methods
+        - Accept:
+
+    GET
+        - application/json: returns the post in json format
+        - text/html: view the post while logged into our web service. If the post is an image it will return raw
+            image data
+    POST
+        - inserts a post with the specified post_id. Will error if that post already exists
+    PUT
+        - inserts a post, updates the post if it already exists
+
     For consistency, it maintains the same pageable format as http://service/posts if JSON is requested
     If HTML is requested it will return a page that will view the post details, or if the post is an image it
     will respond directly with image data for use in hosting images.
-    Methods: GET
     :param request: should specify Accepted content-type
-    :returns: application/json | text/html
+    :returns: application/json | text/html | image/jpg | image/png
     """
     def check_perm(request, api_object_post):
         """
@@ -128,7 +139,10 @@ def retrieve_single_post_with_id(request, post_id):
     # Get a single post
     return Endpoint(request, Post.objects.filter(id=post_id), [
         PagingHandler("GET", "text/html", html_handler),
-        PagingHandler("GET", "application/json", json_handler)
+        PagingHandler("GET", "application/json", json_handler),
+        PagingHandler("PUT", "*/*", json_handler),
+        PagingHandler("POST", "*/*", json_handler),
+
     ]).resolve()
 
 
