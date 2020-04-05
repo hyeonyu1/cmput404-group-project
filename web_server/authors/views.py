@@ -97,8 +97,19 @@ def retrieve_friends_of_author(authorid):
                 response_data.append(entry)
     return response_data
 
-# http://service/author endpoint
-# Author : Ida Hou
+
+"""
+NO AUTHENTICATION REQUIRED  
+endpoint: http://service/author
+
+allowed methods: 
+GET: return full information of all LOCAL authors
+
+response:
+405: method not allowed 
+200: success
+    
+"""
 
 
 def return_all_authors_registered_on_local_server(request):
@@ -117,13 +128,22 @@ def return_all_authors_registered_on_local_server(request):
         # each['friends'] = retrieve_friends_of_author(author.uid) # uncomment if should return friend list
         data.append(each)
 
-    return JsonResponse(data, safe=False)
+    return JsonResponse(data, safe=False, status=200)
 
 
-# Ida Hou
-# return a list of author id that are currently stored in database and
-# are not friend with current author
-# internal endpoint -  not used
+"""
+INTERNAL ENDPOINT 
+endpoint: http://service/author/<authorid:UUID>/addfriend
+
+allowed methods: 
+GET: return authors on (both local and authenticated foreign servers) that have yet friends with current author
+
+response:
+405: method not allowed 
+404: current author not found (either inactive or superuser or simply DNE)
+200: success
+    
+"""
 @login_required
 def view_list_of_available_authors_to_befriend(request, author_id):
     if request.method != 'GET':
@@ -160,7 +180,7 @@ def view_list_of_available_authors_to_befriend(request, author_id):
                 )] = f"Could not parse json response, exception: {e}"
     # if author has no friends
     if not Friend.objects.filter(author_id=author_id).exists():
-        return JsonResponse(response_data)
+        return JsonResponse(response_data, status=200)
 
     existing_friends = Friend.objects.filter(author_id=author_id)
     existing_friends_set = set([each.friend_id for each in existing_friends])
@@ -170,18 +190,29 @@ def view_list_of_available_authors_to_befriend(request, author_id):
             available_authors_to_friend.append(each)
     response_data["available_authors_to_befriend"] = available_authors_to_friend
 
-    return JsonResponse(response_data)
+    return JsonResponse(response_data, status=200)
 
 
-# Ida Hou
-# service/author/unfriend endpoint handler
-# post request body
-# {
-#  author_id :http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
-#  friend_id : http://127.0.0.1:8000/author/019fcd68-9224-4d1d-8dd3-e6e865451a31
-#
-# }
-# internal endpoints
+"""
+INTERNAL ENDPOINT  
+endpoint: http://service/author/unfriend 
+
+allowed methods: 
+POST: unfriend two authors given in request body 
+
+response:
+405: method not allowed
+422: post body missing fields 
+404: friendship doesn't exist 
+200: success
+
+post body example: 
+{
+    "author_id" : "127.0.0.1:8000/author/9d411951f13246728c2a1d00c081e680",
+	"friend_id" : "localhost:8000/author/99baa477e25b406696f0f61655716197"
+}
+    
+"""
 
 
 @login_required
@@ -193,15 +224,8 @@ def unfriend(request):
         # strip protocol from url
         author_id = body.get("author_id", "")
         friend_id = body.get("friend_id", "")
-
-        # print("\n\n\n\n\n\n")
-        # print(author_id)
-        # print(friend_id)
         author_id = sanitize_author_id(author_id)
         friend_id = sanitize_author_id(friend_id)
-        # print(author_id)
-        # print(friend_id)
-        # print("\n\n\n\n\n\n")
         if not author_id or not friend_id:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
@@ -217,13 +241,6 @@ def unfriend(request):
         return HttpResponse("Unfriended !", status=200)
 
     return HttpResponse("Method Not Allowed", status=405)
-# handler for endpoint: http://service/author/<str:author_id>/update
-# post body data requirement
-# require a json objects with following fields:
-# first_name, last_name, email, bio, github, display_name, delete
-# allow authors delete themselves (delete  = True if to be deleted)
-# if no changes to above field, original values should be passed
-# username, uid, id, url, host of author can't be changed
 
 
 def check_missing_post_body_field_and_return_422(body, fields_to_check):
@@ -232,7 +249,29 @@ def check_missing_post_body_field_and_return_422(body, fields_to_check):
             return HttpResponse("Post body missing fields: {}".format(each), status=422)
     return None
 
-# internal endpoint - not used
+
+"""
+INTERNAL ENDPOINT  
+endpoint: http://service/author/<authorid:UUID>/update
+
+allowed methods: 
+POST: update current author with values given in request body
+
+response:
+405: method not allowed 
+200: success
+404: author to be updated not found 
+422: post body missing fields 
+
+
+post body data requirement:
+require a json objects with following fields:
+first_name, last_name, email, bio, github, display_name, delete
+allow authors delete themselves (delete  = True if to be deleted)
+if no changes to above field, original values should be passed
+username, uid, id, url, host of author can't be changed
+    
+"""
 
 
 @login_required
@@ -270,8 +309,24 @@ def update_author_profile(request, author_id):
     return HttpResponse("Author successfully updated", status=200)
 
 
+"""
+INTERNAL ENDPOINT 
+endpoint: http://service/author/profile/<author_id: URL>/
+
+allowed methods: 
+GET: return full information of a given UNIVERSAL author 
+
+response:
+404: failure to retrieve author information
+405: method not allowed 
+200: success
+    
+"""
 @login_required
 def retrieve_universal_author_profile(request, author_id):
+    if request.method != 'GET':
+        return HttpResponse("Method Not Allowed", status=405)
+
     current_host = request.get_host()
 
     # strip protocol
@@ -293,12 +348,6 @@ def retrieve_universal_author_profile(request, author_id):
             # first try /author/authorid with UUID dash
             url = "http://{}/{}".format(author_id_splits[0], str(author_uuid))
             res = requests.get(url)
-            # print("\n\n\n\n\n\n")
-            # print(author_id)
-            # print(url)
-            # print("inside universla author profile")
-            # print(res.text, res.status_code)
-            # print("\n\n\n\n\n\n")
             if res.status_code >= 200 and res.status_code < 300:
                 try:
                     foreign_friend = res.json()
@@ -310,12 +359,6 @@ def retrieve_universal_author_profile(request, author_id):
                 url = "http://{}/{}".format(
                     author_id_splits[0], author_uuid.hex)
                 res = requests.get(url)
-                # print("\n\n\n\n\n\n")
-
-                # print(url)
-                # print("inside universla author profile second try ")
-                # print(res.text, res.status_code)
-                # print("\n\n\n\n\n\n")
                 if res.status_code >= 200 and res.status_code < 300:
                     try:
                         foreign_friend = res.json()
@@ -333,9 +376,22 @@ def retrieve_universal_author_profile(request, author_id):
                     return HttpResponse("Wrong Format Foreign Server Response", status=404)
 
     return HttpResponse("Can't Retrieve Foreign Author's Information", status=404)
-# Ida Hou
-# service/author/{author_id} endpoint handler
-# publicly accessible without needing basic auth
+
+
+"""
+PUBLIC ENDPOINT
+endpoint: http://service/author/<author_id: UUID>
+
+allowed methods: 
+GET: return full information of a given LOCAL author's UUID
+
+response:
+404: author in query doesn't not exist on local database (either inactive or is superuser or simply DNE)
+405: method not allowed 
+200: success
+
+    
+"""
 
 
 def retrieve_author_profile(request, author_id):
@@ -1155,9 +1211,23 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
     ]).resolve()
 
 
-# Ida Hou
+"""
+PUBLIC ENDPOINT
+endpoint: http://service/author/<author_id: URL>/friends
 
-# author_id : (http://)localhost:8000/author/<UUID>
+allowed methods: 
+GET: return a list of friends of current author 
+POST: apply filter to given list of author ids (given in request body);
+    return only those who are friends with current author (in response body)
+
+response:
+422: post body missing entries 
+405: method not allowed 
+200: success
+401: authentication required 
+    
+"""
+
 
 @validate_remote_server_authentication()
 def friend_checking_and_retrieval_of_author_id(request, author_id):
@@ -1182,7 +1252,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
                 if Friend.objects.filter(author_id=author_id).filter(friend_id=potential_friend).exists():
                     response_data["authors"].append(potential_friend)
 
-        return JsonResponse(response_data)
+        return JsonResponse(response_data, status=200)
     elif request.method == 'GET':
         # a reponse if friends or not
         # ask a service GET http://service/author/<authorid>/friends/
@@ -1197,25 +1267,33 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
 
             for friend in friends:
                 response_data['authors'].append(friend.friend_id)
-        return JsonResponse(response_data)
+        return JsonResponse(response_data, status=200)
     else:
         return HttpResponse("You can only GET or POST to the URL", status=405)
 
-# Ida Hou
+
+"""
+PUBLIC ENDPOINT 
 # Ask if 2 authors are friends
-# GET http://service/author/<authorid>/friends/<authorid2>
-# authorid : UUID
-# authorid2: https://127.0.0.1%3A5454%2Fauthor%2Fae345d54-75b4-431b-adb2-fb6b9e547891 (url-encoded)
+endpoint: http://service/author/<authorid: UUID>/friends/<authorid2: URL>
 
+allowed methods:
+GET: Ask if 2 authors are friends
 
+response: 
+200: success
+401: suthentication required 
+405: method not allowed 
+
+"""
 @validate_remote_server_authentication()
 def check_if_two_authors_are_friends(request, author1_id, author2_id):
     if request.method == 'GET':
-        # compose author id from author uid
 
+        # compose author id from author uid
         host = request.get_host()
         author1_id = host + "/author/" + UUID(author1_id).hex
-        # decode + strip url protocol
+        # remove dashes in UUID + strip url protocol
         author2_id = sanitize_author_id(author2_id)
 
         # compose response data
@@ -1240,10 +1318,6 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
                 response_data["pending"] = True
             else:
                 response_data["pending"] = False
-        # print("\n\n\n\n\n")
-        # print("in check friends")
-        # print(response_data)
-        # print("\n\n\n\n\n")
         return JsonResponse(response_data, status=200)
 
     return HttpResponse("You can only GET the URL", status=405)

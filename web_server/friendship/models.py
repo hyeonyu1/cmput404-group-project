@@ -25,7 +25,6 @@ url_regex = re.compile(r"(http(s?))?://")
     However, each row identifies mutual relationship. i.e: if a row with author_id = 1, friend_id = 2 then author 1 already friended with 2 and vice versa 
 
     """
-# Author: Ida Hou
 
 
 class Friend(models.Model):
@@ -56,8 +55,6 @@ class Friend(models.Model):
     my intention was to make from_id and to_id together acts as primary key, the order does matter. 
     i.e from_id = 1, to_id = 2 identifies a different row from from_id = 2, to_id = 1 
     """
-
-# Author: Ida Hou
 
 
 class FriendRequest(models.Model):
