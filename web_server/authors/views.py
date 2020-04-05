@@ -247,7 +247,7 @@ def update_author_profile(request, author_id):
     return HttpResponse("Author successfully updated", status=200)
 
 
-@login_required
+# @login_required
 def retrieve_universal_author_profile(request, author_id):
     current_host = request.get_host()
 
