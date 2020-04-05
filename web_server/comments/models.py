@@ -78,7 +78,7 @@ class Comment(models.Model):
             # print(response.status_code)
             # if response.status_code == 200:
             #     author_info = response.json()
-            author_info = retrieve_universal_author_profile(requests, author_uid)
+            author_info = retrieve_universal_author_profile(author_uid)
             print(author_info)
             return {
                 "author": {
