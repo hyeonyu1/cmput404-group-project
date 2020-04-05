@@ -68,6 +68,7 @@ class Comment(models.Model):
             response = requests.get(
                 "https://{}/author/profile/http://{}/".format(settings.HOSTNAME, author_uid)
             )
+            print("got a response")
             if response.status_code == 200:
                 author_info = response.json()
 
