@@ -293,9 +293,8 @@ def retrieve_author_profile(request, author_id):
         print("author_id", author_id)
         # compose full url of author
         host = request.get_host()
-        # author_id = host + "/author/" + str(author_id)
+        author_id = host + "/author/" + str(author_id)
 
-        author_id = url_regex.sub("", author_id).rstrip("/")
         # only active authors are retrivable
         author = get_object_or_404(
             Author.objects.filter(is_active=1), uid=author_id)
