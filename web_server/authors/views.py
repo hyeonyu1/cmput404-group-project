@@ -256,7 +256,8 @@ def retrieve_universal_author_profile(request, author_id):
     author_id = author_id.rstrip("/")
     splits = author_id.split("/")
     author_host = splits[0]
-
+    print("current host = ", current_host)
+    print("author_host = ", author_host)
     # if this is local author, redirect to /author/authorid
     if current_host == author_host:
         # return redirect('retrieve_author_profile', author_id=splits[2])
