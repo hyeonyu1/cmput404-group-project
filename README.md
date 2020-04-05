@@ -30,5 +30,5 @@ The following command will load the file created in the above command into your 
     
 # Ajax Documentation
 ## Usage of axios
-    post.html, profile.html, home.html, post.html 
+    post.html, profile.html, home.html 
     
