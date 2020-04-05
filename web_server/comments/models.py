@@ -2,7 +2,6 @@ from django.db import models
 from users.models import Author
 from posts.models import Post
 from nodes.models import Node
-from authors.views import retrieve_universal_author_profile
 import requests
 
 
@@ -65,20 +64,18 @@ class Comment(models.Model):
             }
         except Author.DoesNotExist:
             print("FOREIGN AUTHOR")
-            node = author_uid.split("/author/")[0]
-            username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-            password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-            api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
-            if Node.objects.get(foreign_server_hostname=node).append_slash:
-                api = api + "/"
+            # node = author_uid.split("/author/")[0]
+            # username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+            # password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+            # api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+            # if Node.objects.get(foreign_server_hostname=node).append_slash:
+            #     api = api + "/"
             response = requests.get(
-                "http://{}/author/{}/".format(api, author_uid),
-                auth=(username, password)
+                "http://{}/author/{}/".format(settings.HOSTNAME, author_uid)
             )
             print(response.status_code)
             if response.status_code == 200:
                 author_info = response.json()
-            # author_info = retrieve_universal_author_profile(author_uid)
             print(author_info)
             return {
                 "author": {
