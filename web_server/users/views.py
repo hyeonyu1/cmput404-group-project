@@ -128,8 +128,8 @@ def view_post(request, post_path):
             'post': req.json()['posts'][0]
         })
     except Exception as e:
-        return HttpResponse("The foreign server returned a response, but it was not compliant with the specification. "
-                            "We are unable to show the post at this time", status=500)
+        return HttpResponse(f"The foreign server returned a response, but it was not compliant with the specification. "
+                            f"We are unable to show the post at this time: {e}", status=500)
 
 
 @login_required

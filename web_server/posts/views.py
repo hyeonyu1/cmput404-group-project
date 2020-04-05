@@ -370,8 +370,9 @@ def proxy_foreign_server_image(request, image_url):
         node = Node.objects.get(foreign_server_hostname=image_url_parts[0])
         credentials = (node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
     except Node.DoesNotExist as e:
-        # This url is not for a node that we have credentials for, we have to return the url as is
-        return HttpResponse('https://' + image_url)
+        # This url is not for a node that we have credentials for, we have to return some sort of message that
+        # Will inform the front end to NOT replace the url. This is done just by stating an error status.
+        return HttpResponse("We do not have a connection to this node", status=404)
 
     request_args = {
         'headers': {
@@ -381,7 +382,7 @@ def proxy_foreign_server_image(request, image_url):
     if credentials is not None:
         request_args['auth'] = credentials
     # Make a request to the url, and pass in the credentials if they exist
-    response = requests.get('http://' + image_url, *request_args)
+    response = requests.get('http://' + image_url, **request_args)
     if response.status_code != 200:
         # Return the original server response as an HTTP response
         return HttpResponse(f'The server failed to deliver a valid response. The response was {response.content}', status=response.status_code)
