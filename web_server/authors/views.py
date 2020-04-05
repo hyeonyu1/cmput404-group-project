@@ -288,7 +288,8 @@ def retrieve_universal_author_profile(request, author_id):
 
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
-        print("AUTH_PROFILE")
+        print("\n\n\n\n\nAUTH_PROFILE")
+        print("author_id", author_id)
         # compose full url of author
         host = request.get_host()
         # author_id = host + "/author/" + str(author_id)
