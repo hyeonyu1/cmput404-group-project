@@ -484,9 +484,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # visibility = SERVERONLY
 
         local_host = url_regex.sub("", request.user.host).rstrip("/")
+        print("\n\n\n\n\nlocal_host = ", local_host)
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
-
+        print(server_only_post)
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
         visible_post = visible_post.distinct()
