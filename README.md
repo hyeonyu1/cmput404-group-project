@@ -22,7 +22,13 @@ The following command will load the file created in the above command into your 
 
 # Testcases
 ## Model Class Unittest
-    python3 manage.py test friendship.test_friendship_models
+    python3 manage.py test friendship.tests.TestFriendshipModels
     python3 manage.py test comments.test_comment_models
     python3 manage.py test users.tests.TestAuthorModels
     python3 manage.py test posts.test_posts_models
+    
+    
+# Ajax Documentation
+## Usage of axios
+    post.html, profile.html, home.html, post.html 
+    
