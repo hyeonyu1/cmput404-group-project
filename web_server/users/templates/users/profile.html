@@ -109,7 +109,7 @@
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'/user/profile/' + friend.uid">[[friend.displayName]] [[friend.uid]]</a>
+                <a v-bind:href="'/user/profile/' + friend.uid">[[friend.displayName]] [[friend.host]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
                     @click="app.unfriend(friend.uid, '{{ user.uid }}', index)">Delete</button>
 
@@ -191,9 +191,10 @@
     });
 
     class Friend {
-        constructor(uid, displayName) {
+        constructor(uid, displayName, host) {
             this.uid = uid;
             this.displayName = displayName;
+            this.host = host;
             this.isDeleted = false;
         }
     }
@@ -229,8 +230,8 @@
                         this.is_visitor = false
                     }
                     for (let friend of response.data['friends']) {
-                        let afriend = new Friend(friend.id, friend.displayName);
-                        console.log(afriend)
+                        let afriend = new Friend(friend.id, friend.displayName, friend.host);
+                        console.log(afriend);
                         this.friends.push(afriend);
                     }
                 })
@@ -288,7 +289,7 @@
                     if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
-                        let afriend = new Friend(sender.id, sender.displayName);
+                        let afriend = new Friend(sender.id, sender.displayName, sender.host);
                         this.friends.push(afriend);
                     }
                 }).catch(error => {

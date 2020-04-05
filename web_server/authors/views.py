@@ -7,7 +7,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse, QueryDict, Http404
 from users.models import Author
 from nodes.models import Node
-from friendship.models import Friend
+from friendship.models import Friend, FriendRequest
 from posts.models import Post, Category, VisibleTo
 from comments.models import Comment
 from django.db.models import Q
@@ -17,7 +17,7 @@ from django.template import RequestContext
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
-from friendship.views import FOAF_verification
+from friendship.views import FOAF_verification, sanitize_author_id
 
 import math
 from django.conf import settings
@@ -57,10 +57,24 @@ def retrieve_friends_of_author(authorid):
                 try:
                     foreign_authors = res.json()
                     for foreign_author in foreign_authors:
+                        # strip protocol and trailing slash
                         stripped_foreign_author_id = url_regex.sub(
                             "", foreign_author["id"].rstrip("/"))
+
+                        # remove - from UUID
+                        try:
+                            stripped_foreign_author_id_splits = stripped_foreign_author_id.rsplit(
+                                "/", 1)
+                            stripped_foreign_author_id = stripped_foreign_author_id_splits[0] + \
+                                "/" + \
+                                UUID(stripped_foreign_author_id_splits[1]).hex
+
+                        except:
+                            pass
+
                         if stripped_foreign_author_id not in foreign_author_dict:
                             foreign_author_dict[stripped_foreign_author_id] = foreign_author
+
                 except:
                     continue
 
@@ -177,8 +191,17 @@ def unfriend(request):
         body = request.body.decode('utf-8')
         body = json.loads(body)
         # strip protocol from url
-        author_id = url_regex.sub('', body.get("author_id", ""))
-        friend_id = url_regex.sub('', body.get("friend_id", ""))
+        author_id = body.get("author_id", "")
+        friend_id = body.get("friend_id", "")
+
+        # print("\n\n\n\n\n\n")
+        # print(author_id)
+        # print(friend_id)
+        author_id = sanitize_author_id(author_id)
+        friend_id = sanitize_author_id(friend_id)
+        # print(author_id)
+        # print(friend_id)
+        # print("\n\n\n\n\n\n")
         if not author_id or not friend_id:
             # Unprocessable Entity
             return HttpResponse("post request body missing fields", status=422)
@@ -264,21 +287,50 @@ def retrieve_universal_author_profile(request, author_id):
     # it's foreign author
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
-        url = "http://{}".format(author_id)
+        try:
+            author_id_splits = author_id.rsplit("/", 1)
+            author_uuid = UUID(author_id_splits[1])
+            # first try /author/authorid with UUID dash
+            url = "http://{}/{}".format(author_id_splits[0], str(author_uuid))
+            res = requests.get(url)
+            # print("\n\n\n\n\n\n")
+            # print(author_id)
+            # print(url)
+            # print("inside universla author profile")
+            # print(res.text, res.status_code)
+            # print("\n\n\n\n\n\n")
+            if res.status_code >= 200 and res.status_code < 300:
+                try:
+                    foreign_friend = res.json()
+                    return JsonResponse(foreign_friend, status=200)
+                except:
+                    return HttpResponse("Wrong Format Foreign Server Response", status=404)
+            else:
+                # try /author/authorid without UUID dash
+                url = "http://{}/{}".format(
+                    author_id_splits[0], author_uuid.hex)
+                res = requests.get(url)
+                # print("\n\n\n\n\n\n")
 
-        res = requests.get(url)
-        # print("\n\n\n\n\n\n")
-        # print(author_id)
-        # print(url)
-        # print("inside universla author profile")
-        # print(res.text, res.status_code)
-        # print("\n\n\n\n\n\n")
-        if res.status_code >= 200 or res.status_code < 300:
-            try:
-                foreign_friend = res.json()
-                return JsonResponse(foreign_friend, status=200)
-            except:
-                return HttpResponse("Wrong Format Foreign Server Response", status=404)
+                # print(url)
+                # print("inside universla author profile second try ")
+                # print(res.text, res.status_code)
+                # print("\n\n\n\n\n\n")
+                if res.status_code >= 200 and res.status_code < 300:
+                    try:
+                        foreign_friend = res.json()
+                        return JsonResponse(foreign_friend, status=200)
+                    except:
+                        return HttpResponse("Wrong Format Foreign Server Response", status=404)
+        except:
+            url = "http://{}".format(author_id)
+            res = requests.get(url)
+            if res.status_code >= 200 and res.status_code < 300:
+                try:
+                    foreign_friend = res.json()
+                    return JsonResponse(foreign_friend, status=200)
+                except:
+                    return HttpResponse("Wrong Format Foreign Server Response", status=404)
 
     return HttpResponse("Can't Retrieve Foreign Author's Information", status=404)
 # Ida Hou
@@ -290,7 +342,7 @@ def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
         host = request.get_host()
-        author_id = host + "/author/" + str(author_id)
+        author_id = host + "/author/" + UUID(author_id).hex
 
         # only active authors are retrivable
         author = get_object_or_404(
@@ -396,7 +448,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         new_post.visibility = post['visibility'].upper()   #: "PUBLIC",
 
         #: true
-        new_post.unlisted = True if 'unlisted' in post and (post['unlisted'] == 'true' or post['unlisted'] == 'on') else False
+        new_post.unlisted = True if 'unlisted' in post and (
+            post['unlisted'] == 'true' or post['unlisted'] == 'on') else False
 
         new_post.save()
 
@@ -410,7 +463,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         for uid in uids:
             visible_to = VisibleTo(author_uid=uid, accessed_post=new_post)
             visible_to.save()
-
 
         # Categories is commented out because it's not yet in the post data, uncomment once available
         for category in post['categories'].split('\r\n'):
@@ -693,8 +745,8 @@ def post_edit_and_delete(request, post_id):
     def get_edit_dialog(request):
         # Render the response and send it back!
         return render(request, 'editPost.html', {
-            'post':post,
-            'hostname':settings.HOSTNAME,
+            'post': post,
+            'hostname': settings.HOSTNAME,
             'url_image_path': 'posts',  # The API path for viewing an image
             'url_post_edit_path': 'author/posts'  # The API path for editing an image
         })
@@ -711,7 +763,8 @@ def post_edit_and_delete(request, post_id):
             if hasattr(post, key):
                 if key == 'visibleTo':
                     #  Must create visible to objects to add to the post after it is saved
-                    visible_to_list = [VisibleTo(author_uid=author_uid) for author_uid in vars.getlist(key)]
+                    visible_to_list = [
+                        VisibleTo(author_uid=author_uid) for author_uid in vars.getlist(key)]
                 elif len(vars.getlist(key)) <= 1:  # Simple value or empty
                     try:
                         # Special fields
@@ -1108,11 +1161,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
 @validate_remote_server_authentication()
 def friend_checking_and_retrieval_of_author_id(request, author_id):
+    author_id = sanitize_author_id(author_id)
     if request.method == 'POST':
         # ask a service if anyone in the list is a friend
         # POST to http://service/author/<authorid>/friends
-        author_id = url_regex.sub('', author_id)
-
         body_unicode = str(request.body, 'utf-8')
         body = json.loads(body_unicode)
 
@@ -1126,7 +1178,7 @@ def friend_checking_and_retrieval_of_author_id(request, author_id):
         response_data["authors"] = []
         if Friend.objects.filter(author_id=author_id).exists():
             for potential_friend in potential_friends:
-                potential_friend = url_regex.sub('', potential_friend)
+                potential_friend = sanitize_author_id(potential_friend)
                 if Friend.objects.filter(author_id=author_id).filter(friend_id=potential_friend).exists():
                     response_data["authors"].append(potential_friend)
 
@@ -1162,9 +1214,9 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
         # compose author id from author uid
 
         host = request.get_host()
-        author1_id = host + "/author/" + str(author1_id)
+        author1_id = host + "/author/" + UUID(author1_id).hex
         # decode + strip url protocol
-        author2_id = url_regex.sub('', author2_id)
+        author2_id = sanitize_author_id(author2_id)
 
         # compose response data
         response_data = {}
@@ -1173,11 +1225,26 @@ def check_if_two_authors_are_friends(request, author1_id, author2_id):
         # query friend table for friendship information
         if Friend.objects.filter(author_id=author1_id).filter(friend_id=author2_id).exists():
             response_data["friends"] = True
+            response_data["pending"] = False
         else:
             response_data["friends"] = False
-        # add optional information of current user
+            outgoing_request = FriendRequest.objects.filter(
+                from_id=author1_id).filter(to_id=author2_id).exists()
+            incoming_request = FriendRequest.objects.filter(
+                from_id=author2_id).filter(to_id=author1_id).exists()
 
-        return JsonResponse(response_data)
+            # add optional information of current user
+            # add pending field (not listed in example-article.json ..)
+            # but it's helpful when invalidate friendrequest / friends
+            if outgoing_request or incoming_request:
+                response_data["pending"] = True
+            else:
+                response_data["pending"] = False
+        # print("\n\n\n\n\n")
+        # print("in check friends")
+        # print(response_data)
+        # print("\n\n\n\n\n")
+        return JsonResponse(response_data, status=200)
 
     return HttpResponse("You can only GET the URL", status=405)
 
@@ -1192,6 +1259,7 @@ def post_creation_page(request):
         'post_retrieval_url': settings.HOST_URI + reverse('post', args=['00000000000000000000000000000000']).replace('00000000000000000000000000000000/', '')
     })
 
+
 @login_required
 def get_all_available_authors_ids(request):
     """
@@ -1203,7 +1271,8 @@ def get_all_available_authors_ids(request):
     """
     current_user = request.user
     local_author_ids = [author.uid for author in Author.objects.all()]
-    foreign_friend_ids = [friend.friend_id for friend in Friend.objects.filter(author_id=current_user.uid)]
+    foreign_friend_ids = [friend.friend_id for friend in Friend.objects.filter(
+        author_id=current_user.uid)]
     return JsonResponse({
         'success': True,
         'data': list(set(local_author_ids + foreign_friend_ids))
