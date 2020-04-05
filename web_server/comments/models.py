@@ -76,12 +76,12 @@ class Comment(models.Model):
             print("requests = ", "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
             response = requests.get(
-                "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
+                "https://{}/author/profile/http://{}/".format(settings.HOSTNAME, author_uid)
             )
             print("status code", response.status_code)
             if response.status_code == 200:
                 print("status code is 200")
-                print("TURN response to jsono")
+                print("TURN response to json")
                 print(response.text)
                 author_info = response.json()
 
