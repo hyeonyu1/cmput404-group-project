@@ -197,8 +197,9 @@ def view_post_comment(request, post_path):
         comment_info = loads(body)
         comment_info = comment_info['comment']
 
-        author_uid = "{}/author/{}".format(settings.HOSTNAME, comment_info["author"]["id"].replace("-", ""))
-        author = Author.objects.get(uid=author_uid)
+        # author_uid = "{}/author/{}".format(settings.HOSTNAME, comment_info["author"]["id"].replace("-", ""))
+        print("\n\n\n\n\n in post of view_post_comments\nauthor_uid = ", comment_info["author"]["id"].replace("-", ""))
+        author = Author.objects.get(uid=url_regex.sub("", comment_info["author"]["id"].replace("-", "")))
         output = {
             "query": "addComment",
             "post": "http://"+post_path,
