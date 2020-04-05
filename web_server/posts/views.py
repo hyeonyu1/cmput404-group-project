@@ -224,8 +224,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
     def FOAF_verification_post(auth_user, author):
 
+        print("\n\n\n\n\n\n\nFOAF_verification")
         auth_user = url_regex.sub("", auth_user).rstrip("/")
         author = url_regex.sub("", author).rstrip("/")
+        print("auth_user = ", auth_user)
+        print("author = ", author)
 
         # If the author is a friend of auth user return True
         if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
