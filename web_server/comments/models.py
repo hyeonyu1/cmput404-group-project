@@ -80,8 +80,8 @@ class Comment(models.Model):
                     "id": author_info["id"],
                     "host": author_info["host"],
                     "displayName": author_info["displayName"],
-                    "first_name": author_info["firstName"],
-                    "last_name": author_info["lastName"],
+                    "firstName": author_info["firstName"],
+                    "lastName": author_info["lastName"],
                     "url": author_info["url"],
                     "github": author_info["github"]
                 },
