@@ -211,11 +211,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
-
-            if "/author/" in comment_info[comment_info['author']['id']]:
-                new_comment.author = comment_info['author']['id'].replace("-", "")
-            else:
-                new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-", ""))
+            new_comment.author = comment_info['author']['id'].replace("-", "")
             print(new_comment.author)
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
