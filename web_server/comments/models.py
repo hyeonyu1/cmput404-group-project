@@ -66,7 +66,7 @@ class Comment(models.Model):
             }
         except Author.DoesNotExist:
             response = requests.get(
-                "https://{}/author/profile/http://{}/".format(settings.HOSTNAME, author_uid)
+                "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
             print("got a response")
             if response.status_code == 200:
