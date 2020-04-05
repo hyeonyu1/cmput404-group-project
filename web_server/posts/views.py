@@ -79,12 +79,8 @@ def check_perm(request, api_object_post):
         return FOAF_verification(request, author_id)
 
     elif visibility == Post.SERVERONLY:
-        print("author_id = ", author_id)
-
         req_user_host = url_regex.sub("", request.get_host()).rstrip("/").rstrip("/")
-        print(req_user_host)
         author_host = url_regex.sub("", Author.objects.get(uid=author_id).host).rstrip("/")
-        print(author_host)
         if req_user_host == author_host:
             return True
     elif visibility == Post.PRIVATE:
@@ -193,6 +189,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
+            print("Post exists do checking for perm")
             if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
                 return JsonResponse(
                     {
