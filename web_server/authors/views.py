@@ -342,7 +342,7 @@ def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
         host = request.get_host()
-        author_id = host + "/author/" + str(author_id)
+        author_id = host + "/author/" + UUID(author_id).hex
 
         # only active authors are retrivable
         author = get_object_or_404(
