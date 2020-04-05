@@ -198,7 +198,7 @@ def view_post_comment(request, post_path):
         comment_info = comment_info['comment']
 
         # author_uid = "{}/author/{}".format(settings.HOSTNAME, comment_info["author"]["id"].replace("-", ""))
-        author_uid = url_regex.sub("",comment_info["author"]["id"].replace("-", "")).rstrip("/")
+        author_uid = url_regex.sub("", comment_info["author"]["id"].replace("-", "")).rstrip("/")
         print("POST FOREIGN", author_uid)
         author = Author.objects.get(uid=author_uid)
         output = {
