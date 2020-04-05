@@ -289,8 +289,8 @@ def retrieve_universal_author_profile(request, author_id):
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
-        # host = request.get_host()
-        # author_id = host + "/author/" + str(author_id)
+        host = request.get_host()
+        author_id = host + "/author/" + str(author_id)
 
         # only active authors are retrivable
         author = get_object_or_404(
@@ -375,7 +375,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             new_post.contentType = post['contentType']  # : "text/plain",
             new_post.content = post['content']      #: "stuffs",
 
-        new_post.author = request.user        # the authenticated user
+        new_post.author = request.user         # the authenticated user
 
         # Categories added after new post is saved
 
@@ -648,6 +648,7 @@ def get_comments(post_id):
     comments = Comment.objects.filter(
         parentPost=post_id).order_by("-published")[:5]
     size = comments.count()
+
     for comment in comments:
         comments_list.append(comment.to_api_object())
         # comments_list.append(c)

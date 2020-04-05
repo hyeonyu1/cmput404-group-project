@@ -118,7 +118,7 @@
 <template id="list-comment">
     <div>
         <div>
-            <a v-bind:href="'/user/profile/' + comment.author.url">[[comment.author.displayName]]</a>
+            <a v-bind:href="'/user/profile/' + comment.author.url">[[comment.author.display_name]]</a>
             <small>[[comment.published]]</small>
         </div>
         <vue-markdown v-if="comment.contentType === 'text/markdown'">[[comment.content]]</vue-markdown>
