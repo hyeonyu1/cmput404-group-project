@@ -2,7 +2,7 @@ from django.db import models
 from users.models import Author
 from posts.models import Post
 from nodes.models import Node
-# from authors.views import retrieve_universal_author_profile
+from authors.views import retrieve_universal_author_profile
 import requests
 
 
