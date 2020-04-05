@@ -180,20 +180,34 @@
            return {
                'comments': [],
                'content':'',
-               'contentType':''
+               'contentType':'',
+               'next': 0,
            }
         },
         methods:{
             // Retrieve all comments under the current post.
             get_comments(post_id){
-                let url = 'comments/';
+                if(this.next==undefined) {
+                    alert("No more comments");
+                    return;
+                }
+
+                var url = '';
+                if(this.next===0)
+                    url = 'comments/';
+                else if(this.next!==undefined)
+                    url = this.next;
+                else{
+                    alert("Error");
+                    return;
+                }
                 window.axios.get(url).then((response) =>{
                     for(let item of response.data['comments']){
                         let comment = new Comment(item);
                         comment.published=moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
-
                         this.comments.push(comment);
                     }
+                    this.next=response.data["next"];
                 });
             },
 
@@ -205,8 +219,7 @@
                         'published':new Date(),
                         'author':{
                             'id':'{{user.id}}',
-                            'first_name': '{{user.first_name}}',
-                            'last_name':'{{user.last_name}}',
+                            'display_name': '{{user.display_name}}',
                             'uid': '{{user.id.hex}}'
                         },
                         'contentType':this.contentType,
@@ -223,7 +236,7 @@
                 }).then((response) => {
                     alert(response.data['message']);
                     if( response.data['type']){
-                        comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        comment.published = moment(comment.published.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                         this.comments.push(comment);
                     }
                 })
