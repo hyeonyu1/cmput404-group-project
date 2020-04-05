@@ -68,12 +68,17 @@ def retrieve_single_post_with_id(request, post_id):
         Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
         """
         visibility = api_object_post["visibility"]
-        # Foreign servers can access all posts, unless they are 'SERVERONLY'
-        if request.remote_server_authenticated:
-            if visibility != Post.SERVERONLY:
-                return True
-            else:
-                return False
+        # Foreign servers can access all posts, unless they are 'SERVERONLY',
+        # or if image or post sharing has been turned off
+        if request.remote_server_authenticated and visibility != Post.SERVERONLY:
+            allowed_post_types = []
+            if request.remote_server_authenticated_for_images:
+                allowed_post_types += [Post.TYPE_JPEG, Post.TYPE_PNG]
+            if request.remote_server_authenticated_for_posts:
+                allowed_post_types += [Post.TYPE_BASE64, Post.TYPE_MARKDOWN, Post.TYPE_PLAIN]
+            return api_object_post['contentType'] in allowed_post_types
+        else:
+            return False
 
         user_id = request.user.uid
         author_id = api_object_post["author"]['id']
