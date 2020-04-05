@@ -77,8 +77,11 @@ def check_perm(request, api_object_post):
     elif visibility == Post.FOAF:
         # getting the friends of the author
         return FOAF_verification(request, author_id)
+
     elif visibility == Post.SERVERONLY:
-        if request.user.host == Author.objects.get(id=author_id).host:
+        req_user_host = url_regex.sub("", request.user.host).rstrip("/").rstrip("/")
+        author_host = url_regex.sub("", Author.objects.get(id=author_id).host).rstrip("/")
+        if req_user_host == author_host:
             return True
     elif visibility == Post.PRIVATE:
         if user_id in api_object_post["visibleTo"]:
