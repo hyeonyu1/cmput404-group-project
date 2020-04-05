@@ -77,8 +77,15 @@ def check_perm(request, api_object_post):
     elif visibility == Post.FOAF:
         # getting the friends of the author
         return FOAF_verification(request, author_id)
+
     elif visibility == Post.SERVERONLY:
-        if request.user.host == Author.objects.get(id=author_id).host:
+        print("author_id = ", author_id)
+
+        req_user_host = url_regex.sub("", request.get_host()).rstrip("/").rstrip("/")
+        print(req_user_host)
+        author_host = url_regex.sub("", Author.objects.get(uid=author_id).host).rstrip("/")
+        print(author_host)
+        if req_user_host == author_host:
             return True
     elif visibility == Post.PRIVATE:
         if user_id in api_object_post["visibleTo"]:
@@ -178,6 +185,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
+        print("post_handler")
         output = {
             "query": "addComment",
         }
@@ -191,8 +199,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "query": "addComment",
                         "success": False,
                         "message": "Comment not allowed"
-                    },
-                    status=403
+                    }, status=403
                 )
 
         # change body = request.POST to body = request.body.decode('utf-8'),
@@ -211,45 +218,95 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
-            output['type'] = True
+            output['success'] = True
             output['message'] = "Comment added"
         except Exception as e:
-            output['type'] = False
+            output['success'] = False
             output['message'] = "Comment not allowed"
             output['error'] = str(e)
         finally:
-            return JsonResponse(output)
+            if output["success"]:
+                return JsonResponse(output, status=200)
+            else:
+                return JsonResponse(output, status=403)
+
 
     def FOAF_verification_post(auth_user, author):
-
         auth_user = url_regex.sub("", auth_user).rstrip("/")
         author = url_regex.sub("", author).rstrip("/")
 
-        # If the author is a friend of auth user return True
-        if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
+        own_node = request.get_host()
+        if auth_user == author:
             return True
 
-        else:
-            author_friends = Friend.objects.filter(author_id=author)
-            author_friends_list = []
-            for friends in author_friends:
-                author_friends_list.append(friends.friend_id)
-            node = Node.objects.get(foreign_server_hostname=auth_user.split("/author")[0])
-            username = node.username_registered_on_foreign_server
-            password = node.password_registered_on_foreign_server
-            api = node.foreign_server_api_location
-            if node.append_slash:
-                api = api + "/"
-            response = requests.get(
-                "http://{}/author/{}/friends".format(api, auth_user),
-                auth=(username, password)
-            )
-            if response.status_code == 200:
-                friends_list = response.json()
-                for user in friends_list["authors"]:
-                    print(user)
-                    if user in author_friends_list:
-                        return True
+        nodes = [own_node]
+        for node in Node.objects.all():
+            nodes.append(node.foreign_server_hostname)
+
+        for node in nodes:
+            # If the author is a friend of auth user return True
+            if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
+                return True
+
+            # not friends so check for FOAF
+            else:
+                # if the author is on the same host as auth user
+                if node == own_node:
+                    author_friends = Friend.objects.filter(author_id=author)
+                    for friend in author_friends:
+                        # getting the node of the friend
+                        friend_node = friend.friend_id.split("/author/")[0]
+                        # if friend of the author is on the same host as the auth user
+                        # A -> A -> A
+                        if friend_node == own_node:
+                            # E.g Test <-> Lara <-> Bob
+                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
+                                return True
+                            else:
+                                return False
+
+                        # Since the friend is not on the same host as the auth user make a request to get friends from the other node
+                        # A -> A -> B
+                        else:
+                            username = Node.objects.get(
+                                foreign_server_hostname=friend_node).username_registered_on_foreign_server
+                            password = Node.objects.get(
+                                foreign_server_hostname=friend_node).password_registered_on_foreign_server
+                            api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
+                            if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
+                                api = api + "/"
+                            response = requests.get(
+                                "http://{}/author/{}/friends/".format(api, "{}/author/{}".format(api, author)),
+                                auth=(username, password)
+                            )
+                            if response.status_code == 200:
+                                friends_list = response.json()
+                                for user in friends_list["authors"]:
+                                    if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                        return True
+                                    else:
+                                        return False
+
+                # author's host is different from auth user
+                else:
+                    username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
+                    password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
+                    api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                    if Node.objects.get(foreign_server_hostname=node).append_slash:
+                        api = api + "/"
+                    response = requests.get(
+                        "http://{}/author/{}/friends/".format(api, author),
+                        auth=(username, password)
+                    )
+                    if response.status_code == 200:
+                        friends_list = response.json()
+                        for user in friends_list["authors"]:
+                            # E.g Test <-> Lara <-> User
+                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                return True
+                            else:
+                                return False
+
         return False
 
     def check_perm_foreign_user(user_id, api_object_post):
@@ -303,8 +360,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "query": "addComment",
                         "success": False,
                         "message": "Comment not allowed"
-                    },
-                    status=403
+                    }, status=403
                 )
         try:
             new_comment = Comment()
@@ -314,14 +370,17 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
-            output['type'] = True
+            output['success'] = True
             output['message'] = "Comment added"
         except Exception as e:
-            output['type'] = False
+            output['success'] = False
             output['message'] = "Comment not allowed"
             output['error'] = str(e)
         finally:
-            return JsonResponse(output)
+            if output["success"]:
+                return JsonResponse(output, status=200)
+            else:
+                return JsonResponse(output, status=403)
 
     def api_response(request, comments, pager, pagination_uris):
         size = min(int(request.GET.get('size', 10)), 50)
