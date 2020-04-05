@@ -80,12 +80,11 @@ class Comment(models.Model):
             )
             print("status code", response.status_code)
             if response.status_code == 200:
-                body = json.loads(response)
-                print(response)
-                print(body)
-
+                print("status code is 200")
                 print("TURN response to jsono")
+                print(response.text)
                 author_info = response.json()
+
             print("AUTHOR_INFO = ",  author_info)
             return {
                 "author": {
