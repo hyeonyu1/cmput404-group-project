@@ -264,7 +264,6 @@ def retrieve_universal_author_profile(request, author_id):
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
         url = "http://{}".format(author_id)
-        print(url)
         res = requests.get(url, auth=(node.username_registered_on_foreign_server,
                                       node.password_registered_on_foreign_server),)
         print("\n\n\n\n\n\n")
@@ -290,7 +289,7 @@ def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
         # compose full url of author
         host = request.get_host()
-        author_id = host + "/author/" + str(author_id)
+        # author_id = host + "/author/" + str(author_id)
 
         # only active authors are retrivable
         author = get_object_or_404(
