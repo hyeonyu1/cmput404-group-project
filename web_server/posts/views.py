@@ -79,8 +79,11 @@ def check_perm(request, api_object_post):
         return FOAF_verification(request, author_id)
 
     elif visibility == Post.SERVERONLY:
-        req_user_host = url_regex.sub("", request.user.host).rstrip("/").rstrip("/")
+        print("author_id = ", author_id)
+
+        req_user_host = url_regex.sub("", request.get_host()).rstrip("/").rstrip("/")
         author_host = url_regex.sub("", Author.objects.get(id=author_id).host).rstrip("/")
+        print(req_user_host, author_host)
         if req_user_host == author_host:
             return True
     elif visibility == Post.PRIVATE:
