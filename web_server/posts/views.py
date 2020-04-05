@@ -82,8 +82,9 @@ def check_perm(request, api_object_post):
         print("author_id = ", author_id)
 
         req_user_host = url_regex.sub("", request.get_host()).rstrip("/").rstrip("/")
-        author_host = url_regex.sub("", Author.objects.get(id=author_id).host).rstrip("/")
-        print(req_user_host, author_host)
+        print(req_user_host)
+        author_host = url_regex.sub("", Author.objects.get(uid=author_id).host).rstrip("/")
+        print(author_host)
         if req_user_host == author_host:
             return True
     elif visibility == Post.PRIVATE:
