@@ -15,6 +15,7 @@ from django.core import serializers
 from django.contrib.auth.models import AnonymousUser
 
 import re
+import json
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
@@ -74,7 +75,7 @@ def retrieve_single_post_with_id(request, post_id):
     :param request: should specify Accepted content-type
     :returns: application/json | text/html | image/jpg | image/png
     """
-    def check_perm(request, api_object_post):
+    def check_get_perm(request, api_object_post):
         """
         Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
         """
@@ -111,19 +112,19 @@ def retrieve_single_post_with_id(request, post_id):
         else:
             return False
 
-    def json_handler(request, posts, pager, pagination_uris):
+    def get_json(request, posts, pager, pagination_uris):
         output = {
             "query": "post",
             "count": 1,
             "size": 1,
-            "posts": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
+            "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
         }
         return JsonResponse(output)
 
-    def html_handler(request, posts, pager, pagination_uris):
+    def get_html_or_image(request, posts, pager, pagination_uris):
         post = Post.objects.get(id=post_id)
         if post.contentType == post.TYPE_PNG or post.contentType == post.TYPE_JPEG:
-            if not check_perm(request, post.to_api_object()):
+            if not check_get_perm(request, post.to_api_object()):
                 # The user does not have permission to access this post, they must be served the 401 image
                 with open(finders.find('401-image.png'), 'rb') as f:
                     return HttpResponse(f.read(), content_type='image/png', status=401)
@@ -132,16 +133,114 @@ def retrieve_single_post_with_id(request, post_id):
             response['Content-Type'] = post.contentType
             return response
 
-        if not check_perm(request, post.to_api_object()):
+        if not check_get_perm(request, post.to_api_object()):
             return HttpResponse("You do not have permission to see this post", status=401)
         return render(request, 'posts/post.html', {'post': post})
 
+    def insert_or_update_post(request):
+        """
+        Inserts or updates a post with the given post id. Whether or not we reject the request if the post already
+        exists depends on the request method: PUT updates, POST rejects
+        """
+        # First we find out if the post exists
+        try:
+            post = Post.objects.get(id=post_id)
+        except Post.DoesNotExist as e:
+            post = None
+
+        if post is not None and request.method == 'POST':
+            return HttpResponse(f"Post ID '{post_id}' already exists, and cannot be updated by POST, try PUT instead.",
+                                status=400)
+
+        # Create the post if it does not exist
+        if post is None:
+            post = Post(id=post_id)
+
+        # Insert all the provided fields
+
+        # There might be a lot of different keys passed, and some keys might not get passed and are entirely optional.
+        # Thus we need to carefully consider each key and see if we can set that value for the post
+
+        visible_to_list = None
+        post_author = None
+        post_comments = None
+        vars = json.loads(request.body)
+        for key in vars:
+            # Ignore passed in values that can't be stored on posts
+            if not hasattr(post, key) and key not in ['author']:
+                continue
+
+            if key == 'id':
+                # We ignore a passed in id, since the id was already specified in the url
+                continue
+            elif key == 'visibleTo':
+                #  visibleTo is a Many to One relationship, we need to create the objects that will be bound to the post
+                visible_to_list = [
+                    VisibleTo(author_uid=re.sub(r'http(s)?://', '', author_uid))
+                    for author_uid in vars.get(key)
+                ]
+            elif key == 'categories':
+                post.categories.clear()
+                # Look up the categories or create them if they are new
+                for category in vars['categories']:
+                    c, created = Category.objects.get_or_create(
+                        name=category)
+                    post.categories.add(c)
+            elif key == 'unlisted':
+                if vars.get(key) == 'true':
+                    setattr(post, key, True)
+                elif vars.get(key) == 'false':
+                    setattr(post, key, False)
+            elif key == 'comments':
+                # We store the comments to add to the post once it is saved to the database
+                # @todo merge with Hyeon's code that supports foreign comment authors
+                post_comments = vars['comments']
+            elif key == 'author':
+                # It is unclear whether the spec expects a full user object, or just an author id url
+                # We need to prepare for both
+                if type(vars['author']) == dict:
+                    author_uid = re.sub(r'http(s)?://', '', vars['author']['id'])
+                else:
+                    author_uid = re.sub(r'http(s)?://', '', vars['author'])
+
+                # Our system does not store foreign data. We must validate that the author is not foreign:
+                try:
+                    post_author = Author.objects.get(uid=author_uid)
+                except Author.DoesNotExist as e:
+                    return HttpResponse("We do not support attaching posts to Authors not signed up on the local server"
+                                        f". Please send your post to the server the foreign author '{author_uid}' "
+                                        "belongs to.",
+                                        status=400)
+
+                # You need permission to attach a post to an author. Servers are root, and logged in users can only
+                # attach posts to themselves
+                if not request.remote_server_authenticated and post_author != request.user:
+                    return HttpResponse("You do are not authorized to attach a post to an author other than yourself",
+                                        status=400)
+
+                post.author = post_author
+            else:
+                # All other fields
+                setattr(post, key, vars.get(key))
+        post.size = 0
+        post.save()
+
+        # Set the visibleTo if it was passed, start by removing all the visibleTo that currently exist
+        if visible_to_list is not None:
+            post.visibleTo.all().delete()
+            for vt in visible_to_list:
+                vt.accessed_post = post
+                vt.save()
+
+        return JsonResponse({"success": "Post updated"})
+
+
     # Get a single post
     return Endpoint(request, Post.objects.filter(id=post_id), [
-        PagingHandler("GET", "text/html", html_handler),
-        PagingHandler("GET", "application/json", json_handler),
-        PagingHandler("PUT", "*/*", json_handler),
-        PagingHandler("POST", "*/*", json_handler),
+        PagingHandler("GET", "text/html", get_html_or_image),
+        PagingHandler("GET", "application/json", get_json),
+        Handler("PUT", "*/*", insert_or_update_post),
+        Handler("POST", "*/*", insert_or_update_post),
 
     ]).resolve()
 
