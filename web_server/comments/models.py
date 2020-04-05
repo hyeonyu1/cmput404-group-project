@@ -76,6 +76,7 @@ class Comment(models.Model):
             )
             print(response.status_code)
             if response.status_code == 200:
+                print(response)
                 author_info = response.json()
             print(author_info)
             return {
