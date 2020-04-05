@@ -72,13 +72,15 @@ class Comment(models.Model):
             #     api = api + "/"
             print(settings.HOSTNAME)
             print("requests = ","http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
-            ) 
+            )
             response = requests.get(
                 "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
             print(response.status_code)
             if response.status_code == 200:
                 print(response)
+                print(response.body)
+                print(response.json())
                 author_info = response.json()
             print("AUTHOR_INFO = ",  author_info)
             return {
