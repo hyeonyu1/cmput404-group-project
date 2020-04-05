@@ -70,8 +70,9 @@ class Comment(models.Model):
             # api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
             # if Node.objects.get(foreign_server_hostname=node).append_slash:
             #     api = api + "/"
+            print(settings.HOSTNAME)
             response = requests.get(
-                "http://{}/author/{}/".format(settings.HOSTNAME, author_uid)
+                "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
             print(response.status_code)
             if response.status_code == 200:
