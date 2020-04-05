@@ -306,9 +306,6 @@ def invalidate_friend_requests(author_id):
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
                 if res.status_code >= 200 and res.status_code < 300:
                     res = res.json()
-                    # print("\n\n\n\n\n")
-                    # print(res)
-                    # print("\n\n\n\n\n")
                     # if they are friends
                     if res["friends"]:
                         if FriendRequest.objects.filter(from_id=author_id).filter(to_id=request.to_id).exists():
