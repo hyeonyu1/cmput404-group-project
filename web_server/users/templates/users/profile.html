@@ -426,6 +426,8 @@
                         if (source_host.slice(0, 7) === 'http://') { source_host = source_host.slice(7) }
                         source_host = source_host.split('/')[0];
                         post['source_host'] = source_host;
+                        const date = new Date(post.published);
+                        post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                         this.myposts.push(post);
                     }
 
