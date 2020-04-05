@@ -210,7 +210,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
-            output['type'] = True
+            output['success'] = True
             output['message'] = "Comment added"
         except Exception as e:
             output['success'] = False
