@@ -103,7 +103,8 @@ class Post(models.Model):
         visible_to_list = []
         for visible in visible_to:
             visible_to_list.append("http://"+visible.uid)
-
+        print(self.author.to_api_object())
+        print([comment.to_api_object() for comment in self.comment_set.all().order_by("-published")[:5]])
         return {
             "title": self.title,
             "source": self.source,
