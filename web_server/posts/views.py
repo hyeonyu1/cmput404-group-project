@@ -181,6 +181,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
+        print("post_handler")
         output = {
             "query": "addComment",
         }
@@ -225,39 +226,10 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             else:
                 return JsonResponse(output, status=403)
 
-    def FOAF_verification_post(auth_user, author):
 
-        print("\n\n\n\n\n\n\nFOAF_verification")
+    def FOAF_verification_post(auth_user, author):
         auth_user = url_regex.sub("", auth_user).rstrip("/")
         author = url_regex.sub("", author).rstrip("/")
-        print("auth_user = ", auth_user)
-        print("author = ", author)
-
-        # # If the author is a friend of auth user return True
-        # if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
-        #     return True
-        #
-        # else:
-        #     author_friends = Friend.objects.filter(author_id=author)
-        #     author_friends_list = []
-        #     for friends in author_friends:
-        #         author_friends_list.append(friends.friend_id)
-        #     node = Node.objects.get(foreign_server_hostname=auth_user.split("/author")[0])
-        #     username = node.username_registered_on_foreign_server
-        #     password = node.password_registered_on_foreign_server
-        #     api = node.foreign_server_api_location
-        #     if node.append_slash:
-        #         api = api + "/"
-        #     response = requests.get(
-        #         "http://{}/author/{}/friends".format(api, auth_user),
-        #         auth=(username, password)
-        #     )
-        #     if response.status_code == 200:
-        #         friends_list = response.json()
-        #         for user in friends_list["authors"]:
-        #             if user in author_friends_list:
-        #                 return True
-        # return False
 
         own_node = request.get_host()
         if auth_user == author:
