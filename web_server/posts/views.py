@@ -302,8 +302,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         "query": "addComment",
                         "success": False,
                         "message": "Comment not allowed"
-                    },
-                    status=403
+                    }
                 )
         try:
             new_comment = Comment()
