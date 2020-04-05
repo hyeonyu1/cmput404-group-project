@@ -65,27 +65,12 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
-            print("FOREIGN AUTHOR")
-            # node = author_uid.split("/author/")[0]
-            # username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-            # password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-            # api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
-            # if Node.objects.get(foreign_server_hostname=node).append_slash:
-            #     api = api + "/"
-            print(settings.HOSTNAME)
-            print("requests = ", "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
-            )
             response = requests.get(
                 "https://{}/author/profile/http://{}/".format(settings.HOSTNAME, author_uid)
             )
-            print("status code", response.status_code)
             if response.status_code == 200:
-                print("status code is 200")
-                print("TURN response to json")
-                print(response.text)
                 author_info = response.json()
 
-            print("AUTHOR_INFO = ",  author_info)
             return {
                 "author": {
                     "id": author_info["id"],
