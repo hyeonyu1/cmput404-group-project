@@ -71,6 +71,8 @@ class Comment(models.Model):
             # if Node.objects.get(foreign_server_hostname=node).append_slash:
             #     api = api + "/"
             print(settings.HOSTNAME)
+            print("requests = ","http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
+            ) 
             response = requests.get(
                 "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
@@ -78,7 +80,7 @@ class Comment(models.Model):
             if response.status_code == 200:
                 print(response)
                 author_info = response.json()
-            print(author_info)
+            print("AUTHOR_INFO = ",  author_info)
             return {
                 "author": {
                     "id": author_info["id"],
