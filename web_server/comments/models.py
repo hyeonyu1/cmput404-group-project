@@ -3,6 +3,8 @@ from users.models import Author
 from posts.models import Post
 from nodes.models import Node
 import requests
+import json
+
 
 
 from django.conf import settings
@@ -71,16 +73,18 @@ class Comment(models.Model):
             # if Node.objects.get(foreign_server_hostname=node).append_slash:
             #     api = api + "/"
             print(settings.HOSTNAME)
-            print("requests = ","http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
+            print("requests = ", "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
             response = requests.get(
                 "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
-            print(response.status_code)
+            print("status code", response.status_code)
             if response.status_code == 200:
+                body = json.loads(response)
                 print(response)
-                print(response.body)
-                print(response.json())
+                print(body)
+
+                print("TURN response to jsono")
                 author_info = response.json()
             print("AUTHOR_INFO = ",  author_info)
             return {
