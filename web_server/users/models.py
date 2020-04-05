@@ -64,13 +64,14 @@ class Author(AbstractUser):
         """
 
         """
+
         return {
-                "id": self.uid,
-                "host": self.host,
+                "id": "http://" + self.uid,
+                "host": "http://" + self.host,
                 "displayName": self.display_name,
                 "first_name": self.first_name,
                 "last_name": self.last_name,
-                "url": self.uid,
+                "url": "http://" + self.uid,
                 "github": self.github
             }
 

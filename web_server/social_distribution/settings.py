@@ -14,7 +14,9 @@ import os
 import django_heroku
 
 HOST_PREFERRED_PROTOCOL = "https" if os.getenv("MANDALA_HOST_PREFERRED_PROTOCOL") is None else os.getenv("MANDALA_HOST_PREFERRED_PROTOCOL")
-HOSTNAME = "cmput404-group-project-mandala.herokuapp.com" if os.getenv("MANDALA_HOSTNAME") is None else os.getenv("MANDALA_HOSTNAME")
+# HOSTNAME = "cmput404-group-project-mandala.herokuapp.com" if os.getenv("MANDALA_HOSTNAME") is None else os.getenv("MANDALA_HOSTNAME")
+HOSTNAME = "127.0.0.1:8000"
+
 HOST_URI = f"{HOST_PREFERRED_PROTOCOL}://{HOSTNAME}"
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -151,11 +151,9 @@ def view_post_comment(request, post_path):
     The first part of the path should be a hostname, and the last part should be the post id
     If no hostname is provided (no path, only a uuid), then the local server is assumed
     """
-    print("\n\n\n\n\n\n\nview_post_comment\n", post_path)
     path = post_path.split('/')
     host = path[0]
     post_id = path[-1]
-    print("post_id = ", post_id)
     # Assume local server if only uuid provided
     if len(path) == 1:
         return redirect('post', args=[path[0]])
@@ -173,7 +171,7 @@ def view_post_comment(request, post_path):
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
     if request.method == "GET":
-        req = node.make_api_get_request(f'posts/{post_id}/comments')
+        req = node.make_api_get_request(f'posts/{post_id}/comments/')
         comments_list = []
         for comment in req.json()["comments"]:
             content = {
@@ -198,12 +196,9 @@ def view_post_comment(request, post_path):
         body = request.body.decode('utf-8')
         comment_info = loads(body)
         comment_info = comment_info['comment']
-        print("\n\n\n\n\nPOST", comment_info)
 
-        print(comment_info["author"]["id"])
         author_uid = "{}/author/{}".format(settings.HOSTNAME, comment_info["author"]["id"].replace("-", ""))
         author = Author.objects.get(uid=author_uid)
-        print(author.to_api_object())
         output = {
             "query": "addComment",
             "post": "http://"+post_path,
@@ -215,7 +210,6 @@ def view_post_comment(request, post_path):
                 "id": str(uuid4())
             }
         }
-        print(output)
 
         try:
             node = Node.objects.get(foreign_server_hostname=host)
@@ -225,29 +219,13 @@ def view_post_comment(request, post_path):
         api = node.foreign_server_api_location
         if node.append_slash:
             api = api + "/"
-        print("http://{}/posts/{}/comments/".format(api, post_id))
         response = requests.post(
             "http://{}/posts/{}/comments/".format(api, post_id),
             auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
             json=output
         )
 
-        print("http://{}/posts/{}/comments".format(api, post_id))
-
         return HttpResponse(response.text, status=response.status_code)
-
-        # return JsonResponse(req.json())
-    # else:
-    #     req = node.make_api_get_request(f'posts/{post_id}')
-    #     try:
-    #         return render(request, 'posts/foreign_post.html', {
-    #             'post': req.json()['posts'][0]
-    #         })
-    #     except:
-    #         return HttpResponse(
-    #             "The foreign server returned a response, but it was not compliant with the specification. "
-    #             "We are unable to show the post at this time", status=500)
-
 
 
 @login_required

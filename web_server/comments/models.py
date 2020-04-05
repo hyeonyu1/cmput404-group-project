@@ -7,6 +7,9 @@ import requests
 
 from django.conf import settings
 
+import re
+# used for stripping url protocol
+url_regex = re.compile(r"(http(s?))?://")
 
 from uuid import uuid4
 
@@ -48,8 +51,9 @@ class Comment(models.Model):
         """
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
+        author_uid = url_regex.sub("", str(self.author)).rstrip("/")
         try:
-            author = Author.objects.get(uid=self.author)
+            author = Author.objects.get(uid=author_uid)
             return {
                 "author": author.to_api_object(),
                 "comment": self.content,
@@ -58,15 +62,14 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
-            # print("\n\n\n\n\n\n\n\nforeign author=", self.author)
-            node = self.author.split("/author/")[0]
+            node = author_uid.split("/author/")[0]
             username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
             password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
             api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
             if Node.objects.get(foreign_server_hostname=node).append_slash:
                 api = api + "/"
             response = requests.get(
-                "http://{}/author/{}".format(api, self.author),
+                "http://{}/author/{}/".format(api, author_uid),
                 auth=(username, password)
             )
             if response.status_code == 200:

@@ -60,6 +60,7 @@ def check_perm(request, api_object_post):
     Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
     """
     visibility = api_object_post["visibility"]
+    print("visbility = ", visibility)
     # Foreign servers can access all posts, unless they are 'SERVERONLY'
     if request.remote_server_authenticated:
         if visibility != Post.SERVERONLY:
@@ -67,7 +68,7 @@ def check_perm(request, api_object_post):
         else:
             return False
 
-    user_id = request.user.uid
+    user_id = url_regex.sub("", request.user.uid).rstrip("/")
     author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
 
     if user_id == author_id or visibility == Post.PUBLIC:
@@ -124,7 +125,6 @@ def retrieve_single_post_with_id(request, post_id):
             response = HttpResponse(base64.b64decode(post.content), status=200)
             response['Content-Type'] = post.contentType
             return response
-
         if not check_perm(request, post.to_api_object()):
             return HttpResponse("You do not have permission to see this post", status=401)
         return render(request, 'posts/post.html', {'post': post})
