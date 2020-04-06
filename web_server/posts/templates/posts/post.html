@@ -7,117 +7,120 @@
 <script src="{% static 'js/vue-markdown.js' %}"></script>
 
 <div id="app" class="container-fluid">
-     <div class="row">
-         <div class="col-sm-2"></div>
+    <div class="row">
+        <div class="col-sm-2"></div>
 
-         <div class="col-sm-8 mt-5">
-             <div class="form-inline">
-                 <div class="d-flex w-100 justify-content-between">
+        <div class="col-sm-8 mt-5">
+            <div class="form-inline">
+                <div class="d-flex w-100 justify-content-between">
 
-                 	{% if post.contentType == "text/plain" %}
-                        <h2>{{post.title}}</h2>
+                    {% if post.contentType == "text/plain" %}
+                    <h2>{{post.title}}</h2>
                     {% else %}
-                        <h2>{{post.title|show_markdown|safe}}</h2>
+                    <h2>{{post.title|show_markdown|safe}}</h2>
                     {% endif %}
 
-                     {% if post.author.id == user.id %}
-                         <!-- direct to edit page which is as same as create page-->
-                         <div class="btn-group">
-                             <button type="button" class="btn btn-light dropdown-toggle dropdown-toggle-split"
-                                     data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                 <span class="sr-only">Toggle Dropdown</span>
-                             </button>
-                             <div class="dropdown-menu">
-                                 <a class="dropdown-item" href="{% url 'edit_or_delete_post' post.id %}">Edit</a>
-                                 <!--
+                    {% if post.author.id == user.id %}
+                    <!-- direct to edit page which is as same as create page-->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-light dropdown-toggle dropdown-toggle-split"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'edit_or_delete_post' post.id %}">Edit</a>
+                            <!--
                                  Deleting a post doesn't require a page at this time. So instead we use javascript to call
                                  the delete endpoint and the we redirect to the home page
                                  -->
-                                 <a class="dropdown-item" onclick="delete_post()">Delete</a>
-                             </div>
-                         </div>
-                     {% endif %}
-                 </div>
-             </div>
+                            <a class="dropdown-item" onclick="delete_post()">Delete</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
 
             <div class="form-inline">
-            	{% if post.contentType == "text/plain" %}
-                	<h3>{{post.description}}</h3>
+                {% if post.contentType == "text/plain" %}
+                <h3>{{post.description}}</h3>
                 {% else %}
-                	<h3>{{post.description|show_markdown|safe}}</h3>
+                <h3>{{post.description|show_markdown|safe}}</h3>
                 {% endif %}
             </div>
 
-             <div class="form-inline">
-                 <i class="far fa-clock mr-2"></i>
-                 <p class="mt-3 mr-2">Post by</p>
-                 <a class="mr-2" href="{% url 'profile' post.author.uid %}">
-                      {{post.author}}
-                 </a>
-                 <small>{{post.published}}</small>
+            <div class="form-inline">
+                <i class="far fa-clock mr-2"></i>
+                <p class="mt-3 mr-2">Post by</p>
+                <a class="mr-2" href="{% url 'profile' post.author.uid %}">
+                    {{post.author}}
+                </a>
+                <small>{{post.published}}</small>
 
-             </div>
+            </div>
 
-             <!-- These are labels for posts-->
-             <div>
-                 {% for category in post.categories.all %}
-                     <span class="badge badge-success">{{category}}</span>
-                 {% endfor %}
-                 <span class="badge badge-info">{{post.visibility}}</span>
-                 {% if post.contentType == "text/plain" %}
-                        <span class="badge badge-secondary">Plaintext</span>
-                 {% else %}
-                        <span class="badge badge-secondary">Markdown</span>
-                 {% endif %}
+            <!-- These are labels for posts-->
+            <div>
 
-             </div>
+                {% for category in post.categories.all %}
+                <span class="badge badge-success">{{category}}</span>
+                {% endfor %}
 
-             <br>
+                <span class="badge badge-info">{{post.visibility}}</span>
 
-             <div>
                 {% if post.contentType == "text/plain" %}
-                    <p>{{post.content}}</p>
-                {% else %}
-                    <p>{{post.content|show_markdown|safe}}</p>
+                    <span class="badge badge-secondary">Plaintext</span>
+                {% elif post.contentType == "text/markdown" %}
+                    <span class="badge badge-secondary">Markdown</span>
+                {% elif post.contentType == "image/jpeg;base64" %}
+                    <span class="badge badge-secondary">JPEG</span>
+                {% elif post.contentType == "image/png;base64" %}
+                    <span class="badge badge-secondary">PNG</span>
                 {% endif %}
-             </div>
 
-             <hr>
+            </div>
 
-             <!-- This part is used to allow users leave comments and choose types(markdown/plaintext).-->
-             <div class="form-group">
-                 <div class="d-flex w-100 justify-content-between">
-                     <h4>Leave a Comment:</h4>
-                     <div class="row">
+            <br>
+
+            <div>
+                {% if post.contentType == "text/plain" %}
+                <p>{{post.content}}</p>
+                {% else %}
+                <p>{{post.content|show_markdown|safe}}</p>
+                {% endif %}
+            </div>
+
+            <hr>
+
+            <!-- This part is used to allow users leave comments and choose types(markdown/plaintext).-->
+            <div class="form-group">
+                <div class="d-flex w-100 justify-content-between">
+                    <h4>Leave a Comment:</h4>
+                    <div class="row">
                         <div class="col-md-15 mr-3">
                             <select class="browser-default custom-select">
                                 <option @click="app.set_contentType('text/plain')">Plaintext</option>
                                 <option @click="app.set_contentType('text/markdown')">Markdown</option>
                             </select>
                         </div>
-                     </div>
-                 </div>
-                 <div class="form-group">
-                     <textarea class="form-control" rows="3" required v-model="content"></textarea>
-                 </div>
-                 <button type="submit"  @click="app.add_comments('{{ post.id }}')" class="btn btn-light">Submit</button>
-             </div>
-
-             <!-- This part is used to show all comments under this post.-->
-             <p>Comments:</p>
-             <div class="row">
-                 <div class="col-sm-10" >
-                     <comment-list
-                     v-for="comment in comments"
-                     v-bind:comment="comment"
-                     :contentType="contentType"
-                     >
-                     </comment-list>
+                    </div>
                 </div>
-             </div>
-         </div>
-         <div class="col-sm-2">
-         </div>
+                <div class="form-group">
+                    <textarea class="form-control" rows="3" required v-model="content"></textarea>
+                </div>
+                <button type="submit" @click="app.add_comments('{{ post.id }}')" class="btn btn-light">Submit</button>
+            </div>
+
+            <!-- This part is used to show all comments under this post.-->
+            <p>Comments:</p>
+            <div class="row">
+                <div class="col-sm-10">
+                    <comment-list v-for="comment in comments" v-bind:comment="comment" :contentType="contentType">
+                    </comment-list>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-2">
+        </div>
     </div>
 </div>
 
@@ -145,23 +148,23 @@
                 post_id: "{{ post.id }}"
             })
         })
-        .then(response=>{
-            if (response.status == 200){
-                window.location.href = "{% url 'home' %}"
-            } else {
-                alert("Unable to delete post")
-            }
-        })
+            .then(response => {
+                if (response.status == 200) {
+                    window.location.href = "{% url 'home' %}"
+                } else {
+                    alert("Unable to delete post")
+                }
+            })
     };
 
     Vue.component('comment-list', {
         delimiters: ['[[', ']]'],
-        props: ['comment','contentType' ],
+        props: ['comment', 'contentType'],
         template: '#list-comment'
     });
 
-    class Comment{
-        constructor(comment){
+    class Comment {
+        constructor(comment) {
             this.contentType = comment['contentType'];
             this.content = comment['content'];
             this.published = comment['published'];
@@ -177,57 +180,57 @@
         el: '#app',
         delimiters: ['[[', ']]'],
         data() {
-           return {
-               'comments': [],
-               'content':'',
-               'contentType':'',
-               'next': 0,
-           }
+            return {
+                'comments': [],
+                'content': '',
+                'contentType': '',
+                'next': 0,
+            }
         },
-        methods:{
+        methods: {
             // Retrieve all comments under the current post.
-            get_comments(post_id){
-                if(this.next==undefined) {
+            get_comments(post_id) {
+                if (this.next == undefined) {
                     alert("No more comments");
                     return;
                 }
 
                 var url = '';
-                if(this.next===0)
+                if (this.next === 0)
                     url = 'comments/';
-                else if(this.next!==undefined)
+                else if (this.next !== undefined)
                     url = this.next;
-                else{
+                else {
                     alert("Error");
                     return;
                 }
-                window.axios.get(url).then((response) =>{
-                    for(let item of response.data['comments']){
+                window.axios.get(url).then((response) => {
+                    for (let item of response.data['comments']) {
                         let comment = new Comment(item);
-                        comment.published=moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
                         this.comments.push(comment);
                     }
-                    this.next=response.data["next"];
+                    this.next = response.data["next"];
                 });
             },
 
-            add_comments(post_id){
+            add_comments(post_id) {
                 //Add comments, if status code is 200, push this comment into comments(list)
                 let url = 'comments/';
                 let comment = new Comment({
-                        'content':this.content,
-                        'published':new Date(),
-                        'author':{
-                            'id':'{{user.uid}}',
-                            'display_name': '{{user.displayName}}',
-                            'uid': '{{user.id.hex}}'
-                        },
-                        'contentType':this.contentType,
-                        'commentId': undefined
-                    });
+                    'content': this.content,
+                    'published': new Date(),
+                    'author': {
+                        'id': '{{user.uid}}',
+                        'display_name': '{{user.displayName}}',
+                        'uid': '{{user.id.hex}}'
+                    },
+                    'contentType': this.contentType,
+                    'commentId': undefined
+                });
 
-                window.axios.post(url,{
-                    'comment':{
+                window.axios.post(url, {
+                    'comment': {
                         'comment': comment.content,
                         'published': comment.published,
                         'author': { "id": comment.author.id },
@@ -235,7 +238,7 @@
                     }
                 }).then((response) => {
                     alert(response.data['message']);
-                    if( response.data['success']){
+                    if (response.data['success']) {
                         comment.published = moment(comment.published.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                         this.comments.push(comment);
                     }
@@ -243,22 +246,22 @@
             },
 
             //Set comments types: markdown/plaintext
-            set_contentType(type){
-                this.contentType=type;
+            set_contentType(type) {
+                this.contentType = type;
             }
         },
-         created() {
+        created() {
             this.get_comments("{{ post.id }}")
-         }
+        }
 
     });
 
     //gets the image in the div and sends to the proxy image api
     var image = document.getElementById('app').querySelector('img');
-    if(image != undefined){
+    if (image != undefined) {
         $.ajax({
-            url: "/posts/proxy_image/"+image.src.split("//")[1],
-            success: function(response){
+            url: "/posts/proxy_image/" + image.src.split("//")[1],
+            success: function (response) {
                 image.src = response;
             }
         })

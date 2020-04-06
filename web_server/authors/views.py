@@ -99,16 +99,16 @@ def retrieve_friends_of_author(authorid):
 
 
 """
-NO AUTHENTICATION REQUIRED  
+NO AUTHENTICATION REQUIRED
 endpoint: http://service/author
 
-allowed methods: 
+allowed methods:
 GET: return full information of all LOCAL authors
 
 response:
-405: method not allowed 
+405: method not allowed
 200: success
-    
+
 """
 
 
@@ -132,17 +132,17 @@ def return_all_authors_registered_on_local_server(request):
 
 
 """
-INTERNAL ENDPOINT 
+INTERNAL ENDPOINT
 endpoint: http://service/author/<authorid:UUID>/addfriend
 
-allowed methods: 
+allowed methods:
 GET: return authors on (both local and authenticated foreign servers) that have yet friends with current author
 
 response:
-405: method not allowed 
+405: method not allowed
 404: current author not found (either inactive or superuser or simply DNE)
 200: success
-    
+
 """
 @login_required
 def view_list_of_available_authors_to_befriend(request, author_id):
@@ -194,24 +194,24 @@ def view_list_of_available_authors_to_befriend(request, author_id):
 
 
 """
-INTERNAL ENDPOINT  
-endpoint: http://service/author/unfriend 
+INTERNAL ENDPOINT
+endpoint: http://service/author/unfriend
 
-allowed methods: 
-POST: unfriend two authors given in request body 
+allowed methods:
+POST: unfriend two authors given in request body
 
 response:
 405: method not allowed
-422: post body missing fields 
-404: friendship doesn't exist 
+422: post body missing fields
+404: friendship doesn't exist
 200: success
 
-post body example: 
+post body example:
 {
     "author_id" : "127.0.0.1:8000/author/9d411951f13246728c2a1d00c081e680",
 	"friend_id" : "localhost:8000/author/99baa477e25b406696f0f61655716197"
 }
-    
+
 """
 
 
@@ -251,17 +251,17 @@ def check_missing_post_body_field_and_return_422(body, fields_to_check):
 
 
 """
-INTERNAL ENDPOINT  
+INTERNAL ENDPOINT
 endpoint: http://service/author/<authorid:UUID>/update
 
-allowed methods: 
+allowed methods:
 POST: update current author with values given in request body
 
 response:
-405: method not allowed 
+405: method not allowed
 200: success
-404: author to be updated not found 
-422: post body missing fields 
+404: author to be updated not found
+422: post body missing fields
 
 
 post body data requirement:
@@ -270,7 +270,7 @@ first_name, last_name, email, bio, github, display_name, delete
 allow authors delete themselves (delete  = True if to be deleted)
 if no changes to above field, original values should be passed
 username, uid, id, url, host of author can't be changed
-    
+
 """
 
 
@@ -310,18 +310,20 @@ def update_author_profile(request, author_id):
 
 
 """
-INTERNAL ENDPOINT 
+INTERNAL ENDPOINT
 endpoint: http://service/author/profile/<author_id: URL>/
 
-allowed methods: 
-GET: return full information of a given UNIVERSAL author 
+allowed methods:
+GET: return full information of a given UNIVERSAL author
 
 response:
 404: failure to retrieve author information
-405: method not allowed 
+405: method not allowed
 200: success
-    
+
 """
+
+
 def retrieve_universal_author_profile(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method Not Allowed", status=405)
@@ -384,15 +386,15 @@ def retrieve_universal_author_profile(request, author_id):
 PUBLIC ENDPOINT
 endpoint: http://service/author/<author_id: UUID>
 
-allowed methods: 
+allowed methods:
 GET: return full information of a given LOCAL author's UUID
 
 response:
 404: author in query doesn't not exist on local database (either inactive or is superuser or simply DNE)
-405: method not allowed 
+405: method not allowed
 200: success
 
-    
+
 """
 
 
@@ -548,6 +550,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
     # Response to a server, servers are considered 'root' and get all posts except for 'SERVERONLY'  and unlisted because
     # they have no reason to see those ones.
     def api_response(request, posts, pager, pagination_uris):
+        print('api response')
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
         output = {
             "query": "posts",
@@ -725,6 +728,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             if auth[0].lower() == "basic":
                 uname, passwd = base64.b64decode(
                     auth[1]).decode('utf-8').rsplit(':', 1)
+
         node = Node.objects.get(foreign_server_username=uname)
 
         if node.post_share and node.image_share:
@@ -905,14 +909,13 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
             api = "http://{}/author/{}/posts?size={}&page={}".format(
-                    api, author_id, request_size, page_num)
+                api, author_id, request_size, page_num)
             if diff_node.append_slash:
                 api = api + "/"
 
-            response = requests.get(api
-                ,
-                auth=(username, password)
-            )
+            response = requests.get(api,
+                                    auth=(username, password)
+                                    )
 
             if response.status_code != 200:
                 response_data = {

@@ -132,9 +132,11 @@ def view_post(request, post_path):
         print(req.content)
         return HttpResponse(f"The foreign server returned a response, but we could not extract the post. Error: {e}",
                             status=500)
+
+    # For image posts, we create a special content for direct rendering as an image
+    post['image_content_data'] = 'data:' + post['contentType'] + ',' + post['content']
+
     # Attempt to render the post
-    print(post["contentType"])
-    print(type(post))
     try:
         return render(request, 'posts/foreign_post.html', {
             'post': post

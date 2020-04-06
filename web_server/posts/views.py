@@ -5,7 +5,6 @@ from django.contrib.staticfiles import finders
 from django.conf import settings
 
 from .models import Post, VisibleTo, Category
-
 from comments.models import Comment
 from users.models import Author
 from nodes.models import Node
@@ -18,6 +17,8 @@ from json import loads
 from django.core import serializers
 from django.contrib.auth.models import AnonymousUser
 
+import json
+
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
 
@@ -26,7 +27,6 @@ import base64
 import re
 # used for stripping url protocol
 url_regex = re.compile(r"(http(s?))?://")
-
 
 
 # No Authentication Required
@@ -71,7 +71,8 @@ def check_get_perm(request, api_object_post):
             if request.remote_server_authenticated_for_images:
                 allowed_post_types += [Post.TYPE_JPEG, Post.TYPE_PNG]
             if request.remote_server_authenticated_for_posts:
-                allowed_post_types += [Post.TYPE_BASE64, Post.TYPE_MARKDOWN, Post.TYPE_PLAIN]
+                allowed_post_types += [Post.TYPE_BASE64,
+                                       Post.TYPE_MARKDOWN, Post.TYPE_PLAIN]
             return api_object_post['contentType'] in allowed_post_types
         else:
             return False
@@ -79,7 +80,6 @@ def check_get_perm(request, api_object_post):
     user_id = url_regex.sub("", request.user.uid).rstrip("/")
 
     author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
-
 
     if user_id == author_id or visibility == Post.PUBLIC:
         return True
@@ -92,7 +92,8 @@ def check_get_perm(request, api_object_post):
             return True
     elif visibility == Post.PRIVATE:
         # The visibleTo list contains protocols, which we dont want
-        no_protocol_visible_to = [re.sub(r'http(s)*://', '', vt) for vt in api_object_post["visibleTo"]]
+        no_protocol_visible_to = [
+            re.sub(r'http(s)*://', '', vt) for vt in api_object_post["visibleTo"]]
         if user_id in no_protocol_visible_to:
             return True
     elif visibility == Post.FRIENDS:
@@ -103,13 +104,14 @@ def check_get_perm(request, api_object_post):
     else:
         return False
 
-
 @validate_remote_server_authentication()
 def retrieve_single_post_with_id(request, post_id):
     """
     For endpoint http://service/posts/{POST_ID}
+
     Methods
         - Accept:
+
     GET
         - application/json: returns the post in json format
         - text/html: view the post while logged into our web service. If the post is an image it will return raw
@@ -118,24 +120,20 @@ def retrieve_single_post_with_id(request, post_id):
         - inserts a post with the specified post_id. Will error if that post already exists
     PUT
         - inserts a post, updates the post if it already exists
+
     For consistency, it maintains the same pageable format as http://service/posts if JSON is requested
     If HTML is requested it will return a page that will view the post details, or if the post is an image it
     will respond directly with image data for use in hosting images.
     :param request: should specify Accepted content-type
     :returns: application/json | text/html | image/jpg | image/png
     """
-
     def get_json(request, posts, pager, pagination_uris):
-        print("get_json")
         output = {
             "query": "post",
             "count": 1,
             "size": 1,
-            # "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
-            # this should not check for permission since if a foreign node calls it it will be always be false
-            "posts": [post.to_api_object() for post in posts],
+            "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
         }
-        print(output)
         return JsonResponse(output)
 
     def get_html_or_image(request, posts, pager, pagination_uris):
@@ -232,9 +230,8 @@ def retrieve_single_post_with_id(request, post_id):
                 # You need permission to attach a post to an author. Servers are root, and logged in users can only
                 # attach posts to themselves
                 if not request.remote_server_authenticated and post_author != request.user:
-                    return HttpResponse(
-                        f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
-                        status=400)
+                    return HttpResponse(f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
+                                        status=400)
 
                 post.author = post_author
             else:
@@ -252,6 +249,7 @@ def retrieve_single_post_with_id(request, post_id):
 
         return JsonResponse({"success": "Post updated"})
 
+
     # Get a single post
     return Endpoint(request, Post.objects.filter(id=post_id), [
         PagingHandler("GET", "text/html", get_html_or_image),
@@ -263,8 +261,6 @@ def retrieve_single_post_with_id(request, post_id):
 
 
 @validate_remote_server_authentication()
-
-
 def comments_retrieval_and_creation_to_post_id(request, post_id):
 
     def get_handler(request, comments, pager, pagination_uris):
@@ -301,7 +297,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
         return JsonResponse(output)
 
-
     def post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
@@ -336,7 +331,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
-            new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")
+            new_comment.author = url_regex.sub(
+                '', comment_info['author']['id']).rstrip("/")
             print(new_comment.author)
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
@@ -351,7 +347,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 return JsonResponse(output, status=200)
             else:
                 return JsonResponse(output, status=403)
-
 
     def FOAF_verification_post(auth_user, author):
         auth_user = url_regex.sub("", auth_user).rstrip("/")
@@ -394,14 +389,15 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                                 foreign_server_hostname=friend_node).username_registered_on_foreign_server
                             password = Node.objects.get(
                                 foreign_server_hostname=friend_node).password_registered_on_foreign_server
-                            api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
-                            api = "http://{}/author/{}/friends".format(api, "{}/author/{}".format(api, author))
+                            api = Node.objects.get(
+                                foreign_server_hostname=friend_node).foreign_server_api_location
+                            api = "http://{}/author/{}/friends".format(
+                                api, "{}/author/{}".format(api, author))
                             if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                                 api = api + "/"
-                            response = requests.get(api
-                                ,
-                                auth=(username, password)
-                            )
+                            response = requests.get(api,
+                                                    auth=(username, password)
+                                                    )
                             if response.status_code == 200:
                                 friends_list = response.json()
                                 for user in friends_list["authors"]:
@@ -412,16 +408,18 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
                 # author's host is different from auth user
                 else:
-                    username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-                    password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-                    api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                    username = Node.objects.get(
+                        foreign_server_hostname=node).username_registered_on_foreign_server
+                    password = Node.objects.get(
+                        foreign_server_hostname=node).password_registered_on_foreign_server
+                    api = Node.objects.get(
+                        foreign_server_hostname=node).foreign_server_api_location
                     api = "http://{}/author/{}/friends/".format(api, author)
                     if Node.objects.get(foreign_server_hostname=node).append_slash:
                         api = api + "/"
-                    response = requests.get(api
-                        ,
-                        auth=(username, password)
-                    )
+                    response = requests.get(api,
+                                            auth=(username, password)
+                                            )
                     if response.status_code == 200:
                         friends_list = response.json()
                         for user in friends_list["authors"]:
@@ -443,7 +441,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         if visibility == Post.SERVERONLY:
             return False
 
-        author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
+        author_id = url_regex.sub(
+            "", api_object_post["author"]['id']).rstrip("/")
         user_id = url_regex.sub("", user_id).rstrip("/")
 
         if user_id == author_id or visibility == Post.PUBLIC:
@@ -475,7 +474,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         comment_info = loads(body)
         comment_info = comment_info['comment']
 
-
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
@@ -492,7 +490,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
-            new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")
+            new_comment.author = url_regex.sub(
+                '', comment_info['author']['id']).rstrip("/")
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['success'] = True
@@ -526,7 +525,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     if request.user.is_authenticated:
         return Endpoint(request, Comment.objects.filter(parentPost=post_id).order_by("-published"),
                         [Handler("POST", "application/json", post_handler),
-                        PagingHandler("GET", "application/json", get_handler)]
+                         PagingHandler("GET", "application/json", get_handler)]
                         ).resolve()
     else:
         auth = request.META['HTTP_AUTHORIZATION'].split()
@@ -558,7 +557,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
         return Endpoint(request, Comment.objects.filter(parentPost=post_id).order_by("-published"),
                         [Handler("POST", "application/json", foreign_post_handler, False),
-                        PagingHandler("GET", "application/json", api_response)]
+                         PagingHandler("GET", "application/json", api_response)]
                         ).resolve()
 
 
@@ -639,6 +638,7 @@ def fetch_public_posts_from_nodes(request):
         """
         Manages a collection of node pagers, returning pages of their combined results
         """
+
         def __init__(self, size):
             self.size = size
             self.node_pagers = dict()
@@ -668,19 +668,12 @@ def fetch_public_posts_from_nodes(request):
                     current_results_queue += pager_page
                     pager.next_page()
 
-
             return current_results_queue[page*self.size:(page+1)*self.size]
-
 
     manager = NodeCollectionPager(10)
     output['posts'] = manager.get_page(output['page'])
 
     return JsonResponse(output)
-
-
-
-
-
 
 
     # for node in Node.objects.all():
@@ -714,6 +707,7 @@ def fetch_public_posts_from_nodes(request):
 
     return JsonResponse(output, status=200)
 
+
 @login_required
 def proxy_foreign_server_image(request, image_url):
     """
@@ -727,7 +721,8 @@ def proxy_foreign_server_image(request, image_url):
     credentials = None
     try:
         node = Node.objects.get(foreign_server_hostname=image_url_parts[0])
-        credentials = (node.username_registered_on_foreign_server, node.password_registered_on_foreign_server)
+        credentials = (node.username_registered_on_foreign_server,
+                       node.password_registered_on_foreign_server)
     except Node.DoesNotExist as e:
         # This url is not for a node that we have credentials for, we have to return some sort of message that
         # Will inform the front end to NOT replace the url. This is done just by stating an error status.
