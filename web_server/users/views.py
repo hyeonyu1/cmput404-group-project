@@ -223,7 +223,7 @@ def view_post_comment(request, post_path):
             return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
         api = node.foreign_server_api_location
-        api = "http://{}/posts/{}/comments/".format(api, post_id)
+        api = "http://{}/posts/{}/comments".format(api, post_id)
         if node.append_slash:
             api = api + "/"
         print("api",api, node)
