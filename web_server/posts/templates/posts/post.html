@@ -60,14 +60,21 @@
 
             <!-- These are labels for posts-->
             <div>
+
                 {% for category in post.categories.all %}
                 <span class="badge badge-success">{{category}}</span>
                 {% endfor %}
+
                 <span class="badge badge-info">{{post.visibility}}</span>
+
                 {% if post.contentType == "text/plain" %}
-                <span class="badge badge-secondary">Plaintext</span>
-                {% else %}
-                <span class="badge badge-secondary">Markdown</span>
+                    <span class="badge badge-secondary">Plaintext</span>
+                {% elif post.contentType == "text/markdown" %}
+                    <span class="badge badge-secondary">Markdown</span>
+                {% elif post.contentType == "image/jpeg;base64" %}
+                    <span class="badge badge-secondary">JPEG</span>
+                {% elif post.contentType == "image/png;base64" %}
+                    <span class="badge badge-secondary">PNG</span>
                 {% endif %}
 
             </div>
