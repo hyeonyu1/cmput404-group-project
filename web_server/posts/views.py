@@ -119,11 +119,12 @@ def retrieve_single_post_with_id(request, post_id):
             return False
 
     def get_json(request, posts, pager, pagination_uris):
+        post_list = [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())]
         output = {
             "query": "post",
-            "count": 1,
-            "size": 1,
-            "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
+            "count": len(post_list),
+            "size": len(post_list),
+            "posts": post_list,
         }
         return JsonResponse(output)
 
