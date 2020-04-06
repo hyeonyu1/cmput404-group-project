@@ -900,12 +900,13 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             username = diff_node.username_registered_on_foreign_server
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
+            api = "http://{}/author/{}/posts?size={}&page={}".format(
+                    api, author_id, request_size, page_num)
             if diff_node.append_slash:
                 api = api + "/"
 
-            response = requests.get(
-                "http://{}/author/{}/posts?size={}&page={}".format(
-                    api, author_id, request_size, page_num),
+            response = requests.get(api
+                ,
                 auth=(username, password)
             )
 

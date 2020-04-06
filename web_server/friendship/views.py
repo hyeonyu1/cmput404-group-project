@@ -377,10 +377,11 @@ def FOAF_verification(request, author):
                         username = Node.objects.get(foreign_server_hostname=friend_node).username_registered_on_foreign_server
                         password = Node.objects.get(foreign_server_hostname=friend_node).password_registered_on_foreign_server
                         api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
+                        api = "http://{}/author/{}/friends/".format(api, "{}/author/{}".format(api, author))
                         if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                             api = api + "/"
-                        response = requests.get(
-                            "http://{}/author/{}/friends/".format(api, "{}/author/{}".format(api, author)),
+                        response = requests.get(api
+                            ,
                             auth=(username, password)
                         )
                         if response.status_code == 200:

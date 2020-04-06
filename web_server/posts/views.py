@@ -135,7 +135,6 @@ def retrieve_single_post_with_id(request, post_id):
         return JsonResponse(output)
 
     def get_html_or_image(request, posts, pager, pagination_uris):
-        print("\n\n\n\nget html or image")
         post = Post.objects.get(id=post_id)
         if post.contentType == post.TYPE_PNG or post.contentType == post.TYPE_JPEG:
             if not check_get_perm(request, post.to_api_object()):
@@ -393,10 +392,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                             password = Node.objects.get(
                                 foreign_server_hostname=friend_node).password_registered_on_foreign_server
                             api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
+                            api = "http://{}/author/{}/friends".format(api, "{}/author/{}".format(api, author))
                             if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                                 api = api + "/"
-                            response = requests.get(
-                                "http://{}/author/{}/friends/".format(api, "{}/author/{}".format(api, author)),
+                            response = requests.get(api
+                                ,
                                 auth=(username, password)
                             )
                             if response.status_code == 200:
@@ -412,10 +412,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                     username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
                     password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
                     api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                    api = "http://{}/author/{}/friends/".format(api, author)
                     if Node.objects.get(foreign_server_hostname=node).append_slash:
                         api = api + "/"
-                    response = requests.get(
-                        "http://{}/author/{}/friends/".format(api, author),
+                    response = requests.get(api
+                        ,
                         auth=(username, password)
                     )
                     if response.status_code == 200:
