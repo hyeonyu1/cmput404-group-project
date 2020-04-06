@@ -62,6 +62,8 @@ def check_get_perm(request, api_object_post):
     Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
     """
     visibility = api_object_post["visibility"]
+
+    print("visibility = ", api_object_post)
     # Foreign servers can access all posts, unless they are 'SERVERONLY',
     # or if image or post sharing has been turned off
     if request.remote_server_authenticated:
@@ -132,6 +134,7 @@ def retrieve_single_post_with_id(request, post_id):
         return JsonResponse(output)
 
     def get_html_or_image(request, posts, pager, pagination_uris):
+        print("\n\n\n\nget html or image")
         post = Post.objects.get(id=post_id)
         if post.contentType == post.TYPE_PNG or post.contentType == post.TYPE_JPEG:
             if not check_get_perm(request, post.to_api_object()):

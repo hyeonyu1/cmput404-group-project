@@ -585,32 +585,24 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         foaf_post = Post.objects.filter(id__in=foaf_post_id)
 
         # visibility = PRIVATE
-        print("request", request.user.uid)
         private_post = Post.objects.filter(
             visibleTo__author_uid__contains=request.user.uid,
             unlisted=False)
-        # private_post = Post.objects.all()
-        # for i in private_post:
-        #     print(i)
-        print("private post", private_post)
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
 
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
-        print("grabbed visible_posts")
+
         visible_post = visible_post.distinct()
-        print("got visible_post distinct")
+
         array_of_posts = []
         count = visible_post.count()
-        print("page_num")
 
         page_num = int(request.GET.get('page', "1"))
-        print("size")
 
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
-        print("going through posts")
         for post in visible_post.order_by("-published"):
             author_id = Author.objects.get(uid=post.author_id)
 
@@ -631,14 +623,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             for c in categories:
                 categories_list.append(c.name)
 
-            print("\n\n\n\n")
-            print("trying")
-            print(post.visibleTo)
-            print("got it")
             visible_to = post.visibleTo.all()
             visible_to_list = []
-            # for visible in visible_to:
-            #     visible_to_list.append(visible.author_uid)
+            for visible in visible_to:
+                visible_to_list.append(visible.author_uid)
 
             host = request.get_host()
             if request.is_secure():
