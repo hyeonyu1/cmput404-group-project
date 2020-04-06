@@ -60,15 +60,23 @@
 
              <!-- These are labels for posts-->
              <div>
+
                  {% for category in post.categories.all %}
                      <span class="badge badge-success">{{category}}</span>
                  {% endfor %}
+
                  <span class="badge badge-info">{{post.visibility}}</span>
+
                  {% if post.contentType == "text/plain" %}
                         <span class="badge badge-secondary">Plaintext</span>
-                 {% else %}
+                 {% elif post.contentType == "text/markdown" %}
                         <span class="badge badge-secondary">Markdown</span>
+                 {% elif post.contentType == "image/jpeg;base64" %}
+                        <span class="badge badge-secondary">JPEG</span>
+                 {% elif post.contentType == "image/png;base64" %}
+                        <span class="badge badge-secondary">PNG</span>
                  {% endif %}
+
              </div>
 
              <br>
@@ -76,8 +84,8 @@
              <div>
                 {% if post.contentType == "text/markdown" %}
                     <p>{{post.content|show_markdown|safe}}</p>
-                {% elif if post.contentType == "image/jpeg" or post.contentType == "image/png" %}
-                    <img src="'data:' + {{post.contentType}} + ',' + {{post.content}}">
+                {% elif post.contentType == "image/jpeg;base64" or post.contentType == "image/png;base64" %}
+                    <img src="{{ post.image_content_data }}" alt="Image hosted on foreign server">
                 {% else %}
                     <p>{{post.content}}</p>
                 {% endif %}
@@ -126,7 +134,7 @@
 <template id="list-comment">
     <div>
         <div>
-            <a v-bind:href="'/user/profile/' + comment.author.uid">[[comment.author.first_name + ' ' + comment.author.last_name]]</a>
+            <a v-bind:href="'/user/profile/' + comment.author.uid">[[comment.author.displayName]]</a>
             <small>[[comment.published]]</small>
         </div>
         <vue-markdown v-if="comment.contentType === 'text/markdown'">[[comment.content]]</vue-markdown>
@@ -208,9 +216,8 @@
                         'content':this.content,
                         'published':new Date(),
                         'author':{
-                            'id':'{{user.id}}',
-                            'first_name': '{{user.first_name}}',
-                            'last_name':'{{user.last_name}}',
+                            'id':'{{user.uid}}',
+                            'display_name': '{{user.displayName}}',
                             'uid': '{{user.id.hex}}'
                         },
                         'contentType':this.contentType,
@@ -226,11 +233,12 @@
                     }
                 }).then((response) => {
                     alert(response.data['message']);
-                    if( response.data['type']){
+                    if( response.data['success']){
                         comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
                         this.comments.push(comment);
                     }
                 })
+
             },
 
             //Set comments types: markdown/plaintext
@@ -248,18 +256,14 @@
         //gets the image in the div and sends to the proxy image api
         let image = document.getElementById('app').querySelector('img');
 
+        // Ignore images that have raw data in them
+        if (image.src.startsWith('data')) return;
+
         fetch("/posts/proxy_image/"+image.src.split("//")[1])
         .then(response => response.text())
         .then(url => {
             image.src=url
         })
-
-        /*$.ajax({
-            url: "/posts/proxy_image/"+image.src.split("//")[1],
-            success: function(response){
-                image.src = response;
-            }
-        })*/
     }
 
     window.addEventListener('load', replace_foreign_images)

@@ -1,9 +1,17 @@
 from django.db import models
 from users.models import Author
 from posts.models import Post
+from nodes.models import Node
+import requests
+
+
+
 
 from django.conf import settings
 
+import re
+# used for stripping url protocol
+url_regex = re.compile(r"(http(s?))?://")
 
 from uuid import uuid4
 
@@ -29,7 +37,10 @@ class Comment(models.Model):
     # @todo Are comments editable? Should we allow this and if so would this field update to match?
     published = models.DateTimeField(auto_now_add=True)
 
-    author = models.ForeignKey(Author, on_delete=models.PROTECT)
+    # author = models.ForeignKey(Author, on_delete=models.PROTECT)
+    #uid of author
+    author = models.CharField(max_length=500)
+
 
     parentPost = models.ForeignKey(Post, on_delete=models.CASCADE)
 
@@ -42,10 +53,41 @@ class Comment(models.Model):
         """
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
-        return {
-                    "author": self.author.to_api_object(),
-                    "comment": self.content,
-                    "contentType": self.contentType,
-                    "published": self.published,
-                    "id": str(self.id.hex)
-                }
+        author_uid = url_regex.sub("", str(self.author)).rstrip("/")
+        print("author_uid = ", author_uid)
+        try:
+            author = Author.objects.get(uid=author_uid)
+            return {
+                "author": author.to_api_object(),
+                "comment": self.content,
+                "contentType": self.contentType,
+                "published": self.published,
+                "id": str(self.id.hex)
+            }
+        except Author.DoesNotExist:
+            print("AUTHOR DOES NOT EXISTS")
+            print("calling http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid))
+            response = requests.get(
+                "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
+            )
+            print("got a response")
+            print(response.body)
+            if response.status_code == 200:
+                author_info = response.json()
+
+            return {
+                "author": {
+                    "id": author_info["id"],
+                    "host": author_info["host"],
+                    "displayName": author_info["displayName"],
+                    "firstName": author_info["firstName"],
+                    "lastName": author_info["lastName"],
+                    "url": author_info["url"],
+                    "github": author_info["github"]
+                },
+                "comment": self.content,
+                "contentType": self.contentType,
+                "published": self.published,
+                "id": str(self.id.hex)
+            }
+
