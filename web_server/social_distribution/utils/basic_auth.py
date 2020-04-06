@@ -23,6 +23,8 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
     """
     deny_response = ""
     request.remote_server_authenticated = False
+    request.remote_server_authenticated_for_images = False
+    request.remote_server_authenticated_for_posts = False
 
     # If the user is already authenticated on the local server, then we are fine, and we let them proceed
     if test_func(request.user):
@@ -59,6 +61,8 @@ def handle_incoming_request_or_request(view, request, test_func, realm="", *args
 
                     if check_password(passwd, entry.foreign_server_password):
                         request.remote_server_authenticated = True
+                        request.remote_server_authenticated_for_images = entry.image_share
+                        request.remote_server_authenticated_for_posts = entry.post_share
                         return view(request, *args, **kwargs)
                     else:
                         deny_response += " The provided password for your server authentication was invalid"

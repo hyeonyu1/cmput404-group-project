@@ -19,3 +19,22 @@ The following command will create a copy of your database and dump it into a fil
 The following command will load the file created in the above command into your database
 
     python manage.py loaddata test_data.yaml
+
+# Testcases
+## Model Class Unittest
+    python3 manage.py test friendship.tests.TestFriendshipModels
+    python3 manage.py test comments.test_comment_models
+    python3 manage.py test users.tests.TestAuthorModels
+    python3 manage.py test posts.test_posts_models
+    
+    
+# Ajax Documentation
+## Usage of axios
+    post.html, profile.html, home.html 
+    
+
+# Ajax Usage
+
+	In editPost.html fetch is used to send the form data to edit the current post and on success returns to homepage and on failure, alerts the user.
+
+	In post.html jquery and ajax is used to send any images to our image proxy endpoint and replace the image source with the base64 of that image.

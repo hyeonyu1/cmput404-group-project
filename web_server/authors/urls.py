@@ -6,6 +6,8 @@ urlpatterns = [
          name="add_or_get_post"),
 
     # GET is also the user UI for editing
+    path('available/', views.get_all_available_authors_ids,
+         name='all_available_authors'),
     path('posts/<str:post_id>', views.post_edit_and_delete,
          name="edit_or_delete_post"),
     path('<path:author_id>/posts/', views.retrieve_posts_of_author_id_visible_to_current_auth_user,
@@ -21,10 +23,9 @@ urlpatterns = [
          name="retrieve_all_authors"),
     path('<slug:author_id>/update', views.update_author_profile,
          name="update_author_profile"),
-    path('unfriend', views.unfriend, name="unfriend"),  # only work wo slash
+    path('unfriend', views.unfriend, name="unfriend"),
     path('<str:author_id>/addfriend/', views.view_list_of_available_authors_to_befriend,
          name="view_list_of_available_authors_to_befriend"),
-    path('', views.get_all_authors, name='all_authors'),
 
     # Webpage URLS
     path('create_post', views.post_creation_page, name='post_create_form'),

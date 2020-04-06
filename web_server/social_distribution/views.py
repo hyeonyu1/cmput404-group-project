@@ -19,7 +19,10 @@ def home(request):
 def github(request):
     if request.method == 'GET':
         context = {}
-        context['github'] = request.user.github.split('github.com/')[1]
+        try:
+            context['github'] = request.user.github.split('github.com/')[1]
+        except:
+            print("Your github profile could not be loaded.")
         return JsonResponse(context)
 
 def landing_page(request):
