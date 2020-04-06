@@ -226,6 +226,7 @@ def view_post_comment(request, post_path):
         api = "http://{}/posts/{}/comments/".format(api, post_id)
         if node.append_slash:
             api = api + "/"
+        print("api",api, node)
         response = requests.post(api
             ,
             auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),

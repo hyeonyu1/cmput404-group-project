@@ -435,6 +435,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         """
         Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
         """
+        print("check_perm_foreign_user")
 
         visibility = api_object_post["visibility"]
 
@@ -444,8 +445,9 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         author_id = url_regex.sub(
             "", api_object_post["author"]['id']).rstrip("/")
         user_id = url_regex.sub("", user_id).rstrip("/")
-
-        if user_id == author_id or visibility == Post.PUBLIC:
+        print("author_id = ", author_id)
+        print("user_id = ", user_id)
+        if visibility == Post.PUBLIC:
             return True
 
         elif visibility == Post.FOAF:
@@ -466,6 +468,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def foreign_post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
+        print("foreign_post_handler")
         output = {
             "query": "addComment",
         }
