@@ -134,6 +134,7 @@ def view_post(request, post_path):
                             status=500)
     # Attempt to render the post
     try:
+        print("contenttype - ", post.contentType)
         return render(request, 'posts/foreign_post.html', {
             'post': post
         })
@@ -149,6 +150,7 @@ def view_post_comment(request, post_path):
     The first part of the path should be a hostname, and the last part should be the post id
     If no hostname is provided (no path, only a uuid), then the local server is assumed
     """
+    print("GETTING COMMENT")
     path = post_path.split('/')
     host = path[0]
     post_id = path[-1]
