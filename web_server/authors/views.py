@@ -562,7 +562,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
-        print('ret posts')
         # own post
         own_post = Post.objects.filter(
             author_id=request.user.uid, unlisted=False)
@@ -582,8 +581,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         FOAF_post = Post.objects.filter(visibility="FOAF", unlisted=False)
         foaf_post_id = []
         for post in FOAF_post:
+            print(f"Testing FOAF: {post.author.uid}")
             if FOAF_verification(request, post.author.uid):
+                print("FOAF passed")
                 foaf_post_id.append(post.id)
+            print("FOAF finished")
         foaf_post = Post.objects.filter(id__in=foaf_post_id)
 
         # visibility = PRIVATE
@@ -724,9 +726,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             if auth[0].lower() == "basic":
                 uname, passwd = base64.b64decode(
                     auth[1]).decode('utf-8').rsplit(':', 1)
-        print(f"getting node: {uname}")
+
         node = Node.objects.get(foreign_server_username=uname)
-        print("Node Got")
 
         if node.post_share and node.image_share:
             query = Post.objects.filter(unlisted=False).exclude(
