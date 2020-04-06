@@ -478,6 +478,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         comment_info = loads(body)
         comment_info = comment_info['comment']
 
+        print("\n\n\n\n\n foreign_comment_info = ", comment_info)
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
