@@ -123,13 +123,22 @@ def view_post(request, post_path):
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
     req = node.make_api_get_request(f'posts/{post_id}')
+    # Attempt to extract the post
+    try:
+        post = req.json()['posts'][0]
+    except Exception as e:
+        print(req.content)
+        return HttpResponse(f"The foreign server returned a response, but we could not extract the post. Error: {e}",
+                            status=500)
+    # Attempt to render the post
     try:
         return render(request, 'posts/foreign_post.html', {
-            'post': req.json()['posts'][0]
+            'post': post
         })
     except Exception as e:
-        return HttpResponse(f"The foreign server returned a response, but it was not compliant with the specification. "
-                            f"We are unable to show the post at this time: {e}", status=500)
+        print(post)
+        return HttpResponse(f"The post we extracted from the foreign server has missing or incorrect keys: {e}",
+                            status=500)
 
 
 @login_required
