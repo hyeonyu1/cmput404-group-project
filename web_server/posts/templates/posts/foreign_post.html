@@ -54,7 +54,7 @@
                  <a class="mr-2" href="{% url 'profile' post.author.id %}">
                       {{post.author.displayName}}
                  </a>
-                 <small>{{post.published}}</small>
+                 <small>[[ publishTime ]]</small>
 
              </div>
 
@@ -189,7 +189,8 @@
            return {
                'comments': [],
                'content':'',
-               'contentType':''
+               'contentType':'',
+               'publishTime':''
            }
         },
         methods:{
@@ -212,6 +213,13 @@
             add_comments(post_id){
                 //Add comments, if status code is 200, push this comment into comments(list)
                 let url = 'comments/';
+                
+                //If users do not choose contentType, set it to plaintext
+                if(this.contentType===""){
+                    this.contentType="text/plain";
+                }
+
+                //This is used to update the comments list after adding comments
                 let comment = new Comment({
                         'content':this.content,
                         'published':new Date(),
@@ -247,7 +255,9 @@
             }
         },
          created() {
-            this.get_comments("{{ post.id }}")
+             this.get_comments("{{ post.id }}");
+             const date = new Date('{{post.published}}');
+             this.publishTime=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
          }
 
     });

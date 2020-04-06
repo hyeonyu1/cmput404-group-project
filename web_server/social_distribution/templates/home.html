@@ -26,7 +26,7 @@
                 <button class="btn btn-primary" @click="app.get_more_posts()">Load More</button>
                 <hr>
                 <div class="list-group">
-                    <label>Foreign Posts: </label>
+                    <label>Public Foreign Posts: </label>
                     <foreign_posts-list
                     v-for="post in foreign_posts"
                     v-bind:post="post">
@@ -82,10 +82,10 @@
           <small>[[post.published]]</small>
         </div>
         <p v-if="post.contentType == 'image/png;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="width: 100px">
         </p>
         <p v-else-if="post.contentType == 'image/jpeg;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="width: 100px">
         </p>
         <div v-else>
             <span style="overflow-wrap: break-word;" class="mb-1">[[post.sub_content]]</span>
@@ -107,10 +107,10 @@
           <small>[[post.published]]</small>
         </div>
         <p v-if="post.contentType == 'image/png;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="width: 100%">
         </p>
         <p v-else-if="post.contentType == 'image/jpeg;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="width: 100%">
         </p>
         <div v-else>
             <span style="overflow-wrap: break-word;" class="mb-1">[[post.sub_content]]</span>
