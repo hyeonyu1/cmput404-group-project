@@ -581,11 +581,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         FOAF_post = Post.objects.filter(visibility="FOAF", unlisted=False)
         foaf_post_id = []
         for post in FOAF_post:
-            print(f"Testing FOAF: {post.author.uid}")
             if FOAF_verification(request, post.author.uid):
-                print("FOAF passed")
                 foaf_post_id.append(post.id)
-            print("FOAF finished")
         foaf_post = Post.objects.filter(id__in=foaf_post_id)
 
         # visibility = PRIVATE

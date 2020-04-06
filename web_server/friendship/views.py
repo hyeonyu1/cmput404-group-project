@@ -367,13 +367,15 @@ def FOAF_verification(request, author):
                     # Since the friend is not on the same host as the auth user make a request to get friends from the other node
                     # A -> A -> B
                     else:
-                        username = Node.objects.get(
-                            foreign_server_hostname=node).username_registered_on_foreign_server
-                        password = Node.objects.get(
-                            foreign_server_hostname=node).password_registered_on_foreign_server
-                        api = Node.objects.get(
-                            foreign_server_hostname=node).foreign_server_api_location
-                        if Node.objects.get(foreign_server_hostname=node).append_slash:
+                        try:
+                            node_object = Node.objects.get(foreign_server_hostname=node)
+                        except Node.DoesNotExist as e:
+                            print(f'attempt to FOAF verify with foreign node {node} caused error: {e}')
+                            return False
+                        username = node_object.username_registered_on_foreign_server
+                        password = node_object.password_registered_on_foreign_server
+                        api = node_object.foreign_server_api_location
+                        if node_object.append_slash:
                             api = api + "/"
                         response = requests.get(
                             "http://{}/author/{}/friends".format(
@@ -391,13 +393,15 @@ def FOAF_verification(request, author):
 
             # author's host is different from auth user
             else:
-                username = Node.objects.get(
-                    foreign_server_hostname=node).username_registered_on_foreign_server
-                password = Node.objects.get(
-                    foreign_server_hostname=node).password_registered_on_foreign_server
-                api = Node.objects.get(
-                    foreign_server_hostname=node).foreign_server_api_location
-                if Node.objects.get(foreign_server_hostname=node).append_slash:
+                try:
+                    node_object = Node.objects.get(foreign_server_hostname=node)
+                except Node.DoesNotExist as e:
+                    print(f'attempt to FOAF verify with different foreign node {node} caused error: {e}')
+                    return False
+                username = node_object.username_registered_on_foreign_server
+                password = node_object.password_registered_on_foreign_server
+                api = node_object.foreign_server_api_location
+                if node_object.append_slash:
                     api = api + "/"
                 response = requests.get(
                     "http://{}/author/{}/friends".format(api, author),
