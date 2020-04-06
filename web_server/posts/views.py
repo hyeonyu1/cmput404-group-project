@@ -259,15 +259,19 @@ def fetch_public_posts_from_nodes(request):
             if self.results is not None:
                 return self.results
 
-            response = requests.get(self.api_location,
-                                    auth=(self.username, self.password),
-                                    headers={
-                                        'Accept': 'application/json'
-                                    },
-                                    params={
-                                        'size': self.size,
-                                        'page': self.page
-                                    })
+            try:
+                response = requests.get(self.api_location,
+                                        auth=(self.username, self.password),
+                                        headers={
+                                            'Accept': 'application/json'
+                                        },
+                                        params={
+                                            'size': self.size,
+                                            'page': self.page
+                                        })
+            except Exception as e:
+                print(f"Error connecting to node '{self.api_location}': {e}")
+                return []
             if response.status_code != 200:
                 self.results = []
             else:
