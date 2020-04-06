@@ -322,7 +322,6 @@ response:
 200: success
     
 """
-@login_required
 def retrieve_universal_author_profile(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method Not Allowed", status=405)
