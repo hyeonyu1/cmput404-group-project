@@ -66,6 +66,7 @@ class Comment(models.Model):
             }
         except Author.DoesNotExist:
             print("AUTHOR DOES NOT EXISTS")
+            print("calling http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid))
             response = requests.get(
                 "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
