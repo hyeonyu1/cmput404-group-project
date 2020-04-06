@@ -624,10 +624,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             for c in categories:
                 categories_list.append(c.name)
 
-            # visible_to = post.visibleTo.all()
+            visible_to = post.visibleTo.all()
             visible_to_list = []
-            # for visible in visible_to:
-            #     visible_to_list.append(visible.author_uid)
+            for visible in visible_to:
+                visible_to_list.append(visible.author_uid)
 
             host = request.get_host()
             if request.is_secure():
