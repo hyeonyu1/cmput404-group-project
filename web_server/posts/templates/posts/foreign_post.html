@@ -249,10 +249,14 @@
         let image = document.getElementById('app').querySelector('img');
 
         fetch("/posts/proxy_image/"+image.src.split("//")[1])
-        .then(response => response.text())
+        .then(response => {
+            if(!response.ok){throw response.text()}
+            response.text()
+        })
         .then(url => {
             image.src=url
         })
+        .catch(err => console.log(`An attempt to proxy the image failed with result: ${err}`))
 
         /*$.ajax({
             url: "/posts/proxy_image/"+image.src.split("//")[1],
