@@ -26,7 +26,7 @@
                 <button class="btn btn-primary" @click="app.get_more_posts()">Load More</button>
                 <hr>
                 <div class="list-group">
-                    <label>Foreign Posts: </label>
+                    <label>Public Foreign Posts: </label>
                     <foreign_posts-list
                     v-for="post in foreign_posts"
                     v-bind:post="post">

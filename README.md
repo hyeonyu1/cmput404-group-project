@@ -30,11 +30,12 @@ The following command will load the file created in the above command into your 
     
 # Ajax Documentation
 ## Usage of axios
-    post.html, profile.html, home.html 
-    
-
-# Ajax Usage
+    post.html, editPost.html, profile.html, home.html 
 
 	In editPost.html fetch is used to send the form data to edit the current post and on success returns to homepage and on failure, alerts the user.
 
 	In post.html jquery and ajax is used to send any images to our image proxy endpoint and replace the image source with the base64 of that image.
+
+	In profile.html axios is used to retrieve a users info, friends and github activity
+
+	In home.html axios is used to retrieve the list of local and foreign post
