@@ -76,13 +76,14 @@
             <ul class="list-group" v-if="show['friend']">
                 <friend-list v-for="(friend, index) in friends" v-bind:friend="friend" v-bind:index="index"
                     v-bind:is_visitor="is_visitor">
-                    >
+
                 </friend-list>
             </ul>
 
             <div class="list-group" v-if="show['post']">
                 <user-posts v-for="post in myposts" v-bind:post="post">
                 </user-posts>
+                <button class="btn btn-primary" @click="app.get_more_posts()">Load More</button>
             </div>
 
             <user-info v-bind:user="user" v-if="show['info']" :is_visitor="is_visitor">
@@ -104,12 +105,14 @@
             <small>[[post.published]]</small>
         </div>
         <p v-if="post.contentType == 'image/png;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]"> 
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
         </p>
         <p v-else-if="post.contentType == 'image/jpeg;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]"> 
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
         </p>
-        <p v-else class="mb-1">[[post.content]]</p>
+        <div v-else style="height: 8vh; overflow: auto">
+            <p class="mb-1">[[post.content]]</p>
+        </div>
         <small>[[post.author.displayName]]</small>
     </a>
 
@@ -233,7 +236,8 @@
 
                 is_visitor: true,
                 is_added: false,
-                is_already_friend: false
+                is_already_friend: false,
+                next: undefined,
             }
         },
         methods: {
@@ -467,11 +471,31 @@
                         if (source_host.slice(0, 7) === 'http://') { source_host = source_host.slice(7) }
                         source_host = source_host.split('/')[0];
                         post['source_host'] = source_host;
+                        const date = new Date(post.published);
+                        post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                         this.myposts.push(post);
                     }
+                    this.next = response.data["next"];
 
                 });
 
+            },
+
+            //Retrieve more posts for stream
+            get_more_posts(){
+                if(this.next != undefined){
+                    window.axios.get(this.next).then((response) => {
+                        const data = response.data["posts"];
+                        this.next = response.data["next"];
+                        data.forEach((post) => {
+                            const date = new Date(post.published);
+                            post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
+                            this.myposts.push(post);
+                        })
+                    })
+                } else {
+                    alert("There are no more posts here.");
+                }
             },
 
         },
