@@ -58,47 +58,36 @@ def profile(request, user_id):
     })
 
 
-def invalidate_friends(host, user_id):
-    # print("\n\n\n\n\n\n\n\n")
-    # print("from invalidate_friends")
+"""
+ this function invalidates existing friendship of give author 
+ it GETs foreign servers' https://service/<authorid: UUID>/friends/<authorid2:: URL> endpoint to retrieve latest 
+ friendship status (if given author has foreign friends)
+"""
 
+
+def invalidate_friends(host, user_id):
     author_id = url_regex.sub('', user_id)
     author_id = author_id.rstrip("/")
-    # print(author_id)
-    # print(host)
-    # print("\n\n\n\n\n\n\n\n")
     if not Friend.objects.filter(author_id=author_id).exists():
         return
     friends = Friend.objects.filter(author_id=author_id)
-    # print("\n\n\n\n\n\n\n\n")
-    # print(friends)
-    # print("\n\n\n\n\n\n\n\n")
     for friend in friends:
         splits = friend.friend_id.split("/")
         friend_host = splits[0]
         if host != friend_host:
             if Node.objects.filter(pk=friend_host).exists():
                 node = Node.objects.get(foreign_server_hostname=friend_host)
-                # quoted_author_id = quote(
-                #     author_id, safe='~()*!.\'')
                 headers = {"Content-Type": "application/json",
                            "Accept": "application/json"}
                 url = "https://{}/friends/{}".format(
                     friend.friend_id, author_id)
                 res = requests.get(url, headers=headers, auth=(
                     node.username_registered_on_foreign_server, node.password_registered_on_foreign_server))
-                # print("\n\n\n\n\n")
-                # print("this is in invalidate friends ")
-                # print(url)
-                # print(res.text, res.status_code)
-                # print("\n\n\n\n\n")
                 if res.status_code >= 200 and res.status_code < 300:
                     res = res.json()
-                    # print("\n\n\n\n\n")
-                    # print(res)
-                    # print("\n\n\n\n\n")
                     # if they are friends
-                    if not res["friends"]:
+                    pending = res.get("pending", None)
+                    if not pending and not res["friends"]:
                         if Friend.objects.filter(author_id=author_id).filter(friend_id=friend.friend_id).exists():
                             Friend.objects.filter(author_id=author_id).filter(
                                 friend_id=friend.friend_id).delete()

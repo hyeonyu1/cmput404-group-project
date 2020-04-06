@@ -65,12 +65,14 @@ class Author(AbstractUser):
 
         """
         return {
-                "id": self.uid,
-                "host": self.host,
-                "displayName": self.display_name,
-                "url": self.uid,
-                "github": self.github
-            }
+            "id": self.uid,
+            "host": self.host,
+            "displayName": self.display_name,
+            "url": self.uid,
+            "github": self.github
+        }
+
+    # def has_author(self):
 
     @staticmethod
     def is_uid_local(uid):

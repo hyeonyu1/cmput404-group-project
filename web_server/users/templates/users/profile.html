@@ -45,6 +45,9 @@
             <button class="btn" v-bind:class="show['post']?'btn-outline-dark':'btn-outline-primary'"
                 @click="app.show_page('post')">[[user.displayName ]]'s Stream</button>
             {% endif %}
+
+            <button class="btn" v-bind:class="show['github']?'btn-outline-dark':'btn-outline-primary'"
+                @click="app.show_page('github')">Github</button>
         </div>
 
         <div class="row">
@@ -73,17 +76,22 @@
             <ul class="list-group" v-if="show['friend']">
                 <friend-list v-for="(friend, index) in friends" v-bind:friend="friend" v-bind:index="index"
                     v-bind:is_visitor="is_visitor">
-                    >
+
                 </friend-list>
             </ul>
 
             <div class="list-group" v-if="show['post']">
                 <user-posts v-for="post in myposts" v-bind:post="post">
                 </user-posts>
+                <button class="btn btn-primary" @click="app.get_more_posts()">Load More</button>
             </div>
 
             <user-info v-bind:user="user" v-if="show['info']" :is_visitor="is_visitor">
             </user-info>
+
+            <div v-if="show['github']">
+                <div id="github-feed"></div>
+            </div>
         </div>
     </div>
 </template>
@@ -96,7 +104,15 @@
             <h5 class="mb-1">[[post.title]]</h5>
             <small>[[post.published]]</small>
         </div>
-        <p class="mb-1">[[post.content]]</p>
+        <p v-if="post.contentType == 'image/png;base64'" class="mb-1">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
+        </p>
+        <p v-else-if="post.contentType == 'image/jpeg;base64'" class="mb-1">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]">
+        </p>
+        <div v-else style="height: 8vh; overflow: auto">
+            <p class="mb-1">[[post.content]]</p>
+        </div>
         <small>[[post.author.displayName]]</small>
     </a>
 
@@ -109,7 +125,7 @@
     <div v-if="!friend.isDeleted">
         <li class="list-group-item">
             <div class="form-inline">
-                <a v-bind:href="'/user/profile/' + friend.uid">[[friend.displayName]] [[friend.uid]]</a>
+                <a v-bind:href="'/user/profile/' + friend.uid">[[friend.displayName]] [[friend.host]]</a>
                 <button class="btn btn-primary" v-if="!is_visitor"
                     @click="app.unfriend(friend.uid, '{{ user.uid }}', index)">Delete</button>
 
@@ -160,6 +176,7 @@
 </template>
 
 
+
 <script>
     Vue.component('request-list', {
         delimiters: ['[[', ']]'],
@@ -191,9 +208,10 @@
     });
 
     class Friend {
-        constructor(uid, displayName) {
+        constructor(uid, displayName, host) {
             this.uid = uid;
             this.displayName = displayName;
+            this.host = host;
             this.isDeleted = false;
         }
     }
@@ -207,16 +225,19 @@
                 user: {},
                 friends: [],
                 myposts: [],
+                github: [],
                 show: {
                     'info': true,
                     'friend': false,
                     'friend_request': false,
                     'post': false,
+                    'github': false,
                 },
 
                 is_visitor: true,
                 is_added: false,
-                is_already_friend: false
+                is_already_friend: false,
+                next: undefined,
             }
         },
         methods: {
@@ -229,9 +250,30 @@
                         this.is_visitor = false
                     }
                     for (let friend of response.data['friends']) {
-                        let afriend = new Friend(friend.id, friend.displayName);
-                        console.log(afriend)
+                        let afriend = new Friend(friend.id, friend.displayName, friend.host);
+                        console.log(afriend);
                         this.friends.push(afriend);
+                    }
+                })
+            },
+
+            // Retrieve users' recent github activity
+            get_github(id) {
+                let url = '/author/profile/' + id;
+                window.axios.get(url).then((response) => {
+                    this.user = response.data;
+                    try {
+                        GitHubActivity.feed({
+                            username: this.user.github.split("github.com/")[1],
+                            selector: "#github-feed",
+                            limit: 10
+                        });
+                    } catch(err) {
+                        console.log("Could not get github name: " + err);
+                        let p = document.createElement("p");
+                        p.innerText = "We couldn't load your github activity. Make sure your github URL is set " +
+                                "correctly in your profile. It should look like \"https://github.com/{your user name}\"";
+                        document.querySelector("#github-feed").appendChild(p);
                     }
                 })
             },
@@ -288,7 +330,7 @@
                     if (response.status >= 200 && response.status < 300) {
                         alert(response.data);
                         this.request_senders[index]['isDeleted'] = true;
-                        let afriend = new Friend(sender.id, sender.displayName);
+                        let afriend = new Friend(sender.id, sender.displayName, sender.host);
                         this.friends.push(afriend);
                     }
                 }).catch(error => {
@@ -386,6 +428,9 @@
                         this.show[key] = false;
                     }
                 }
+                if(name==='github')
+                    this.get_github("{{user_full_id}}");
+
             },
 
             add_friend() {
@@ -426,11 +471,31 @@
                         if (source_host.slice(0, 7) === 'http://') { source_host = source_host.slice(7) }
                         source_host = source_host.split('/')[0];
                         post['source_host'] = source_host;
+                        const date = new Date(post.published);
+                        post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
                         this.myposts.push(post);
                     }
+                    this.next = response.data["next"];
 
                 });
 
+            },
+
+            //Retrieve more posts for stream
+            get_more_posts(){
+                if(this.next != undefined){
+                    window.axios.get(this.next).then((response) => {
+                        const data = response.data["posts"];
+                        this.next = response.data["next"];
+                        data.forEach((post) => {
+                            const date = new Date(post.published);
+                            post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
+                            this.myposts.push(post);
+                        })
+                    })
+                } else {
+                    alert("There are no more posts here.");
+                }
             },
 
         },
