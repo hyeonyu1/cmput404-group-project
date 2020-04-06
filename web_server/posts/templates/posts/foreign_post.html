@@ -213,6 +213,13 @@
             add_comments(post_id){
                 //Add comments, if status code is 200, push this comment into comments(list)
                 let url = 'comments/';
+                
+                //If users do not choose contentType, set it to plaintext
+                if(this.contentType===""){
+                    this.contentType="text/plain";
+                }
+
+                //This is used to update the comments list after adding comments
                 let comment = new Comment({
                         'content':this.content,
                         'published':new Date(),
