@@ -54,7 +54,7 @@
                  <a class="mr-2" href="{% url 'profile' post.author.id %}">
                       {{post.author.displayName}}
                  </a>
-                 <small>{{post.published}}</small>
+                 <small>[[ publishTime ]]</small>
 
              </div>
 
@@ -189,7 +189,8 @@
            return {
                'comments': [],
                'content':'',
-               'contentType':''
+               'contentType':'',
+               'publishTime':''
            }
         },
         methods:{
@@ -247,7 +248,9 @@
             }
         },
          created() {
-            this.get_comments("{{ post.id }}")
+             this.get_comments("{{ post.id }}");
+             const date = new Date('{{post.published}}');
+             this.publishTime=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
          }
 
     });
