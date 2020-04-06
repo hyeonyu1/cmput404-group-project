@@ -63,7 +63,6 @@ def check_get_perm(request, api_object_post):
     """
     visibility = api_object_post["visibility"]
 
-    print("visibility = ", api_object_post)
     # Foreign servers can access all posts, unless they are 'SERVERONLY',
     # or if image or post sharing has been turned off
     if request.remote_server_authenticated:
@@ -77,8 +76,10 @@ def check_get_perm(request, api_object_post):
         else:
             return False
 
-    user_id = request.user.uid
-    author_id = api_object_post["author"]['id']
+    user_id = url_regex.sub("", request.user.uid).rstrip("/")
+
+    author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
+
 
     if user_id == author_id or visibility == Post.PUBLIC:
         return True
@@ -97,7 +98,7 @@ def check_get_perm(request, api_object_post):
     elif visibility == Post.FRIENDS:
         author_friends = Friend.objects.filter(author_id=author_id)
         for friend in author_friends:
-            if user_id == friend.friend_id:
+            if user_id == url_regex.sub("", friend.friend_id).rstrip("/"):
                 return True
     else:
         return False
@@ -329,7 +330,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             comment_info = loads(body)
             comment_info = comment_info['comment']
             new_comment = Comment()
-            new_comment.contentType = comment_info['contentType']
+            print("\n\n\n\n\n\nCOMMENT_INFO", comment_info)
+            new_comment.contentType = comment_info['content-Type']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
             new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")
@@ -447,8 +449,9 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             # getting the friends of the author
             return FOAF_verification_post(user_id, author_id)
         elif visibility == Post.PRIVATE:
-            if user_id in api_object_post["visibleTo"]:
-                return True
+            for user in api_object_post["visibleTo"]:
+                if user_id == url_regex.sub("", user).rstrip("/"):
+                    return True
         elif visibility == Post.FRIENDS:
             author_friends = Friend.objects.filter(author_id=author_id)
             for friend in author_friends:
