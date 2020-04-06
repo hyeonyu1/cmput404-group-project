@@ -550,6 +550,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
     # Response to a server, servers are considered 'root' and get all posts except for 'SERVERONLY'  and unlisted because
     # they have no reason to see those ones.
     def api_response(request, posts, pager, pagination_uris):
+        print('api response')
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
         output = {
             "query": "posts",
@@ -727,6 +728,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             if auth[0].lower() == "basic":
                 uname, passwd = base64.b64decode(
                     auth[1]).decode('utf-8').rsplit(':', 1)
+
         node = Node.objects.get(foreign_server_username=uname)
 
         if node.post_share and node.image_share:

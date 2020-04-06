@@ -5,7 +5,6 @@ from django.contrib.staticfiles import finders
 from django.conf import settings
 
 from .models import Post, VisibleTo, Category
-
 from comments.models import Comment
 from users.models import Author
 from nodes.models import Node
@@ -17,6 +16,8 @@ import json
 from json import loads
 from django.core import serializers
 from django.contrib.auth.models import AnonymousUser
+
+import json
 
 from social_distribution.utils.endpoint_utils import Endpoint, PagingHandler, Handler
 from social_distribution.utils.basic_auth import validate_remote_server_authentication
@@ -55,7 +56,6 @@ def retrieve_all_public_posts_on_local_server(request):
     return Endpoint(request, Post.objects.filter(visibility="PUBLIC").order_by('-published'), [
         PagingHandler("GET", "application/json", json_handler)
     ]).resolve()
-
 
 def check_get_perm(request, api_object_post):
     """
@@ -104,13 +104,14 @@ def check_get_perm(request, api_object_post):
     else:
         return False
 
-
 @validate_remote_server_authentication()
 def retrieve_single_post_with_id(request, post_id):
     """
     For endpoint http://service/posts/{POST_ID}
+
     Methods
         - Accept:
+
     GET
         - application/json: returns the post in json format
         - text/html: view the post while logged into our web service. If the post is an image it will return raw
@@ -119,24 +120,20 @@ def retrieve_single_post_with_id(request, post_id):
         - inserts a post with the specified post_id. Will error if that post already exists
     PUT
         - inserts a post, updates the post if it already exists
+
     For consistency, it maintains the same pageable format as http://service/posts if JSON is requested
     If HTML is requested it will return a page that will view the post details, or if the post is an image it
     will respond directly with image data for use in hosting images.
     :param request: should specify Accepted content-type
     :returns: application/json | text/html | image/jpg | image/png
     """
-
     def get_json(request, posts, pager, pagination_uris):
-        print("get_json")
         output = {
             "query": "post",
             "count": 1,
             "size": 1,
-            # "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
-            # this should not check for permission since if a foreign node calls it it will be always be false
-            "posts": [post.to_api_object() for post in posts],
+            "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
         }
-        print(output)
         return JsonResponse(output)
 
     def get_html_or_image(request, posts, pager, pagination_uris):
@@ -194,8 +191,7 @@ def retrieve_single_post_with_id(request, post_id):
             elif key == 'visibleTo':
                 #  visibleTo is a Many to One relationship, we need to create the objects that will be bound to the post
                 visible_to_list = [
-                    VisibleTo(author_uid=re.sub(
-                        r'http(s)?://', '', author_uid))
+                    VisibleTo(author_uid=re.sub(r'http(s)?://', '', author_uid))
                     for author_uid in vars.get(key)
                 ]
             elif key == 'categories':
@@ -218,8 +214,7 @@ def retrieve_single_post_with_id(request, post_id):
                 # It is unclear whether the spec expects a full user object, or just an author id url
                 # We need to prepare for both
                 if type(vars['author']) == dict:
-                    author_uid = re.sub(r'http(s)?://', '',
-                                        vars['author']['id'])
+                    author_uid = re.sub(r'http(s)?://', '', vars['author']['id'])
                 else:
                     author_uid = re.sub(r'http(s)?://', '', vars['author'])
 
@@ -235,9 +230,8 @@ def retrieve_single_post_with_id(request, post_id):
                 # You need permission to attach a post to an author. Servers are root, and logged in users can only
                 # attach posts to themselves
                 if not request.remote_server_authenticated and post_author != request.user:
-                    return HttpResponse(
-                        f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
-                        status=400)
+                    return HttpResponse(f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
+                                        status=400)
 
                 post.author = post_author
             else:
@@ -255,6 +249,7 @@ def retrieve_single_post_with_id(request, post_id):
 
         return JsonResponse({"success": "Post updated"})
 
+
     # Get a single post
     return Endpoint(request, Post.objects.filter(id=post_id), [
         PagingHandler("GET", "text/html", get_html_or_image),
@@ -266,7 +261,6 @@ def retrieve_single_post_with_id(request, post_id):
 
 
 @validate_remote_server_authentication()
-
 def comments_retrieval_and_creation_to_post_id(request, post_id):
 
     def get_handler(request, comments, pager, pagination_uris):
