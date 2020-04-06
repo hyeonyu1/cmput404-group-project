@@ -397,7 +397,7 @@ response:
 
 
 def retrieve_author_profile(request, author_id):
-    print("RETRIEVE AUTHORS")
+    print("\n\n\n\nRETRIEVE AUTHORS")
     if request.method == 'GET':
         # compose full url of author
         host = request.get_host()
@@ -418,6 +418,7 @@ def retrieve_author_profile(request, author_id):
         response_data['lastName'] = author.last_name
         response_data['email'] = author.email
         response_data['bio'] = author.bio
+        print(response_data)
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
