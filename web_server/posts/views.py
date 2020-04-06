@@ -132,6 +132,7 @@ def retrieve_single_post_with_id(request, post_id):
             "size": 1,
             "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
         }
+        print(output)
         return JsonResponse(output)
 
     def get_html_or_image(request, posts, pager, pagination_uris):
