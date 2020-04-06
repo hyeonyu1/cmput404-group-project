@@ -328,6 +328,7 @@ def retrieve_universal_author_profile(request, author_id):
         return HttpResponse("Method Not Allowed", status=405)
 
     current_host = request.get_host()
+    print("\n\n\n\n\n RETRIEVE_UNI\nauthor_id = ", author_id)
 
     # strip protocol
     author_id = url_regex.sub("", author_id)
@@ -340,6 +341,7 @@ def retrieve_universal_author_profile(request, author_id):
     if current_host == author_host:
         return redirect('retrieve_author_profile', author_id=splits[2])
     # it's foreign author
+    print("FOREIGN AUTHOR")
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
         try:
@@ -348,6 +350,7 @@ def retrieve_universal_author_profile(request, author_id):
             # first try /author/authorid with UUID dash
             url = "http://{}/{}".format(author_id_splits[0], str(author_uuid))
             res = requests.get(url)
+            print("res.body")
             if res.status_code >= 200 and res.status_code < 300:
                 try:
                     foreign_friend = res.json()
