@@ -134,6 +134,7 @@ def view_post(request, post_path):
                             status=500)
     # Attempt to render the post
     print(post["contentType"])
+    print(type(post))
     try:
         return render(request, 'posts/foreign_post.html', {
             'post': post
