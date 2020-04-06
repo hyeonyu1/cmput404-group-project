@@ -132,6 +132,7 @@ def retrieve_single_post_with_id(request, post_id):
             "count": 1,
             "size": 1,
             # "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
+            # this should not check for permission since if a foreign node calls it it will be always be false
             "posts": [post.to_api_object() for post in posts],
         }
         print(output)
