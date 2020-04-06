@@ -221,7 +221,7 @@ def retrieve_single_post_with_id(request, post_id):
                 # You need permission to attach a post to an author. Servers are root, and logged in users can only
                 # attach posts to themselves
                 if not request.remote_server_authenticated and post_author != request.user:
-                    return HttpResponse("You do are not authorized to attach a post to an author other than yourself",
+                    return HttpResponse(f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
                                         status=400)
 
                 post.author = post_author
