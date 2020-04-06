@@ -5,6 +5,8 @@ from nodes.models import Node
 import requests
 
 
+
+
 from django.conf import settings
 
 import re
@@ -52,6 +54,7 @@ class Comment(models.Model):
         Returns a python object that mimics the API, ready to be converted to a JSON string for delivery.
         """
         author_uid = url_regex.sub("", str(self.author)).rstrip("/")
+        print("author_uid = ", author_uid)
         try:
             author = Author.objects.get(uid=author_uid)
             return {
@@ -62,16 +65,10 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
-            node = author_uid.split("/author/")[0]
-            username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
-            password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
-            api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
-            if Node.objects.get(foreign_server_hostname=node).append_slash:
-                api = api + "/"
             response = requests.get(
-                "http://{}/author/{}/".format(api, author_uid),
-                auth=(username, password)
+                "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
+            print("got a response")
             if response.status_code == 200:
                 author_info = response.json()
 
@@ -80,8 +77,8 @@ class Comment(models.Model):
                     "id": author_info["id"],
                     "host": author_info["host"],
                     "displayName": author_info["displayName"],
-                    "first_name": author_info["firstName"],
-                    "last_name": author_info["lastName"],
+                    "firstName": author_info["firstName"],
+                    "lastName": author_info["lastName"],
                     "url": author_info["url"],
                     "github": author_info["github"]
                 },

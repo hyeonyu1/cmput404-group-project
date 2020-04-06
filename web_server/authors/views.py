@@ -247,7 +247,6 @@ def update_author_profile(request, author_id):
     return HttpResponse("Author successfully updated", status=200)
 
 
-@login_required
 def retrieve_universal_author_profile(request, author_id):
     current_host = request.get_host()
 
@@ -257,22 +256,24 @@ def retrieve_universal_author_profile(request, author_id):
     author_id = author_id.rstrip("/")
     splits = author_id.split("/")
     author_host = splits[0]
-
+    print("current host = ", current_host)
+    print("author_host = ", author_host)
     # if this is local author, redirect to /author/authorid
     if current_host == author_host:
-        return redirect('retrieve_author_profile', author_id=splits[2])
+        # return redirect('retrieve_author_profile', author_id=splits[2])
+        return redirect('retrieve_author_profile', author_id=author_id)
     # it's foreign author
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
         url = "http://{}".format(author_id)
-
-        res = requests.get(url)
-        # print("\n\n\n\n\n\n")
-        # print(author_id)
-        # print(url)
-        # print("inside universla author profile")
-        # print(res.text, res.status_code)
-        # print("\n\n\n\n\n\n")
+        res = requests.get(url, auth=(node.username_registered_on_foreign_server,
+                                      node.password_registered_on_foreign_server),)
+        print("\n\n\n\n\n\n")
+        print(author_id)
+        print(url)
+        print("inside universla author profile")
+        print(res.text, res.status_code)
+        print("\n\n\n\n\n\n")
         if res.status_code >= 200 or res.status_code < 300:
             try:
                 foreign_friend = res.json()
@@ -288,6 +289,8 @@ def retrieve_universal_author_profile(request, author_id):
 
 def retrieve_author_profile(request, author_id):
     if request.method == 'GET':
+        print("\n\n\n\n\nAUTH_PROFILE")
+        print("author_id", author_id)
         # compose full url of author
         host = request.get_host()
         author_id = host + "/author/" + str(author_id)
@@ -632,7 +635,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         else:
             return JsonResponse({
                 "success": False,
-                "message": "Post and image sharing is turned off"
+                "message": "Post or image sharing is turned off"
             }, status=403)
 
         return Endpoint(request, query,
@@ -1079,7 +1082,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         else:
             return JsonResponse({
                 "success": False,
-                "message": "Post and image sharing is turned off"
+                "message": "Post or image sharing is turned off"
             }, status=403)
 
     return Endpoint(request, query, [

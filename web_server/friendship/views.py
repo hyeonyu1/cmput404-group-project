@@ -260,7 +260,7 @@ def invalidate_friend_requests(author_id):
 # and in the same server
 
 def FOAF_verification(request, author):
-
+    print("author checking for foaf", author)
     auth_user = request.user.uid
     auth_user = url_regex.sub("", auth_user).rstrip("/")
     author = url_regex.sub("", author).rstrip("/")
@@ -282,10 +282,13 @@ def FOAF_verification(request, author):
         else:
             # if the author is on the same host as auth user
             if node == own_node:
+                print("\n\n\n\n same node")
                 author_friends = Friend.objects.filter(author_id=author)
+                print("friends = ", author_friends)
                 for friend in author_friends:
                     # getting the node of the friend
                     friend_node = friend.friend_id.split("/author/")[0]
+                    print("friend_node")
                     # if friend of the author is on the same host as the auth user
                     # A -> A -> A
                     if friend_node == own_node:

@@ -79,12 +79,8 @@ def check_perm(request, api_object_post):
         return FOAF_verification(request, author_id)
 
     elif visibility == Post.SERVERONLY:
-        print("author_id = ", author_id)
-
         req_user_host = url_regex.sub("", request.get_host()).rstrip("/").rstrip("/")
-        print(req_user_host)
         author_host = url_regex.sub("", Author.objects.get(uid=author_id).host).rstrip("/")
-        print(author_host)
         if req_user_host == author_host:
             return True
     elif visibility == Post.PRIVATE:
@@ -193,6 +189,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
+            print("Post exists so checking for perm")
             if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
                 return JsonResponse(
                     {
@@ -214,8 +211,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
-
-            new_comment.author = "{}/author/{}".format(settings.HOSTNAME, comment_info['author']['id'].replace("-",""))
+            new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")
+            print(new_comment.author)
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['success'] = True
@@ -404,6 +401,33 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         PagingHandler("GET", "application/json", get_handler)]
                         ).resolve()
     else:
+        auth = request.META['HTTP_AUTHORIZATION'].split()
+        if len(auth) == 2:
+            if auth[0].lower() == "basic":
+                uname, passwd = base64.b64decode(
+                    auth[1]).decode('utf-8').rsplit(':', 1)
+        node = Node.objects.get(foreign_server_username=uname)
+        print("\n\n\n\nPOST_ID = ", post_id)
+        image_type = ["image/png;base64", "image/jpeg;base64"]
+        post_type = ["text/plain", "text/markdown"]
+        if Post.objects.filter(id=post_id).exists():
+            type = Post.objects.get(id=post_id).contentType
+
+            if type in post_type and not node.post_share:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Post or image sharing is turned off"
+                    }, status=403
+                )
+            if type in image_type and not node.image_share:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Post or image sharing is turned off"
+                    }, status=403
+                )
+
         return Endpoint(request, Comment.objects.filter(parentPost=post_id).order_by("-published"),
                         [Handler("POST", "application/json", foreign_post_handler, False),
                         PagingHandler("GET", "application/json", api_response)]
