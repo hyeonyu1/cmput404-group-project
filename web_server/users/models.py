@@ -66,7 +66,7 @@ class Author(AbstractUser):
             "host": "http://" + self.host,
             "displayName": self.display_name,
             "url": "http://" + self.uid,
-            # "github": self.github
+            "github": self.github
         }
 
     @staticmethod
