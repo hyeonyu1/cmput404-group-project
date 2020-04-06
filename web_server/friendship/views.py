@@ -368,7 +368,7 @@ def FOAF_verification(request, author):
                     # A -> A -> B
                     else:
                         try:
-                            node_object = Node.objects.get(foreign_server_hostname=node)
+                            node_object = Node.objects.get(foreign_server_hostname=friend_node)
                         except Node.DoesNotExist as e:
                             print(f'attempt to FOAF verify with foreign node {node} caused error: {e}')
                             return False
