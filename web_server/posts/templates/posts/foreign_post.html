@@ -85,7 +85,7 @@
                 {% if post.contentType == "text/markdown" %}
                     <p>{{post.content|show_markdown|safe}}</p>
                 {% elif post.contentType == "image/jpeg;base64" or post.contentType == "image/png;base64" %}
-                    <img src="'data:' + {{post.contentType}} + ',' + {{post.content}}">
+                    <img src="{{ post.image_content_data }}" alt="Image hosted on foreign server">
                 {% else %}
                     <p>{{post.content}}</p>
                 {% endif %}
@@ -256,18 +256,14 @@
         //gets the image in the div and sends to the proxy image api
         let image = document.getElementById('app').querySelector('img');
 
+        // Ignore images that have raw data in them
+        if (image.src.startsWith('data')) return;
+
         fetch("/posts/proxy_image/"+image.src.split("//")[1])
         .then(response => response.text())
         .then(url => {
             image.src=url
         })
-
-        /*$.ajax({
-            url: "/posts/proxy_image/"+image.src.split("//")[1],
-            success: function(response){
-                image.src = response;
-            }
-        })*/
     }
 
     window.addEventListener('load', replace_foreign_images)
