@@ -172,7 +172,7 @@ def view_post_comment(request, post_path):
         req = node.make_api_get_request(f'posts/{post_id}/comments')
         comments_list = []
         for comment in req.json()["comments"]:
-            print(comment)
+            print("\n\n\n\ncomments = ",comment)
             content = {
                 "author": comment["author"],
                 "content": comment["comment"],
