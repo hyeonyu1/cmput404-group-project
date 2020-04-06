@@ -71,7 +71,7 @@ class Comment(models.Model):
                 "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
             print("got a response")
-            print(response.body)
+            # print(response.body)
             if response.status_code == 200:
                 author_info = response.json()
 
@@ -80,10 +80,7 @@ class Comment(models.Model):
                     "id": author_info["id"],
                     "host": author_info["host"],
                     "displayName": author_info["displayName"],
-                    "firstName": author_info["firstName"],
-                    "lastName": author_info["lastName"],
-                    "url": author_info["url"],
-                    "github": author_info["github"]
+
                 },
                 "comment": self.content,
                 "contentType": self.contentType,

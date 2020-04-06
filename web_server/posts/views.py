@@ -415,7 +415,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         foreign_server_hostname=node).password_registered_on_foreign_server
                     api = Node.objects.get(
                         foreign_server_hostname=node).foreign_server_api_location
-                    api = "http://{}/author/{}/friends/".format(api, author)
+                    api = "http://{}/author/{}/friends".format(api, author)
                     if Node.objects.get(foreign_server_hostname=node).append_slash:
                         api = api + "/"
                     response = requests.get(api,
@@ -436,6 +436,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         """
         Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
         """
+        print("check_perm_foreign_user")
 
         visibility = api_object_post["visibility"]
 
@@ -445,8 +446,9 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         author_id = url_regex.sub(
             "", api_object_post["author"]['id']).rstrip("/")
         user_id = url_regex.sub("", user_id).rstrip("/")
-
-        if user_id == author_id or visibility == Post.PUBLIC:
+        print("author_id = ", author_id)
+        print("user_id = ", user_id)
+        if visibility == Post.PUBLIC:
             return True
 
         elif visibility == Post.FOAF:
@@ -467,6 +469,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def foreign_post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
+        print("foreign_post_handler")
         output = {
             "query": "addComment",
         }
@@ -475,6 +478,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         comment_info = loads(body)
         comment_info = comment_info['comment']
 
+        print("\n\n\n\n\n foreign_comment_info = ", comment_info)
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
