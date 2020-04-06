@@ -585,11 +585,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         foaf_post = Post.objects.filter(id__in=foaf_post_id)
 
         # visibility = PRIVATE
-        print(request.user.uid)
+        print("request", request.user.uid)
         private_post = Post.objects.filter(
             visibleTo__author_uid__contains=request.user.uid,
             unlisted=False)
-
+        print("private post")
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
