@@ -126,6 +126,7 @@ def retrieve_single_post_with_id(request, post_id):
     """
 
     def get_json(request, posts, pager, pagination_uris):
+        print("get_json")
         output = {
             "query": "post",
             "count": 1,
