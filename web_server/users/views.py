@@ -205,6 +205,7 @@ def view_post_comment(request, post_path):
         author_uid = url_regex.sub("", comment_info["author"]["id"]).rstrip("/")
         print("POST FOREIGN", author_uid)
         author = Author.objects.get(uid=author_uid)
+        print("author to api", author.to_api_object())
         output = {
             "query": "addComment",
             "post": "http://"+post_path,
@@ -216,7 +217,7 @@ def view_post_comment(request, post_path):
                 "id": str(uuid4())
             }
         }
-
+        print("output = ", output)
         try:
             node = Node.objects.get(foreign_server_hostname=host)
         except Node.DoesNotExist as e:
@@ -226,7 +227,7 @@ def view_post_comment(request, post_path):
         api = "http://{}/posts/{}/comments".format(api, post_id)
         if node.append_slash:
             api = api + "/"
-        print("api",api, node)
+        print("api", api, node)
         response = requests.post(api
             ,
             auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
