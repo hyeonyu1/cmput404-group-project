@@ -26,3 +26,9 @@ The following command will load the file created in the above command into your 
     python3 manage.py test comments.test_comment_models
     python3 manage.py test users.tests.TestAuthorModels
     python3 manage.py test posts.test_posts_models
+
+# Ajax Usage
+
+	In editPost.html fetch is used to send the form data to edit the current post and on success returns to homepage and on failure, alerts the user.
+
+	In post.html jquery and ajax is used to send any images to our image proxy endpoint and replace the image source with the base64 of that image.
