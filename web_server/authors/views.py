@@ -426,7 +426,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
     Endpoint handler for service/author/posts
     POST is for creating a new post using the currently authenticated user
     GET is for retrieving posts visible to currently authenticated user
-
     For servers, the 'currently authenticated user' is a node, and if you are authenticated as a node, you are root.
     Thus we return all the posts, unless they are 'SERVERONLY'
     :param request:
@@ -561,18 +560,16 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
-
-        author_uid = url_regex.sub("", request.user.uid).rstrip("/")
         # own post
         own_post = Post.objects.filter(
-            author_id=author_uid, unlisted=False)
+            author_id=request.user.uid, unlisted=False)
 
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC", unlisted=False)
 
         # visibility = FRIENDS
         users_friends = []
-        friends = Friend.objects.filter(author_id=author_uid)
+        friends = Friend.objects.filter(author_id=request.user.uid)
         for friend in friends:
             users_friends.append(friend.friend_id)
         friend_post = Post.objects.filter(
@@ -592,12 +589,10 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             unlisted=False)
 
         # visibility = SERVERONLY
-
-        local_host = url_regex.sub("", request.get_host()).rstrip("/")
-        print("\n\n\n\n\nlocal_host = ", local_host)
+        local_host = request.user.host
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
-        print(server_only_post)
+
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
         visible_post = visible_post.distinct()
@@ -742,7 +737,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         else:
             return JsonResponse({
                 "success": False,
-                "message": "Post or image sharing is turned off"
+                "message": "Post and image sharing is turned off"
             }, status=403)
 
         return Endpoint(request, query,
