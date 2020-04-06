@@ -228,8 +228,9 @@ def retrieve_single_post_with_id(request, post_id):
                 # You need permission to attach a post to an author. Servers are root, and logged in users can only
                 # attach posts to themselves
                 if not request.remote_server_authenticated and post_author != request.user:
-                    return HttpResponse(f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
-                                        status=400)
+                    return HttpResponse(
+                        f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
+                        status=400)
 
                 post.author = post_author
             else:
@@ -247,7 +248,6 @@ def retrieve_single_post_with_id(request, post_id):
 
         return JsonResponse({"success": "Post updated"})
 
-
     # Get a single post
     return Endpoint(request, Post.objects.filter(id=post_id), [
         PagingHandler("GET", "text/html", get_html_or_image),
@@ -256,7 +256,6 @@ def retrieve_single_post_with_id(request, post_id):
         Handler("POST", "*/*", insert_or_update_post),
 
     ]).resolve()
-
 
 
 @validate_remote_server_authentication()
