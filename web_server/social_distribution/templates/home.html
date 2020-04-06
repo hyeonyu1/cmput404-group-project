@@ -81,7 +81,10 @@
           <h5 class="mb-1">[[post.title]]</h5>
           <small>[[post.published]]</small>
         </div>
-        <p class="mb-1">[[post.content]]</p>
+        <div>
+            <span style="overflow-wrap: break-word;" class="mb-1">[[post.sub_content]]</span>
+        </div>
+
         <small>[[post.author.displayName]]</small>
     </a>
         <div>
@@ -97,7 +100,10 @@
           <h5 class="mb-1">[[post.title]]</h5>
           <small>[[post.published]]</small>
         </div>
-        <p class="mb-1">[[post.content]]</p>
+        <div>
+            <span style="overflow-wrap: break-word;" class="mb-1">[[post.sub_content]]</span>
+        </div>
+
         <small>[[post.author.displayName]]</small>
     </a>
         <div>
@@ -141,10 +147,11 @@
                     posts_list.forEach((post)=>{
                         const date = new Date(post.published);
                         post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
+                        post.height = post.content.length/10;
+                        post.sub_content = this.get_sub_content(post.content);
                         this.posts.push(post);
                     });
                     this.next = response.data["next"];
-                    this.previous = response.data["previous"];
 
                 })
             },
@@ -156,12 +163,17 @@
                         data.forEach((post) => {
                             const date = new Date(post.published);
                             post.published=moment(date.toISOString()).format("MMMM DD, YYYY, hh:mm a");
+                            post.sub_content = this.get_sub_content(post.content);
                             this.posts.push(post);
                         })
                     })
                 } else {
                     alert("There are no more posts here.");
                 }
+            },
+            set_height(event, post){
+                console.log(event.target);
+                console.log(post);
             },
 
             //Retrieve all foreign posts and load more
@@ -192,6 +204,8 @@
                             post.host = post.host.replace('https://', '');
                             // Strip all trailing slashes
                             post.host = post.host.replace(/(\/)+$/, '');
+
+                            post.sub_content = this.get_sub_content(post.content);
                             this.foreign_posts.push(post);
                         });
                         this.page++;
@@ -199,14 +213,24 @@
 
                 }
 
+            },
+            // Add a sub_content which is used to display on the list view.
+            // Only display first 40 words; if the length of the sub_content
+            // is still too long after slicing, get the first 200 characters.
+            get_sub_content(content) {
+                let sub_content = content.split(" ").slice(0,40).join(" ");
+                if(sub_content.length > 200)
+                    sub_content = sub_content.slice(0,200) + "...";
+                return sub_content;
             }
-
 
         },
 
         created() {
             this.get_post();
             this.get_foreign_posts();
+        },
+        mounted() {
         }
     })
 
