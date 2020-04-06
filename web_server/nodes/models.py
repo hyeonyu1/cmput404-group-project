@@ -7,17 +7,38 @@ import requests
 # Create your models here.
 #
 
-# http://dsnfof.herokuapp.com/
-# from hostname ->  Authentication: basic server_username:server_password
-# hostname = "dsnfof.herokuapp.com"
-# server_username = "their username"
-# server_password = "password"
-# we send -> to api_location Authentication: api_username:api_password
-# api_location = "dsnfof.herokuapp.com/api"
-# api_username = "our username"
-# api_password = "some password"
+
+"""
+Node Model: to store credential information used to authenticate foreign servers 
+
+
+SCHEMA: 
+CREATE TABLE IF NOT EXISTS "nodes_node" 
+("foreign_server_hostname" varchar(500) NOT NULL PRIMARY KEY, 
+"foreign_server_username" varchar(500) NOT NULL UNIQUE, 
+"foreign_server_password" varchar(500) NOT NULL, 
+"foreign_server_api_location" varchar(500) NOT NULL, 
+"username_registered_on_foreign_server" varchar(500) NOT NULL, 
+"password_registered_on_foreign_server" varchar(500) NOT NULL, 
+"image_share" bool NOT NULL, "append_slash" bool NOT NULL, "post_share" bool NOT NULL);
+
+
+example:
+http://dsnfof.herokuapp.com/
+from hostname ->  Authentication: basic server_username:server_password
+hostname = "dsnfof.herokuapp.com"
+server_username = "their username"
+server_password = "password"
+we send -> to api_location Authentication: api_username:api_password
+api_location = "dsnfof.herokuapp.com/api"
+api_username = "our username"
+api_password = "some password"
+
+"""
 
 # As a server admin, I want to be able to add node to share with #44
+
+
 class Node(models.Model):
 
     foreign_server_hostname = models.CharField(
@@ -83,6 +104,7 @@ class Node(models.Model):
         """
         url = self.get_safe_api_url(path)
         req = requests.get(url,
-                           auth=(self.username_registered_on_foreign_server, self.password_registered_on_foreign_server),
+                           auth=(self.username_registered_on_foreign_server,
+                                 self.password_registered_on_foreign_server),
                            headers={'Accept': 'application/json'})
         return req

@@ -1,4 +1,3 @@
-
 //Check when changing visibility if its set to private show a list of users
 function visibilityChanged(selectedUsers){
 	var visibility = document.getElementById("visi");
@@ -17,7 +16,7 @@ function visibilityChanged(selectedUsers){
  * you can pick users when making a private post
  */
 function get_all_users(selectedUsers){
-	fetch("/author")
+	fetch("/author/available/")
 		.then(response => {
 			return response.json()
 		})
@@ -25,21 +24,61 @@ function get_all_users(selectedUsers){
 			let select = document.querySelector('#visibleFor');
 			select.multiple = true;
 			select.innerHTML = ''; // Clear out the current options
-			for(let author of data.data){
-				if(!author.uid) continue;
-				//console.log("AUTHOR ID", author.uid, author)
+			for(let uid of data.data){
 				let opt = document.createElement('option');
-				opt.value = author.uid;
-				opt.innerText = (author.display_name || author.first_name + author.last_name || "NO NAME")
-					+ " [" + author.uid.replace(/http[s]+:\/\//,'').slice(0, 10) + '...' + author.uid.slice(-5) + "]";
+				opt.value = uid;
+				opt.innerText = uid;
 				if (selectedUsers != undefined) {
-					if (selectedUsers.includes(author.uid)){
+					if (selectedUsers.includes(uid)){
 						opt.selected = 'selected';
 					}
 				}
-				select.appendChild(opt)
+				select.appendChild(opt);
 			}
+			get_visible_to_names(select);
 		})
+}
+
+/**
+ * For the given select element, will cycle through all of it's options and if the
+ * inner text is a valid profile link, then it will replace the inner text with the users display name and host
+ * @param select_element
+ */
+function get_visible_to_names(select_element){
+	let options = select_element.querySelectorAll('option');
+	for(let option of options){
+		fetch('/author/profile/' + option.innerText)
+			.then(response => response.json())
+			.then(data => {
+				option.innerText = data.displayName + ' (' + option.innerText + ')'
+			})
+	}
+}
+
+/**
+ * Given some text, scans the text for any markdown links that appear in the form {hostname}/{path}/{rest of the path}
+ * and then returns a list of links that will be of form {hostname}/{replaced_path}/{rest of path}
+ * @param content
+ */
+function scan_for_image_edit_links(content, hostname, path, replaced_path){
+	// Get all markdown links
+	let links = content.matchAll(/!\[([^\]]*)]\(https?:\/\/([^)]*)\)/g);
+
+	// Filter for the ones that are for our own server
+	let own_server_links = {};
+	for(let link of links){
+		// There are some capturing groups defined in the above regex that are useful
+		let link_name = link[1];
+		let link_uri = link[2];
+
+		let prefix = hostname + '/' + path + '/';
+
+		if(link_uri.startsWith(prefix)){
+			// This is a link we need to extract and return a replacement version for
+			own_server_links[link_name] = link_uri.replace(path, replaced_path)
+		}
+	}
+	return own_server_links
 }
 
 
