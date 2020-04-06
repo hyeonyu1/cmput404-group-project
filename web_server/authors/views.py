@@ -598,14 +598,15 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
         print("grabbed visible_posts")
         visible_post = visible_post.distinct()
-
+        print("got visible_post distinct")
         array_of_posts = []
         count = visible_post.count()
+        print("page_num")
 
         page_num = int(request.GET.get('page', "1"))
-        print("page_num", page_num)
+        print("size")
+
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
-        print("size", size)
         print("going through posts")
         for post in visible_post.order_by("-published"):
             author_id = Author.objects.get(uid=post.author_id)
