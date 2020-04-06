@@ -331,7 +331,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             comment_info = comment_info['comment']
             new_comment = Comment()
             print("\n\n\n\n\n\nCOMMENT_INFO", comment_info)
-            new_comment.contentType = comment_info['content-Type']
+            new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
             new_comment.author = url_regex.sub('', comment_info['author']['id']).rstrip("/")

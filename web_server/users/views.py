@@ -169,9 +169,10 @@ def view_post_comment(request, post_path):
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
     if request.method == "GET":
-        req = node.make_api_get_request(f'posts/{post_id}/comments/')
+        req = node.make_api_get_request(f'posts/{post_id}/comments')
         comments_list = []
         for comment in req.json()["comments"]:
+            print(comment)
             content = {
                 "author": comment["author"],
                 "content": comment["comment"],
