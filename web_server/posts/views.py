@@ -374,19 +374,23 @@ def fetch_public_posts_from_nodes(request):
                 return self.results
 
             try:
+                req_params = {
+                    'size' : self.size
+                }
+                if self.page > 0:
+                    req_params['page'] = self.page
+
                 response = requests.get(self.api_location,
                                         auth=(self.username, self.password),
                                         headers={
                                             'Accept': 'application/json'
                                         },
-                                        params={
-                                            'size': self.size,
-                                            'page': self.page
-                                        })
+                                        params=req_params)
             except Exception as e:
                 print(f"Error connecting to node '{self.api_location}': {e}")
                 return []
             if response.status_code != 200:
+                print(f"Response was {response.status_code} when fetching public posts from {self.api_location}")
                 self.results = []
             else:
                 try:
