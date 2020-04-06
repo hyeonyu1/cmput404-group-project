@@ -584,6 +584,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         foaf_post = Post.objects.filter(id__in=foaf_post_id)
 
         # visibility = PRIVATE
+        print(request.user.uid)
         private_post = Post.objects.filter(
             visibleTo__author_uid__contains=request.user.uid,
             unlisted=False)
@@ -593,8 +594,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
 
-        # visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
-        visible_post = public_post | foaf_post | friend_post | server_only_post | own_post
+        visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
         visible_post = visible_post.distinct()
 
@@ -624,7 +624,11 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             for c in categories:
                 categories_list.append(c.name)
 
-            # visible_to = post.visibleTo.all()
+            print("\n\n\n\n")
+            print("trying")
+            print(post.visibleTo)
+            print("got it")
+            visible_to = post.visibleTo.all()
             visible_to_list = []
             # for visible in visible_to:
             #     visible_to_list.append(visible.author_uid)
