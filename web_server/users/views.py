@@ -133,7 +133,6 @@ def view_post(request, post_path):
         return HttpResponse(f"The foreign server returned a response, but we could not extract the post. Error: {e}",
                             status=500)
     # Attempt to render the post
-    print("contenttype - ", post.author)
     print(post["contentType"])
     try:
         return render(request, 'posts/foreign_post.html', {
