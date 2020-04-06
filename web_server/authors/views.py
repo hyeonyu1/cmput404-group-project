@@ -586,12 +586,12 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
         # visibility = PRIVATE
         print("request", request.user.uid)
-        # private_post = Post.objects.filter(
-        #     visibleTo__author_uid__contains=request.user.uid,
-        #     unlisted=False)
-        private_post = Post.objects.all()
-        for i in private_post:
-            print(i)
+        private_post = Post.objects.filter(
+            visibleTo__author_uid__contains=request.user.uid,
+            unlisted=False)
+        # private_post = Post.objects.all()
+        # for i in private_post:
+        #     print(i)
         print("private post", private_post)
         # visibility = SERVERONLY
         local_host = request.user.host
