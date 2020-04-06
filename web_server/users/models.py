@@ -67,7 +67,7 @@ class Author(AbstractUser):
         return {
                 "id": "http://" + self.uid,
                 "host": "http://" + self.host,
-                "displayName": self.displayName,
+                "displayName": self.display_name,
                 "url": "http://" + self.uid,
                 "github": self.github
             }
