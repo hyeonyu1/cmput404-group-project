@@ -591,7 +591,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         #     unlisted=False)
         private_post = Post.objects.all()
         for i in private_post:
-            print(i.visibleTo.all())
+            print(i)
+            print(VisibleTo)
         print("private post", private_post)
         # visibility = SERVERONLY
         local_host = request.user.host
