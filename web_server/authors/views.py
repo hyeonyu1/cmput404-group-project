@@ -99,16 +99,16 @@ def retrieve_friends_of_author(authorid):
 
 
 """
-NO AUTHENTICATION REQUIRED  
+NO AUTHENTICATION REQUIRED
 endpoint: http://service/author
 
-allowed methods: 
+allowed methods:
 GET: return full information of all LOCAL authors
 
 response:
-405: method not allowed 
+405: method not allowed
 200: success
-    
+
 """
 
 
@@ -132,17 +132,17 @@ def return_all_authors_registered_on_local_server(request):
 
 
 """
-INTERNAL ENDPOINT 
+INTERNAL ENDPOINT
 endpoint: http://service/author/<authorid:UUID>/addfriend
 
-allowed methods: 
+allowed methods:
 GET: return authors on (both local and authenticated foreign servers) that have yet friends with current author
 
 response:
-405: method not allowed 
+405: method not allowed
 404: current author not found (either inactive or superuser or simply DNE)
 200: success
-    
+
 """
 @login_required
 def view_list_of_available_authors_to_befriend(request, author_id):
@@ -194,24 +194,24 @@ def view_list_of_available_authors_to_befriend(request, author_id):
 
 
 """
-INTERNAL ENDPOINT  
-endpoint: http://service/author/unfriend 
+INTERNAL ENDPOINT
+endpoint: http://service/author/unfriend
 
-allowed methods: 
-POST: unfriend two authors given in request body 
+allowed methods:
+POST: unfriend two authors given in request body
 
 response:
 405: method not allowed
-422: post body missing fields 
-404: friendship doesn't exist 
+422: post body missing fields
+404: friendship doesn't exist
 200: success
 
-post body example: 
+post body example:
 {
     "author_id" : "127.0.0.1:8000/author/9d411951f13246728c2a1d00c081e680",
 	"friend_id" : "localhost:8000/author/99baa477e25b406696f0f61655716197"
 }
-    
+
 """
 
 
@@ -251,17 +251,17 @@ def check_missing_post_body_field_and_return_422(body, fields_to_check):
 
 
 """
-INTERNAL ENDPOINT  
+INTERNAL ENDPOINT
 endpoint: http://service/author/<authorid:UUID>/update
 
-allowed methods: 
+allowed methods:
 POST: update current author with values given in request body
 
 response:
-405: method not allowed 
+405: method not allowed
 200: success
-404: author to be updated not found 
-422: post body missing fields 
+404: author to be updated not found
+422: post body missing fields
 
 
 post body data requirement:
@@ -270,7 +270,7 @@ first_name, last_name, email, bio, github, display_name, delete
 allow authors delete themselves (delete  = True if to be deleted)
 if no changes to above field, original values should be passed
 username, uid, id, url, host of author can't be changed
-    
+
 """
 
 
@@ -310,24 +310,26 @@ def update_author_profile(request, author_id):
 
 
 """
-INTERNAL ENDPOINT 
+INTERNAL ENDPOINT
 endpoint: http://service/author/profile/<author_id: URL>/
 
-allowed methods: 
-GET: return full information of a given UNIVERSAL author 
+allowed methods:
+GET: return full information of a given UNIVERSAL author
 
 response:
 404: failure to retrieve author information
-405: method not allowed 
+405: method not allowed
 200: success
-    
+
 """
-@login_required
+
+
 def retrieve_universal_author_profile(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method Not Allowed", status=405)
 
     current_host = request.get_host()
+    print("\n\n\n\n\n RETRIEVE_UNI\nauthor_id = ", author_id)
 
     # strip protocol
     author_id = url_regex.sub("", author_id)
@@ -340,6 +342,7 @@ def retrieve_universal_author_profile(request, author_id):
     if current_host == author_host:
         return redirect('retrieve_author_profile', author_id=splits[2])
     # it's foreign author
+    print("FOREIGN AUTHOR")
     if Node.objects.filter(foreign_server_hostname=author_host).exists():
         node = Node.objects.get(pk=author_host)
         try:
@@ -348,6 +351,7 @@ def retrieve_universal_author_profile(request, author_id):
             # first try /author/authorid with UUID dash
             url = "http://{}/{}".format(author_id_splits[0], str(author_uuid))
             res = requests.get(url)
+            print(res.body)
             if res.status_code >= 200 and res.status_code < 300:
                 try:
                     foreign_friend = res.json()
@@ -382,22 +386,21 @@ def retrieve_universal_author_profile(request, author_id):
 PUBLIC ENDPOINT
 endpoint: http://service/author/<author_id: UUID>
 
-allowed methods: 
+allowed methods:
 GET: return full information of a given LOCAL author's UUID
 
 response:
 404: author in query doesn't not exist on local database (either inactive or is superuser or simply DNE)
-405: method not allowed 
+405: method not allowed
 200: success
 
-    
+
 """
 
 
 def retrieve_author_profile(request, author_id):
+    print("\n\n\n\nRETRIEVE AUTHORS")
     if request.method == 'GET':
-        print("\n\n\n\n\nAUTH_PROFILE")
-        print("author_id", author_id)
         # compose full url of author
         host = request.get_host()
         author_id = host + "/author/" + UUID(author_id).hex
@@ -417,6 +420,7 @@ def retrieve_author_profile(request, author_id):
         response_data['lastName'] = author.last_name
         response_data['email'] = author.email
         response_data['bio'] = author.bio
+        print(response_data)
         return JsonResponse(response_data)
 
     return HttpResponse("You can only GET the URL", status=405)
@@ -428,7 +432,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
     Endpoint handler for service/author/posts
     POST is for creating a new post using the currently authenticated user
     GET is for retrieving posts visible to currently authenticated user
-
     For servers, the 'currently authenticated user' is a node, and if you are authenticated as a node, you are root.
     Thus we return all the posts, unless they are 'SERVERONLY'
     :param request:
@@ -563,18 +566,17 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
-
-        author_uid = url_regex.sub("", request.user.uid).rstrip("/")
+        print("\n\n\n\n\n in retrive_post")
         # own post
         own_post = Post.objects.filter(
-            author_id=author_uid, unlisted=False)
+            author_id=request.user.uid, unlisted=False)
 
         # visibility =  PUBLIC
         public_post = Post.objects.filter(visibility="PUBLIC", unlisted=False)
 
         # visibility = FRIENDS
         users_friends = []
-        friends = Friend.objects.filter(author_id=author_uid)
+        friends = Friend.objects.filter(author_id=request.user.uid)
         for friend in friends:
             users_friends.append(friend.friend_id)
         friend_post = Post.objects.filter(
@@ -593,13 +595,16 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             visibleTo__author_uid__contains=request.user.uid,
             unlisted=False)
 
-        # visibility = SERVERONLY
 
-        local_host = url_regex.sub("", request.get_host()).rstrip("/")
-        print("\n\n\n\n\nlocal_host = ", local_host)
+<< << << < HEAD
+
+== == == =
+>>>>>> > e41a2bb0bb8dce44a5c921d2584c801d34222751
+        # visibility = SERVERONLY
+        local_host = request.user.host
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
-        print(server_only_post)
+
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
         visible_post = visible_post.distinct()
@@ -608,8 +613,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         count = visible_post.count()
 
         page_num = int(request.GET.get('page', "1"))
-        size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
+        size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
         for post in visible_post.order_by("-published"):
             author_id = Author.objects.get(uid=post.author_id)
 
@@ -744,7 +749,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         else:
             return JsonResponse({
                 "success": False,
-                "message": "Post or image sharing is turned off"
+                "message": "Post and image sharing is turned off"
             }, status=403)
 
         return Endpoint(request, query,
@@ -907,12 +912,13 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             username = diff_node.username_registered_on_foreign_server
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
+            api = "http://{}/author/{}/posts?size={}&page={}".format(
+                    api, author_id, request_size, page_num)
             if diff_node.append_slash:
                 api = api + "/"
 
-            response = requests.get(
-                "http://{}/author/{}/posts?size={}&page={}".format(
-                    api, author_id, request_size, page_num),
+            response = requests.get(api
+                ,
                 auth=(username, password)
             )
 
@@ -1053,7 +1059,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
                 # visibility = PRIVATE
                 private_post = Post.objects.filter(
-                    author=author, visibleTo__author_uid__contains=user_uid, unlisted=False)
+                    author=author, visibleTo__author_uid__contains=request.user.uid, unlisted=False)
 
                 # visibility = SERVERONLY
                 print("\n\n\n\n\n user host = ", request.user.host)

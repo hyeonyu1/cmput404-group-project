@@ -61,18 +61,13 @@ class Author(AbstractUser):
         super(Author, self).save(*args, **kwargs)
 
     def to_api_object(self):
-        """
-
-        """
         return {
-                "id": "http://" + self.uid,
-                "host": "http://" + self.host,
-                "displayName": self.display_name,
-                "first_name": self.first_name,
-                "last_name": self.last_name,
-                "url": "http://" + self.uid,
-                "github": self.github
-            }
+            "id": "http://" + self.uid,
+            "host": "http://" + self.host,
+            "displayName": self.display_name,
+            "url": "http://" + self.uid,
+            "github": self.github
+        }
 
     @staticmethod
     def is_uid_local(uid):

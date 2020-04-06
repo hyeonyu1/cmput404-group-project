@@ -345,6 +345,7 @@ def FOAF_verification(request, author):
     for node in Node.objects.all():
         nodes.append(node.foreign_server_hostname)
 
+    print(nodes)
     for node in nodes:
         # If the author is a friend of auth user return True
         if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
@@ -373,15 +374,19 @@ def FOAF_verification(request, author):
                     # Since the friend is not on the same host as the auth user make a request to get friends from the other node
                     # A -> A -> B
                     else:
-                        username = Node.objects.get(foreign_server_hostname=friend_node).username_registered_on_foreign_server
-                        password = Node.objects.get(foreign_server_hostname=friend_node).password_registered_on_foreign_server
-                        api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
+                        username = Node.objects.get(
+                            foreign_server_hostname=friend_node).username_registered_on_foreign_server
+                        password = Node.objects.get(
+                            foreign_server_hostname=friend_node).password_registered_on_foreign_server
+                        api = Node.objects.get(
+                            foreign_server_hostname=friend_node).foreign_server_api_location
+                        api = "http://{}/author/{}/friends/".format(
+                            api, "{}/author/{}".format(api, author))
                         if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                             api = api + "/"
-                        response = requests.get(
-                            "http://{}/author/{}/friends/".format(api, "{}/author/{}".format(api, author)),
-                            auth=(username, password)
-                        )
+                        response = requests.get(api,
+                                                auth=(username, password)
+                                                )
                         if response.status_code == 200:
                             friends_list = response.json()
                             for user in friends_list["authors"]:
