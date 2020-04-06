@@ -349,7 +349,7 @@ def retrieve_universal_author_profile(request, author_id):
             # first try /author/authorid with UUID dash
             url = "http://{}/{}".format(author_id_splits[0], str(author_uuid))
             res = requests.get(url)
-            print("res.body")
+            print(res.body)
             if res.status_code >= 200 and res.status_code < 300:
                 try:
                     foreign_friend = res.json()
@@ -397,6 +397,7 @@ response:
 
 
 def retrieve_author_profile(request, author_id):
+    print("RETRIEVE AUTHORS")
     if request.method == 'GET':
         # compose full url of author
         host = request.get_host()
