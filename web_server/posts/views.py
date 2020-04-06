@@ -11,6 +11,8 @@ from users.models import Author
 from nodes.models import Node
 from friendship.models import Friend
 from friendship.views import FOAF_verification
+import json
+
 
 from json import loads
 from django.core import serializers
