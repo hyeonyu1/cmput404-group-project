@@ -594,12 +594,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         private_post = Post.objects.filter(
             visibleTo__author_uid__contains=request.user.uid,
             unlisted=False)
-
-
-<< << << < HEAD
-
-== == == =
->>>>>> > e41a2bb0bb8dce44a5c921d2584c801d34222751
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
@@ -913,14 +907,13 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
             api = "http://{}/author/{}/posts?size={}&page={}".format(
-                    api, author_id, request_size, page_num)
+                api, author_id, request_size, page_num)
             if diff_node.append_slash:
                 api = api + "/"
 
-            response = requests.get(api
-                ,
-                auth=(username, password)
-            )
+            response = requests.get(api,
+                                    auth=(username, password)
+                                    )
 
             if response.status_code != 200:
                 response_data = {
