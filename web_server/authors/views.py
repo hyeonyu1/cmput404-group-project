@@ -898,8 +898,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         return JsonResponse(output)
 
     def retrieve_author_posts(request):
-        node = author_id.split("/author/")[0]
-        id_of_author = author_id.split("/author/")[-1]
+        node = author_id.split("/")[0]
+        id_of_author = author_id.split("/")[-1]
         try:
             valid_uuid = UUID(id_of_author, version=4)
 
@@ -923,9 +923,14 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             if diff_node.append_slash:
                 api = api + "/"
 
+            # Quick fix for dsnfof node to allow viewing authors posts
+            api_author_id = author_id
+            if node == 'dsnfof.herokuapp.com':
+                api_author_id = api_author_id.split('/')[-1]
+
             response = requests.get(
                 "http://{}/author/{}/posts?size={}&page={}".format(
-                    api, author_id, request_size, page_num),
+                    api, api_author_id, request_size, page_num),
                 auth=(username, password)
             )
 
