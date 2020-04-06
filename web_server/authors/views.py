@@ -589,7 +589,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         private_post = Post.objects.filter(
             visibleTo__author_uid__contains=request.user.uid,
             unlisted=False)
-        print("private post")
+        print("private post", private_post)
         # visibility = SERVERONLY
         local_host = request.user.host
         server_only_post = Post.objects.filter(
