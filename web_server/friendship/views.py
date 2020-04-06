@@ -375,7 +375,7 @@ def FOAF_verification(request, author):
                         username = node_object.username_registered_on_foreign_server
                         password = node_object.password_registered_on_foreign_server
                         api = node_object.foreign_server_api_location
-                        api = "http://{}/author/{}/friends/".format(
+                        api = "http://{}/author/{}/friends".format(
                             api, "{}/author/{}".format(api, author))
                         if node_object.append_slash:
                             api = api + "/"
@@ -403,7 +403,7 @@ def FOAF_verification(request, author):
                 if node_object.append_slash:
                     api = api + "/"
                 response = requests.get(
-                    "http://{}/author/{}/friends/".format(api, author),
+                    "http://{}/author/{}/friends".format(api, author),
                     auth=(username, password)
                 )
                 if response.status_code == 200:

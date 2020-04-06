@@ -414,7 +414,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                         foreign_server_hostname=node).password_registered_on_foreign_server
                     api = Node.objects.get(
                         foreign_server_hostname=node).foreign_server_api_location
-                    api = "http://{}/author/{}/friends/".format(api, author)
+                    api = "http://{}/author/{}/friends".format(api, author)
                     if Node.objects.get(foreign_server_hostname=node).append_slash:
                         api = api + "/"
                     response = requests.get(api,
