@@ -4,13 +4,15 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.staticfiles import finders
 from django.conf import settings
 
+from .models import Post, VisibleTo, Category
 
-from .models import Post
 from comments.models import Comment
 from users.models import Author
 from nodes.models import Node
 from friendship.models import Friend
 from friendship.views import FOAF_verification
+import json
+
 
 from json import loads
 from django.core import serializers
@@ -55,38 +57,29 @@ def retrieve_all_public_posts_on_local_server(request):
         PagingHandler("GET", "application/json", json_handler)
     ]).resolve()
 
-@validate_remote_server_authentication()
-def retrieve_single_post_with_id(request, post_id):
+def check_get_perm(request, api_object_post):
     """
-    For endpoint http://service/posts/{POST_ID}
-    Access the single specified post.
-    For consistency, it maintains the same pageable format as http://service/posts if JSON is requested
-    If HTML is requested it will return a page that will view the post details, or if the post is an image it
-    will respond directly with image data for use in hosting images.
-    Methods: GET
-    :param request: should specify Accepted content-type
-    :returns: application/json | text/html
+    Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
     """
-    def check_perm(request, api_object_post):
-        """
-        Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
-        """
-        visibility = api_object_post["visibility"]
-        # Foreign servers can access all posts, unless they are 'SERVERONLY',
-        # or if image or post sharing has been turned off
-        if request.remote_server_authenticated:
-            if visibility != Post.SERVERONLY:
-                allowed_post_types = []
-                if request.remote_server_authenticated_for_images:
-                    allowed_post_types += [Post.TYPE_JPEG, Post.TYPE_PNG]
-                if request.remote_server_authenticated_for_posts:
-                    allowed_post_types += [Post.TYPE_BASE64, Post.TYPE_MARKDOWN, Post.TYPE_PLAIN]
-                return api_object_post['contentType'] in allowed_post_types
-            else:
-                return False
+    visibility = api_object_post["visibility"]
+
+    # Foreign servers can access all posts, unless they are 'SERVERONLY',
+    # or if image or post sharing has been turned off
+    if request.remote_server_authenticated:
+        if visibility != Post.SERVERONLY:
+            allowed_post_types = []
+            if request.remote_server_authenticated_for_images:
+                allowed_post_types += [Post.TYPE_JPEG, Post.TYPE_PNG]
+            if request.remote_server_authenticated_for_posts:
+                allowed_post_types += [Post.TYPE_BASE64, Post.TYPE_MARKDOWN, Post.TYPE_PLAIN]
+            return api_object_post['contentType'] in allowed_post_types
+        else:
+            return False
 
     user_id = url_regex.sub("", request.user.uid).rstrip("/")
+
     author_id = url_regex.sub("", api_object_post["author"]['id']).rstrip("/")
+
 
     if user_id == author_id or visibility == Post.PUBLIC:
         return True
@@ -94,68 +87,61 @@ def retrieve_single_post_with_id(request, post_id):
     elif visibility == Post.FOAF:
         # getting the friends of the author
         return FOAF_verification(request, author_id)
-
     elif visibility == Post.SERVERONLY:
-        req_user_host = url_regex.sub("", request.get_host()).rstrip("/").rstrip("/")
-        author_host = url_regex.sub("", Author.objects.get(uid=author_id).host).rstrip("/")
-        if req_user_host == author_host:
+        if request.user.host == Author.objects.get(uid=author_id).host:
             return True
     elif visibility == Post.PRIVATE:
-        if user_id in api_object_post["visibleTo"]:
+        # The visibleTo list contains protocols, which we dont want
+        no_protocol_visible_to = [re.sub(r'http(s)*://', '', vt) for vt in api_object_post["visibleTo"]]
+        if user_id in no_protocol_visible_to:
             return True
     elif visibility == Post.FRIENDS:
         author_friends = Friend.objects.filter(author_id=author_id)
         for friend in author_friends:
-            if user_id == friend.friend_id:
+            if user_id == url_regex.sub("", friend.friend_id).rstrip("/"):
                 return True
     else:
         return False
-        elif visibility == Post.FOAF:
-            # getting the friends of the author
-            return FOAF_verification(request, author_id)
-        elif visibility == Post.SERVERONLY:
-            if request.user.host == Author.objects.get(uid=author_id).host:
-                return True
-        elif visibility == Post.PRIVATE:
-            # The visibleTo list contains protocols, which we dont want
-            no_protocol_visible_to = [re.sub(r'http(s)*://', '', vt) for vt in api_object_post["visibleTo"]]
-            if user_id in no_protocol_visible_to:
-                return True
-        elif visibility == Post.FRIENDS:
-            author_friends = Friend.objects.filter(author_id=author_id)
-            for friend in author_friends:
-                if user_id == friend.friend_id:
-                    return True
-        else:
-            return False
+
 
 @validate_remote_server_authentication()
 def retrieve_single_post_with_id(request, post_id):
     """
     For endpoint http://service/posts/{POST_ID}
-    Access the single specified post.
+    Methods
+        - Accept:
+    GET
+        - application/json: returns the post in json format
+        - text/html: view the post while logged into our web service. If the post is an image it will return raw
+            image data
+    POST
+        - inserts a post with the specified post_id. Will error if that post already exists
+    PUT
+        - inserts a post, updates the post if it already exists
     For consistency, it maintains the same pageable format as http://service/posts if JSON is requested
     If HTML is requested it will return a page that will view the post details, or if the post is an image it
     will respond directly with image data for use in hosting images.
-    Methods: GET
     :param request: should specify Accepted content-type
-    :returns: application/json | text/html
+    :returns: application/json | text/html | image/jpg | image/png
     """
 
-
-    def json_handler(request, posts, pager, pagination_uris):
+    def get_json(request, posts, pager, pagination_uris):
+        print("get_json")
         output = {
             "query": "post",
             "count": 1,
             "size": 1,
-            "posts": [post.to_api_object() for post in posts if check_perm(request, post.to_api_object())],
+            # "posts": [post.to_api_object() for post in posts if check_get_perm(request, post.to_api_object())],
+            # this should not check for permission since if a foreign node calls it it will be always be false
+            "posts": [post.to_api_object() for post in posts],
         }
+        print(output)
         return JsonResponse(output)
 
-    def html_handler(request, posts, pager, pagination_uris):
+    def get_html_or_image(request, posts, pager, pagination_uris):
         post = Post.objects.get(id=post_id)
         if post.contentType == post.TYPE_PNG or post.contentType == post.TYPE_JPEG:
-            if not check_perm(request, post.to_api_object()):
+            if not check_get_perm(request, post.to_api_object()):
                 # The user does not have permission to access this post, they must be served the 401 image
                 with open(finders.find('401-image.png'), 'rb') as f:
                     return HttpResponse(f.read(), content_type='image/png', status=401)
@@ -163,16 +149,117 @@ def retrieve_single_post_with_id(request, post_id):
             response = HttpResponse(base64.b64decode(post.content), status=200)
             response['Content-Type'] = post.contentType
             return response
-        if not check_perm(request, post.to_api_object()):
+
+        if not check_get_perm(request, post.to_api_object()):
             return HttpResponse("You do not have permission to see this post", status=401)
         return render(request, 'posts/post.html', {'post': post})
 
+    def insert_or_update_post(request):
+        """
+        Inserts or updates a post with the given post id. Whether or not we reject the request if the post already
+        exists depends on the request method: PUT updates, POST rejects
+        """
+        # First we find out if the post exists
+        try:
+            post = Post.objects.get(id=post_id)
+        except Post.DoesNotExist as e:
+            post = None
+
+        if post is not None and request.method == 'POST':
+            return HttpResponse(f"Post ID '{post_id}' already exists, and cannot be updated by POST, try PUT instead.",
+                                status=400)
+
+        # Create the post if it does not exist
+        if post is None:
+            post = Post(id=post_id)
+
+        # Insert all the provided fields
+
+        # There might be a lot of different keys passed, and some keys might not get passed and are entirely optional.
+        # Thus we need to carefully consider each key and see if we can set that value for the post
+
+        visible_to_list = None
+        post_author = None
+        post_comments = None
+        vars = json.loads(request.body)
+        for key in vars:
+            # Ignore passed in values that can't be stored on posts
+            if not hasattr(post, key) and key not in ['author']:
+                continue
+
+            if key == 'id':
+                # We ignore a passed in id, since the id was already specified in the url
+                continue
+            elif key == 'visibleTo':
+                #  visibleTo is a Many to One relationship, we need to create the objects that will be bound to the post
+                visible_to_list = [
+                    VisibleTo(author_uid=re.sub(r'http(s)?://', '', author_uid))
+                    for author_uid in vars.get(key)
+                ]
+            elif key == 'categories':
+                post.categories.clear()
+                # Look up the categories or create them if they are new
+                for category in vars['categories']:
+                    c, created = Category.objects.get_or_create(
+                        name=category)
+                    post.categories.add(c)
+            elif key == 'unlisted':
+                if vars.get(key) == 'true':
+                    setattr(post, key, True)
+                elif vars.get(key) == 'false':
+                    setattr(post, key, False)
+            elif key == 'comments':
+                # We store the comments to add to the post once it is saved to the database
+                # @todo merge with Hyeon's code that supports foreign comment authors
+                post_comments = vars['comments']
+            elif key == 'author':
+                # It is unclear whether the spec expects a full user object, or just an author id url
+                # We need to prepare for both
+                if type(vars['author']) == dict:
+                    author_uid = re.sub(r'http(s)?://', '', vars['author']['id'])
+                else:
+                    author_uid = re.sub(r'http(s)?://', '', vars['author'])
+
+                # Our system does not store foreign data. We must validate that the author is not foreign:
+                try:
+                    post_author = Author.objects.get(uid=author_uid)
+                except Author.DoesNotExist as e:
+                    return HttpResponse("We do not support attaching posts to Authors not signed up on the local server"
+                                        f". Please send your post to the server the foreign author '{author_uid}' "
+                                        "belongs to.",
+                                        status=400)
+
+                # You need permission to attach a post to an author. Servers are root, and logged in users can only
+                # attach posts to themselves
+                if not request.remote_server_authenticated and post_author != request.user:
+                    return HttpResponse(
+                        f"You do are not authorized to attach a post to an author other than yourself '{request.user.uid}'",
+                        status=400)
+
+                post.author = post_author
+            else:
+                # All other fields
+                setattr(post, key, vars.get(key))
+        post.size = 0
+        post.save()
+
+        # Set the visibleTo if it was passed, start by removing all the visibleTo that currently exist
+        if visible_to_list is not None:
+            post.visibleTo.all().delete()
+            for vt in visible_to_list:
+                vt.accessed_post = post
+                vt.save()
+
+        return JsonResponse({"success": "Post updated"})
+
     # Get a single post
     return Endpoint(request, Post.objects.filter(id=post_id), [
-        PagingHandler("GET", "text/html", html_handler),
-        PagingHandler("GET", "application/json", json_handler)
-    ]).resolve()
+        PagingHandler("GET", "text/html", get_html_or_image),
+        PagingHandler("GET", "application/json", get_json),
+        Handler("PUT", "*/*", insert_or_update_post),
+        Handler("POST", "*/*", insert_or_update_post),
 
+    ]).resolve()
 
 
 @validate_remote_server_authentication()
@@ -227,7 +314,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
             print("Post exists so checking for perm")
-            if not check_perm(request, Post.objects.get(id=post_id).to_api_object()):
+            if not check_get_perm(request, Post.objects.get(id=post_id).to_api_object()):
                 return JsonResponse(
                     {
                         "query": "addComment",
@@ -245,6 +332,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             comment_info = loads(body)
             comment_info = comment_info['comment']
             new_comment = Comment()
+            print("\n\n\n\n\n\nCOMMENT_INFO", comment_info)
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
@@ -307,10 +395,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                             password = Node.objects.get(
                                 foreign_server_hostname=friend_node).password_registered_on_foreign_server
                             api = Node.objects.get(foreign_server_hostname=friend_node).foreign_server_api_location
+                            api = "http://{}/author/{}/friends".format(api, "{}/author/{}".format(api, author))
                             if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
                                 api = api + "/"
-                            response = requests.get(
-                                "http://{}/author/{}/friends/".format(api, "{}/author/{}".format(api, author)),
+                            response = requests.get(api
+                                ,
                                 auth=(username, password)
                             )
                             if response.status_code == 200:
@@ -326,10 +415,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                     username = Node.objects.get(foreign_server_hostname=node).username_registered_on_foreign_server
                     password = Node.objects.get(foreign_server_hostname=node).password_registered_on_foreign_server
                     api = Node.objects.get(foreign_server_hostname=node).foreign_server_api_location
+                    api = "http://{}/author/{}/friends/".format(api, author)
                     if Node.objects.get(foreign_server_hostname=node).append_slash:
                         api = api + "/"
-                    response = requests.get(
-                        "http://{}/author/{}/friends/".format(api, author),
+                    response = requests.get(api
+                        ,
                         auth=(username, password)
                     )
                     if response.status_code == 200:
@@ -363,8 +453,9 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             # getting the friends of the author
             return FOAF_verification_post(user_id, author_id)
         elif visibility == Post.PRIVATE:
-            if user_id in api_object_post["visibleTo"]:
-                return True
+            for user in api_object_post["visibleTo"]:
+                if user_id == url_regex.sub("", user).rstrip("/"):
+                    return True
         elif visibility == Post.FRIENDS:
             author_friends = Friend.objects.filter(author_id=author_id)
             for friend in author_friends:

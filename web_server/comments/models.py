@@ -65,10 +65,13 @@ class Comment(models.Model):
                 "id": str(self.id.hex)
             }
         except Author.DoesNotExist:
+            print("AUTHOR DOES NOT EXISTS")
+            print("calling http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid))
             response = requests.get(
                 "http://{}/author/profile/{}/".format(settings.HOSTNAME, author_uid)
             )
             print("got a response")
+            print(response.body)
             if response.status_code == 200:
                 author_info = response.json()
 
