@@ -596,7 +596,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
 
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
-
+        print("grabbed visible_posts")
         visible_post = visible_post.distinct()
 
         array_of_posts = []
@@ -605,6 +605,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         page_num = int(request.GET.get('page', "1"))
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
+        print("going through posts")
         for post in visible_post.order_by("-published"):
             author_id = Author.objects.get(uid=post.author_id)
 
