@@ -76,7 +76,7 @@
              <div>
                 {% if post.contentType == "text/markdown" %}
                     <p>{{post.content|show_markdown|safe}}</p>
-                {% elif if post.contentType == "image/jpeg" or post.contentType == "image/png" %}
+                {% elif post.contentType == "image/jpeg" or post.contentType == "image/png" %}
                     <img src="'data:' + {{post.contentType}} + ',' + {{post.content}}">
                 {% else %}
                     <p>{{post.content}}</p>
