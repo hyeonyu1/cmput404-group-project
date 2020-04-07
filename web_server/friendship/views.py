@@ -371,7 +371,13 @@ def FOAF_verification(request, author):
                     # Since the friend is not on the same host as the auth user make a request to get friends from the other node
                     # A -> A -> B
                     else:
-                        node_object = Node.objects.get(foreign_server_hostname=friend_node)
+                        try:
+                            node_object = Node.objects.get(foreign_server_hostname=friend_node)
+                        except Node.DoesNotExist as e:
+                            # If we do not know their friends node, then we must not try to connect with it,
+                            # But we can still consult other friends
+                            print(f"Attempt to FOAF verify friend node hostname '{friend_node}' but we do not have access to that node.")
+                            continue
                         username = node_object.username_registered_on_foreign_server
                         password = node_object.password_registered_on_foreign_server
                         api = node_object.foreign_server_api_location
