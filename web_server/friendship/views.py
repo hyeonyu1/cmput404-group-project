@@ -364,7 +364,7 @@ def FOAF_verification(request, author):
                     # A -> A -> A
                     if friend_node == own_node:
                         # E.g Test <-> Lara <-> Bob
-                        if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
+                        if Friend.objects.filter(author_id=auth_user).filter(friend_id=url_regex.sub("", friend.friend_id).rstrip("/")).exists():
                             return True
                         else:
                             return False
