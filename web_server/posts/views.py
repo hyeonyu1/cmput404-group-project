@@ -350,7 +350,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         author = url_regex.sub("", author).rstrip("/")
 
         auth_user_node = auth_user.split("/author")[0]
-        print("auth_user_node = ", auth_user_node)
+        print("\n\n\n\n\nauth_user_node = ", auth_user_node)
 
         author_friends = Friend.objects.filter(author_id=author)
 
@@ -361,6 +361,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                     if url_regex.sub("", friend_of_auth_user.friend_id).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
                         return True
         else:
+            print("different node")
             try:
                 node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
             except Node.DoesNotExist as e:
