@@ -125,9 +125,15 @@ def view_post(request, post_path):
         return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
 
     req = node.make_api_get_request(f'posts/{post_id}')
+
     # Attempt to extract the post
     try:
-        post = req.json()['posts'][0]
+        # Spongebook group is not spec compliant here
+        # Quick adaptor
+        if node.foreign_server_hostname == 'spongebook.herokuapp.com':
+            post = req.json()
+        else:
+            post = req.json()['posts'][0]
     except Exception as e:
         print(req.content)
         return HttpResponse(f"The foreign server returned a response, but we could not extract the post. Error: {e}",

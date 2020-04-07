@@ -213,7 +213,7 @@
             add_comments(post_id){
                 //Add comments, if status code is 200, push this comment into comments(list)
                 let url = 'comments/';
-                
+
                 //If users do not choose contentType, set it to plaintext
                 if(this.contentType===""){
                     this.contentType="text/plain";
@@ -270,10 +270,14 @@
         if (image.src.startsWith('data')) return;
 
         fetch("/posts/proxy_image/"+image.src.split("//")[1])
-        .then(response => response.text())
+        .then(response => {
+            if(!response.ok){throw response.text()}
+            response.text()
+        })
         .then(url => {
             image.src=url
         })
+        .catch(err => console.log(`An attempt to proxy the image failed with result: ${err}`))
     }
 
     window.addEventListener('load', replace_foreign_images)
