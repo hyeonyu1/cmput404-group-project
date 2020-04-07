@@ -388,7 +388,7 @@ def FOAF_verification(request, author):
                     password = node_object.password_registered_on_foreign_server
                     api = node_object.foreign_server_api_location
                     api = "http://{}/author/{}/friends".format(
-                        api, "{}/author/{}".format(api, author))
+                        api, "{}/author/{}".format(api, friend_id=url_regex.sub("", friend.friend_id).rstrip("/")))
                     if node_object.append_slash:
                         api = api + "/"
                     response = requests.get(api, auth=(username, password))
@@ -398,7 +398,7 @@ def FOAF_verification(request, author):
                         print("reponse did not give a 200 so trying with just the uuid")
                         api = node_object.foreign_server_api_location
                         api = "http://{}/author/{}/friends".format(
-                            api, author.split("author/")[-1])
+                            api, url_regex.sub("", friend.friend_id).rstrip("/").split("author/")[-1])
                         if node_object.append_slash:
                             api = api + "/"
                         print("api sending = ", api)
