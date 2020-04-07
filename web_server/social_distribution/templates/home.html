@@ -107,10 +107,10 @@
           <small>[[post.published]]</small>
         </div>
         <p v-if="post.contentType == 'image/png;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="width: 100%">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="max-width: 100%">
         </p>
         <p v-else-if="post.contentType == 'image/jpeg;base64'" class="mb-1">
-            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="width: 100%">
+            <img v-bind:src="'data:' + [[post.contentType]] + ',' + [[post.content]]" style="max-width: 100%">
         </p>
         <div v-else>
             <span style="overflow-wrap: break-word;" class="mb-1">[[post.sub_content]]</span>
