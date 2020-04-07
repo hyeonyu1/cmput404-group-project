@@ -74,17 +74,29 @@ class Comment(models.Model):
             # print(response.body)
             if response.status_code == 200:
                 author_info = response.json()
+                return {
+                    "author": {
+                        "id": author_info["id"],
+                        "host": author_info["host"],
+                        "displayName": author_info["displayName"],
 
-            return {
-                "author": {
-                    "id": author_info["id"],
-                    "host": author_info["host"],
-                    "displayName": author_info["displayName"],
-
-                },
-                "comment": self.content,
-                "contentType": self.contentType,
-                "published": self.published,
-                "id": str(self.id.hex)
-            }
+                    },
+                    "comment": self.content,
+                    "contentType": self.contentType,
+                    "published": self.published,
+                    "id": str(self.id.hex)
+                }
+            else:
+                return {
+                    "author": {
+                        "id": "",
+                        "host": "",
+                        "displayName": "Unknown Author",
+                        "error": f"The server returned an incorrect response: {response.status_code} - {response.content}"
+                    },
+                    "comment": self.content,
+                    "contentType": self.contentType,
+                    "published": self.published,
+                    "id": str(self.id.hex)
+                }
 
