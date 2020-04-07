@@ -355,7 +355,7 @@ def FOAF_verification(request, author):
         else:
             # if the author is on the same host as auth user
             if node == own_node:
-                author_friends = Friend.objects.filter(author_id=author)
+                author_friends = Friend.objects.filter(author_id=auth_user)
                 for friend in author_friends:
                     # getting the node of the friend
                     friend_node = friend.friend_id.split("/author/")[0]
