@@ -100,8 +100,8 @@
                      <div class="row">
                         <div class="col-md-15 mr-3">
                             <select class="browser-default custom-select">
-                                <option @click="app.set_contentType('text/plain')">Plaintext</option>
                                 <option @click="app.set_contentType('text/markdown')">Markdown</option>
+                                <option @click="app.set_contentType('text/plain')">Plaintext</option>
                             </select>
                         </div>
                      </div>
@@ -189,7 +189,7 @@
            return {
                'comments': [],
                'content':'',
-               'contentType':'',
+               'contentType':'text/markdown',
                'publishTime':''
            }
         },
@@ -214,18 +214,13 @@
                 //Add comments, if status code is 200, push this comment into comments(list)
                 let url = 'comments/';
 
-                //If users do not choose contentType, set it to plaintext
-                if(this.contentType===""){
-                    this.contentType="text/plain";
-                }
-
                 //This is used to update the comments list after adding comments
                 let comment = new Comment({
                         'content':this.content,
                         'published':new Date(),
                         'author':{
                             'id':'{{user.uid}}',
-                            'display_name': '{{user.displayName}}',
+                            'displayName': '{{user.display_name}}',
                             'uid': '{{user.id.hex}}'
                         },
                         'contentType':this.contentType,
@@ -243,7 +238,7 @@
                     alert(response.data['message']);
                     if( response.data['success']){
                         comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
-                        this.comments.push(comment);
+                        this.comments.unshift(comment);
                     }
                 })
 
