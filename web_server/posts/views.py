@@ -358,8 +358,15 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         try:
             node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
         except Node.DoesNotExist as e:
-            print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
-            return False
+            print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but it does not exists so checking the api loation")
+            try:
+                node_object = Node.objects.get(foreign_server_api_location=auth_user_node)
+            except Node.DoesNotExist as e:
+                print(
+                    f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
+
+                return False
+
         username = node_object.username_registered_on_foreign_server
         password = node_object.password_registered_on_foreign_server
         api = node_object.foreign_server_api_location
