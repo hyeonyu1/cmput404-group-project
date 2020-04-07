@@ -20,6 +20,7 @@ from social_distribution.utils.basic_auth import validate_remote_server_authenti
 from friendship.views import FOAF_verification, sanitize_author_id
 
 import math
+import html
 from django.conf import settings
 
 import requests
@@ -451,7 +452,8 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # new_post.id = post['id']                  #: "de305d54-75b4-431b-adb2-eb6b9e546013",
 
         #: "A post title about a post about web dev",
-        new_post.title = post['title']
+
+        new_post.title = html.escape(post['title'])
 
         # Source and origin are the same, and depend on the ID so we wait until after the post gets saved to
         # generate this URLS
@@ -459,7 +461,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         # new_post.origin    = post['origin']       #: "http://whereitcamefrom.com/posts/zzzzz"
 
         # : "This post discusses stuff -- brief",
-        new_post.description = post['description']
+        new_post.description = html.escape(post['description'])
 
         # If the post is an image, the content would have been provided as a file along with the upload
         if len(request.FILES) > 0:
@@ -481,7 +483,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 request.FILES['file'].read()).decode('utf-8')
         else:
             new_post.contentType = post['contentType']  # : "text/plain",
-            new_post.content = post['content']      #: "stuffs",
+            new_post.content = html.escape(post['content'])    #: "stuffs",
 
         new_post.author = request.user         # the authenticated user
 
@@ -841,7 +843,8 @@ def post_edit_and_delete(request, post_id):
                                 setattr(post, key, False)
                         else:
                             # All other fields
-                            setattr(post, key, vars.get(key))
+                            attr = html.escape(vars.get(key))
+                            setattr(post, key, attr)
                     except Exception as e:
                         # @todo remove this try/except block.
                         #  This should ACTUALLY throw an error if we hit a problem here
