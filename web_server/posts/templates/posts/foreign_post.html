@@ -201,12 +201,11 @@
                     for(let item of response.data['comments']){
                         let comment = new Comment(item);
                         comment.published=moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
-
                         comment.author.uid = comment.author.url;
                         comment.author.uid = comment.author.uid.replace(/http[s]*:\/\//, '');
-
                         this.comments.push(comment);
                     }
+                    this.comments.reverse();
                 });
             },
 
