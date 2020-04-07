@@ -377,6 +377,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         if node_object.append_slash:
             api = api + "/"
         response = requests.get(api, auth=(username, password))
+        print(response)
+        print(response.body())
         if response.status_code != 200:
             print("forbidden so trying with just the uuid")
             api = "http://{}/author/{}/friends".format(
@@ -385,6 +387,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 api = api + "/"
             response = requests.get(api, auth=(username, password))
 
+        print("final response = ", response)
         if response.status_code == 200:
             print("status code is 200")
             try:
