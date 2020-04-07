@@ -371,24 +371,20 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         api = node_object.foreign_server_api_location
 
         print("sendingn get request at", api)
-        try:
+
+        api = "http://{}/author/{}/friends".format(
+            api, "{}/author/{}".format(api, auth_user))
+        if node_object.append_slash:
+            api = api + "/"
+        response = requests.get(api, auth=(username, password))
+        if response.status_code != 200:
+            print("forbidden so trying with just the uuid")
             api = "http://{}/author/{}/friends".format(
-                api, "{}/author/{}".format(api, auth_user))
+                api, "{}/author/{}".format(api, auth_user.spit("author/")[-1]))
             if node_object.append_slash:
                 api = api + "/"
             response = requests.get(api, auth=(username, password))
-        except:
-            print("forbidden so trying with just the uuid")
-            try:
-                api = "http://{}/author/{}/friends".format(
-                    api, "{}/author/{}".format(api, auth_user.spit("author/")[-1]))
-                if node_object.append_slash:
-                    api = api + "/"
-                response = requests.get(api, auth=(username, password))
-            except:
-                print("Forbidden call")
 
-        
         if response.status_code == 200:
             print("status code is 200")
             try:
