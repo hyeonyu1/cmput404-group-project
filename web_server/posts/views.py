@@ -351,6 +351,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
         auth_user_node = auth_user.split("/author")[0]
         print("\n\n\n\n\nauth_user_node = ", auth_user_node)
+        print("auth user", auth_user)
 
         author_friends = Friend.objects.filter(author_id=author)
 
@@ -378,11 +379,12 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             api = api + "/"
         response = requests.get(api, auth=(username, password))
         print(response)
-        print(response.body())
+        print(response.status_code)
         if response.status_code != 200:
             print("forbidden so trying with just the uuid")
+            print(auth_user.spit("author/")[-1])
             api = "http://{}/author/{}/friends".format(
-                api, "{}/author/{}".format(api, auth_user.spit("author/")[-1]))
+                api, auth_user)
             if node_object.append_slash:
                 api = api + "/"
             response = requests.get(api, auth=(username, password))
