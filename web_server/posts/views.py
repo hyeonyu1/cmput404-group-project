@@ -301,6 +301,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
+        print("post_handler")
         output = {
             "query": "addComment",
         }
@@ -308,6 +309,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
+            print("Post exists so checking for perm")
             if not check_get_perm(request, Post.objects.get(id=post_id).to_api_object()):
                 return JsonResponse(
                     {
@@ -326,11 +328,13 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             comment_info = loads(body)
             comment_info = comment_info['comment']
             new_comment = Comment()
+            print("\n\n\n\n\n\nCOMMENT_INFO", comment_info)
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
             new_comment.author = url_regex.sub(
                 '', comment_info['author']['id']).rstrip("/")
+            print(new_comment.author)
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['success'] = True
@@ -455,8 +459,9 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 if user_id == url_regex.sub("", user).rstrip("/"):
                     return True
         elif visibility == Post.FRIENDS:
-            print("friends")
-            if Friend.objects.filter(author_id=author_id, friend_id=user_id).exists():
+            author_friends = Friend.objects.filter(author_id=author_id)
+            for friend in author_friends:
+                if user_id == friend.friend_id:
                     return True
         else:
             return False
@@ -464,6 +469,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def foreign_post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
+        print("foreign_post_handler")
         output = {
             "query": "addComment",
         }
@@ -472,6 +478,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         comment_info = loads(body)
         comment_info = comment_info['comment']
 
+        print("\n\n\n\n\n foreign_comment_info = ", comment_info)
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
@@ -532,6 +539,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 uname, passwd = base64.b64decode(
                     auth[1]).decode('utf-8').rsplit(':', 1)
         node = Node.objects.get(foreign_server_username=uname)
+        print("\n\n\n\nPOST_ID = ", post_id)
         image_type = ["image/png;base64", "image/jpeg;base64"]
         post_type = ["text/plain", "text/markdown"]
         if Post.objects.filter(id=post_id).exists():
