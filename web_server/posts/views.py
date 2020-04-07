@@ -456,7 +456,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                     return True
         elif visibility == Post.FRIENDS:
             print("friends")
-            if Friend.objects(author_id=author_id, friend_id=user_id).exists():
+            if Friend.objects.filter(author_id=author_id, friend_id=user_id).exists():
                     return True
         else:
             return False
