@@ -766,12 +766,14 @@ def get_comments(post_id):
     comments_list = []
     comments = Comment.objects.filter(
         parentPost=post_id).order_by("-published")[:5]
-    size = comments.count()
+
 
     for comment in comments:
         c = comment.to_api_object()
         if 'error' not in c['author']:
             comments_list.append(c)
+
+    size = len(comments_list)
 
     return size, comments_list
 
