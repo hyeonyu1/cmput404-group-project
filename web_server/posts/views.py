@@ -364,44 +364,33 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 node_object = Node.objects.get(foreign_server_api_location=auth_user_node)
             except Node.DoesNotExist as e:
                 print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
-
                 return False
 
         username = node_object.username_registered_on_foreign_server
         password = node_object.password_registered_on_foreign_server
         api = node_object.foreign_server_api_location
 
-        print("sendingn get request at", api)
-
         api = "http://{}/author/{}/friends".format(
             api, "{}/author/{}".format(api, auth_user))
         if node_object.append_slash:
             api = api + "/"
         response = requests.get(api, auth=(username, password))
-        print(response)
-        print(response.status_code)
-        if response.status_code != 200:
-            api = node_object.foreign_server_api_location
 
-            print("forbidden so trying with just the uuid")
-            print(auth_user.split("author/")[-1])
+        if response.status_code != 200:
+            print("reponse did not give a 200 so trying with just the uuid")
+            api = node_object.foreign_server_api_location
             api = "http://{}/author/{}/friends".format(
                 api, auth_user.split("author/")[-1])
-            print("sending = ", api)
             if node_object.append_slash:
                 api = api + "/"
             response = requests.get(api, auth=(username, password))
 
-        print("final response = ", response)
         if response.status_code == 200:
-            print("status code is 200")
             try:
                 friends_list = response.json()
-                print("friend_list = ", friends_list)
             except Exception as e:
                 print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
                 return False
-            print("going through the friends")
             for user in friends_list["authors"]:
                 for friend_of_author in author_friends:
                     print("friend_of_author = ", friend_of_author.friend_id)
