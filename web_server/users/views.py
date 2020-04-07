@@ -126,18 +126,36 @@ def view_post(request, post_path):
 
     req = node.make_api_get_request(f'posts/{post_id}')
 
-    # Attempt to extract the post
-    try:
-        # Spongebook group is not spec compliant here
-        # Quick adaptor
-        if node.foreign_server_hostname == 'spongebook.herokuapp.com':
-            post = req.json()
-        else:
+    # Attempt to extract the post, theres a lot of different interpretations of the spec floating out there.
+    # Some return bare posts, some return it under a different key
+    while True:
+        try:
+            # Spec compliant
             post = req.json()['posts'][0]
-    except Exception as e:
-        print(req.content)
-        return HttpResponse(f"The foreign server returned a response, but we could not extract the post. Error: {e}",
-                            status=500)
+            break
+        except:
+            pass
+        try:
+            # Bare post in proper key
+            post = req.json()['posts']
+            break
+        except:
+            pass
+        try:
+            # Incorrect key missing an s
+            post = req.json()['post']
+            break
+        except:
+            pass
+        try:
+            # Bare post
+            post = req.json()
+            break
+        except:
+            return HttpResponse("We attempted to grab the post from the foreign server, but the response was not"
+                                f"understandable. The response looks like: {req.content[:20]}",
+                                status=500)
+        break
 
     # Attempt to render the post
     try:
@@ -149,7 +167,8 @@ def view_post(request, post_path):
         })
     except Exception as e:
         print(post)
-        return HttpResponse(f"The post you are trying to view is on a foreign server, which did not respond properly: {e}",
+        return HttpResponse(f"The post you are trying to view is on a foreign server, which responded unexpectedly: {post}"
+                            f". Which is missing values: {e}",
                             status=500)
 
 @login_required
