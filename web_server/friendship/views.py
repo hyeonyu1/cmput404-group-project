@@ -357,6 +357,15 @@ def FOAF_verification(request, author):
     # auth user has friend B
     # there fore FOAF
     auth_user_node = auth_user.split("/author")[0]
+    if auth_user_node == own_node:
+        # getting friends of authorized user
+        auth_user_friends = Friend.objects.filter(author_id=auth_user)
+        for friend in auth_user_friends:
+            if Friend.objects.filter(author_id=auth_user).filter(friend_id=url_regex.sub("", friend.friend_id).rstrip("/")).exists():
+                return True
+            else:
+                return False
+
     try:
         node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
     except Node.DoesNotExist as e:
