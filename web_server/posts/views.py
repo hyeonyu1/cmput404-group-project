@@ -384,7 +384,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             print("forbidden so trying with just the uuid")
             print(auth_user.split("author/")[-1])
             api = "http://{}/author/{}/friends".format(
-                api, auth_user)
+                api, auth_user.split("author/")[-1])
             if node_object.append_slash:
                 api = api + "/"
             response = requests.get(api, auth=(username, password))
