@@ -76,9 +76,6 @@ class Comment(models.Model):
                     "id": author_info["id"],
                     "host": author_info["host"],
                     "displayName": author_info["displayName"],
-                    "url": author_info["url"],
-                    "github": author_info["github"]
-
                 },
                 "comment": self.content,
                 "contentType": self.contentType,

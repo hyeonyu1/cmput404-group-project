@@ -354,38 +354,31 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
 
         author_friends = Friend.objects.filter(author_id=author)
 
-        if auth_user_node == settings.HOSTNAME:
-            auth_user_friends = Friend.objects.filter(author_id=auth_user)
-            for friend_of_auth_user in auth_user_friends:
-                for friend_of_author in author_friends:
-                    if url_regex.sub("", friend_of_auth_user.friend_id).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
-                        return True
-        else:
-            print("different node")
+
+        try:
+            node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
+        except Node.DoesNotExist as e:
+            print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
+            return False
+        username = node_object.username_registered_on_foreign_server
+        password = node_object.password_registered_on_foreign_server
+        api = node_object.foreign_server_api_location
+        api = "http://{}/author/{}/friends".format(
+            api, "{}/author/{}".format(api, author))
+        if node_object.append_slash:
+            api = api + "/"
+        response = requests.get(api,auth=(username, password))
+        if response.status_code == 200:
             try:
-                node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
-            except Node.DoesNotExist as e:
-                print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
+                friends_list = response.json()
+            except Exception as e:
+                print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
                 return False
-            username = node_object.username_registered_on_foreign_server
-            password = node_object.password_registered_on_foreign_server
-            api = node_object.foreign_server_api_location
-            api = "http://{}/author/{}/friends".format(
-                api, "{}/author/{}".format(api, author))
-            if node_object.append_slash:
-                api = api + "/"
-            response = requests.get(api,auth=(username, password))
-            if response.status_code == 200:
-                try:
-                    friends_list = response.json()
-                except Exception as e:
-                    print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
-                    return False
-                for user in friends_list["authors"]:
-                    for friend_of_author in author_friends:
-                        print("friend_of_author = ", friend_of_author.friend_id)
-                        if url_regex.sub("", user).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
-                            return True
+            for user in friends_list["authors"]:
+                for friend_of_author in author_friends:
+                    print("friend_of_author = ", friend_of_author.friend_id)
+                    if url_regex.sub("", user).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
+                        return True
 
         return False
 
