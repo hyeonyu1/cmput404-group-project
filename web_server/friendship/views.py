@@ -393,7 +393,7 @@ def FOAF_verification(request, author):
                                 friends_list = response.json()
                             except Exception as e:
                                 print(f"Attempt to decode FOAF verification response from '{friend_node}' failed")
-                                continue
+                                return False
                             for user in friends_list["authors"]:
                                 if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
                                     return True
@@ -421,7 +421,7 @@ def FOAF_verification(request, author):
                         friends_list = response.json()
                     except Exception as e:
                         print(f"Attempt to decode FOAF verification response from '{friend_node}' failed")
-                        continue
+                        return False
                     for user in friends_list["authors"]:
                         # E.g Test <-> Lara <-> User
                         if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
