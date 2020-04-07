@@ -301,7 +301,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
-        print("post_handler")
         output = {
             "query": "addComment",
         }
@@ -309,7 +308,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
-            print("Post exists so checking for perm")
             if not check_get_perm(request, Post.objects.get(id=post_id).to_api_object()):
                 return JsonResponse(
                     {
@@ -328,13 +326,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
             comment_info = loads(body)
             comment_info = comment_info['comment']
             new_comment = Comment()
-            print("\n\n\n\n\n\nCOMMENT_INFO", comment_info)
             new_comment.contentType = comment_info['contentType']
             new_comment.content = comment_info['comment']
             new_comment.published = comment_info['published']
             new_comment.author = url_regex.sub(
                 '', comment_info['author']['id']).rstrip("/")
-            print(new_comment.author)
             new_comment.parentPost = Post.objects.filter(id=post_id).first()
             new_comment.save()
             output['success'] = True
@@ -353,90 +349,142 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         auth_user = url_regex.sub("", auth_user).rstrip("/")
         author = url_regex.sub("", author).rstrip("/")
 
-        own_node = request.get_host()
-        if auth_user == author:
-            return True
+        auth_user_node = auth_user.split("/author")[0]
+        print("auth_user_node = ", auth_user_node)
 
-        nodes = [own_node]
-        for node in Node.objects.all():
-            nodes.append(node.foreign_server_hostname)
+        author_friends = Friend.objects.filter(author_id=author)
 
-        for node in nodes:
-            # If the author is a friend of auth user return True
-            if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
-                return True
-
-            # not friends so check for FOAF
-            else:
-                # if the author is on the same host as auth user
-                if node == own_node:
-                    author_friends = Friend.objects.filter(author_id=author)
-                    for friend in author_friends:
-                        # getting the node of the friend
-                        friend_node = friend.friend_id.split("/author/")[0]
-                        # if friend of the author is on the same host as the auth user
-                        # A -> A -> A
-                        if friend_node == own_node:
-                            # E.g Test <-> Lara <-> Bob
-                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
-                                return True
-                            else:
-                                return False
-
-                        # Since the friend is not on the same host as the auth user make a request to get friends from the other node
-                        # A -> A -> B
-                        else:
-                            username = Node.objects.get(
-                                foreign_server_hostname=friend_node).username_registered_on_foreign_server
-                            password = Node.objects.get(
-                                foreign_server_hostname=friend_node).password_registered_on_foreign_server
-                            api = Node.objects.get(
-                                foreign_server_hostname=friend_node).foreign_server_api_location
-                            api = "http://{}/author/{}/friends".format(
-                                api, "{}/author/{}".format(api, author))
-                            if Node.objects.get(foreign_server_hostname=friend_node).append_slash:
-                                api = api + "/"
-                            response = requests.get(api,
-                                                    auth=(username, password)
-                                                    )
-                            if response.status_code == 200:
-                                friends_list = response.json()
-                                for user in friends_list["authors"]:
-                                    if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
-                                        return True
-                                    else:
-                                        return False
-
-                # author's host is different from auth user
-                else:
-                    username = Node.objects.get(
-                        foreign_server_hostname=node).username_registered_on_foreign_server
-                    password = Node.objects.get(
-                        foreign_server_hostname=node).password_registered_on_foreign_server
-                    api = Node.objects.get(
-                        foreign_server_hostname=node).foreign_server_api_location
-                    api = "http://{}/author/{}/friends".format(api, author)
-                    if Node.objects.get(foreign_server_hostname=node).append_slash:
-                        api = api + "/"
-                    response = requests.get(api,
-                                            auth=(username, password)
-                                            )
-                    if response.status_code == 200:
-                        friends_list = response.json()
-                        for user in friends_list["authors"]:
-                            # E.g Test <-> Lara <-> User
-                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
-                                return True
-                            else:
-                                return False
+        if auth_user_node == settings.HOSTNAME:
+            auth_user_friends = Friend.objects.filter(author_id=auth_user)
+            for friend_of_auth_user in auth_user_friends:
+                for friend_of_author in author_friends:
+                    if url_regex.sub("", friend_of_auth_user.friend_id).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
+                        return True
+        else:
+            try:
+                node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
+            except Node.DoesNotExist as e:
+                print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
+                return False
+            username = node_object.username_registered_on_foreign_server
+            password = node_object.password_registered_on_foreign_server
+            api = node_object.foreign_server_api_location
+            api = "http://{}/author/{}/friends".format(
+                api, "{}/author/{}".format(api, author))
+            if node_object.append_slash:
+                api = api + "/"
+            response = requests.get(api,auth=(username, password))
+            if response.status_code == 200:
+                try:
+                    friends_list = response.json()
+                except Exception as e:
+                    print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
+                    return False
+                for user in friends_list["authors"]:
+                    for friend_of_author in author_friends:
+                        print("friend_of_author = ", friend_of_author.friend_id)
+                        if url_regex.sub("", user).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
+                            return True
 
         return False
+
+        # own_node = request.get_host()
+        # if auth_user == author:
+        #     return True
+        #
+        # nodes = [own_node]
+        # for node in Node.objects.all():
+        #     nodes.append(node.foreign_server_hostname)
+        #
+        # for node in nodes:
+        #     # If the author is a friend of auth user return True
+        #     if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
+        #         return True
+        #
+        #     # not friends so check for FOAF
+        #     else:
+        #         # if the author is on the same host as auth user
+        #         if node == own_node:
+        #             author_friends = Friend.objects.filter(author_id=author)
+        #             for friend in author_friends:
+        #                 # getting the node of the friend
+        #                 friend_node = friend.friend_id.split("/author/")[0]
+        #                 # if friend of the author is on the same host as the auth user
+        #                 # A -> A -> A
+        #                 if friend_node == own_node:
+        #                     # E.g Test <-> Lara <-> Bob
+        #                     if Friend.objects.filter(author_id=auth_user).filter(friend_id=friend.friend_id).exists():
+        #                         return True
+        #                     else:
+        #                         return False
+        #
+        #                 # Since the friend is not on the same host as the auth user make a request to get friends from the other node
+        #                 # A -> A -> B
+        #                 else:
+        #                     try:
+        #                         node_object = Node.objects.get(foreign_server_hostname=friend_node)
+        #                     except Node.DoesNotExist as e:
+        #                         print(f"Attempt to FOAF verify friend node hostname '{friend_node}' but we do not have access to that node.")
+        #                         continue
+        #                     username = node_object.username_registered_on_foreign_server
+        #                     password = node_object.password_registered_on_foreign_server
+        #                     api = node_object.foreign_server_api_location
+        #                     api = "http://{}/author/{}/friends".format(
+        #                         api, "{}/author/{}".format(api, author))
+        #                     if node_object.append_slash:
+        #                         api = api + "/"
+        #                     response = requests.get(api,
+        #                                             auth=(username, password)
+        #                                             )
+        #                     if response.status_code == 200:
+        #                         try:
+        #                             friends_list = response.json()
+        #                         except Exception as e:
+        #                             print(f"Attempt to decode FOAF verification response from '{friend_node}' failed")
+        #                             return False
+        #                         for user in friends_list["authors"]:
+        #                             if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+        #                                 return True
+        #                             else:
+        #                                 return False
+        #
+        #         # author's host is different from auth user
+        #         else:
+        #             try:
+        #                 node_object = Node.objects.get(foreign_server_hostname=node)
+        #             except Node.DoesNotExist as e:
+        #                 print(f'attempt to FOAF verify with different foreign node {node} caused error: {e}')
+        #                 return False
+        #             username = node_object.username_registered_on_foreign_server
+        #             password = node_object.password_registered_on_foreign_server
+        #             api = node_object.foreign_server_api_location
+        #             if node_object.append_slash:
+        #                 api = api + "/"
+        #             response = requests.get(
+        #                 "http://{}/author/{}/friends".format(api, author),
+        #                 auth=(username, password)
+        #             )
+        #             if response.status_code == 200:
+        #                 try:
+        #                     friends_list = response.json()
+        #                 except Exception as e:
+        #                     print(f"Attempt to decode FOAF verification response from '{api}' failed")
+        #                     return False
+        #                 for user in friends_list["authors"]:
+        #                     # E.g Test <-> Lara <-> User
+        #                     if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+        #                         return True
+        #                     else:
+        #                         return False
+        #
+        #
+        #
+        # return False
 
     def check_perm_foreign_user(user_id, api_object_post):
         """
         Checks the permissions on a post api object to see if it can be seen by the currently authenticated user
         """
-        print("check_perm_foreign_user")
 
         visibility = api_object_post["visibility"]
 
@@ -446,14 +494,14 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         author_id = url_regex.sub(
             "", api_object_post["author"]['id']).rstrip("/")
         user_id = url_regex.sub("", user_id).rstrip("/")
-        print("author_id = ", author_id)
-        print("user_id = ", user_id)
+
         if visibility == Post.PUBLIC:
             return True
 
         elif visibility == Post.FOAF:
             # getting the friends of the author
             return FOAF_verification_post(user_id, author_id)
+
         elif visibility == Post.PRIVATE:
             for user in api_object_post["visibleTo"]:
                 if user_id == url_regex.sub("", user).rstrip("/"):
@@ -467,7 +515,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
     def foreign_post_handler(request):
         # JSON post body of what you post to a posts' comemnts
         # POST to http://service/posts/{POST_ID}/comments
-        print("foreign_post_handler")
         output = {
             "query": "addComment",
         }
@@ -476,7 +523,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         comment_info = loads(body)
         comment_info = comment_info['comment']
 
-        print("\n\n\n\n\n foreign_comment_info = ", comment_info)
         # checks if local host
         if Post.objects.filter(id=post_id).exists():
             # checks visibility of the post
@@ -537,7 +583,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 uname, passwd = base64.b64decode(
                     auth[1]).decode('utf-8').rsplit(':', 1)
         node = Node.objects.get(foreign_server_username=uname)
-        print("\n\n\n\nPOST_ID = ", post_id)
         image_type = ["image/png;base64", "image/jpeg;base64"]
         post_type = ["text/plain", "text/markdown"]
         if Post.objects.filter(id=post_id).exists():
