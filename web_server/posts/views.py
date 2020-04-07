@@ -382,7 +382,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         print(response.status_code)
         if response.status_code != 200:
             print("forbidden so trying with just the uuid")
-            print(auth_user.spit("author/")[-1])
+            print(auth_user.split("author/")[-1])
             api = "http://{}/author/{}/friends".format(
                 api, auth_user)
             if node_object.append_slash:
