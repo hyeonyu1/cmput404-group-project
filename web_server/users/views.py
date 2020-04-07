@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect, JsonResponse
 from django.contrib.auth import login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,6 +11,9 @@ from nodes.models import Node
 import requests
 from users.models import Author
 from django.conf import settings
+from uuid import uuid4
+
+from json import loads
 
 from nodes.models import Node
 from friendship.views import invalidate_friend_requests
@@ -94,7 +97,6 @@ def invalidate_friends(host, user_id):
                             Friend.objects.filter(author_id=friend.friend_id).filter(
                                 friend_id=author_id).delete()
 
-
 @login_required
 def view_post(request, post_path):
     """
@@ -136,6 +138,10 @@ def view_post(request, post_path):
         print(req.content)
         return HttpResponse(f"The foreign server returned a response, but we could not extract the post. Error: {e}",
                             status=500)
+
+    # For image posts, we create a special content for direct rendering as an image
+    post['image_content_data'] = 'data:' + post['contentType'] + ',' + post['content']
+
     # Attempt to render the post
     try:
         return render(request, 'posts/foreign_post.html', {
@@ -145,6 +151,95 @@ def view_post(request, post_path):
         print(post)
         return HttpResponse(f"The post we extracted from the foreign server has missing or incorrect keys: {e}",
                             status=500)
+
+@login_required
+def view_post_comment(request, post_path):
+    """
+    Local handler for viewing a post, the post might be local or foreign, and the path should determine that.
+    The first part of the path should be a hostname, and the last part should be the post id
+    If no hostname is provided (no path, only a uuid), then the local server is assumed
+    """
+    print("GETTING COMMENT")
+    path = post_path.split('/')
+    host = path[0]
+    post_id = path[-1]
+    # Assume local server if only uuid provided
+    if len(path) == 1:
+        return redirect('post', args=[path[0]])
+
+    # Redirect if local post
+    if host == settings.HOSTNAME:
+        # Local post, handle as normal by redirecting them to the current post viewer
+        return redirect(reverse('post', args=[post_id]))
+
+    # Foreign post
+    # Find the node this post is associated with
+    try:
+        node = Node.objects.get(foreign_server_hostname=host)
+    except Node.DoesNotExist as e:
+        return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+
+    if request.method == "GET":
+        req = node.make_api_get_request(f'posts/{post_id}/comments')
+        comments_list = []
+        for comment in req.json()["comments"]:
+            print("\n\n\n\ncomments = ",comment)
+            content = {
+                "author": comment["author"],
+                "content": comment["comment"],
+                "contentType": comment["contentType"],
+                "published": comment["published"],
+                "id": comment["id"]
+            }
+            comments_list.append(content)
+
+        output = {
+            "query": "comments",
+            "count": req.json()["count"],
+            "size": req.json()["size"],
+            "comments": comments_list
+        }
+
+        return JsonResponse(output)
+
+    elif request.method == "POST" and host != settings.HOSTNAME:
+        body = request.body.decode('utf-8')
+        comment_info = loads(body)
+        comment_info = comment_info['comment']
+
+        # author_uid = "{}/author/{}".format(settings.HOSTNAME, comment_info["author"]["id"].replace("-", ""))
+        author_uid = url_regex.sub("", comment_info["author"]["id"]).rstrip("/")
+        print("POST FOREIGN", author_uid)
+        author = Author.objects.get(uid=author_uid)
+        print("author to api", author.to_api_object())
+        output = {
+            "query": "addComment",
+            "post": "http://"+post_path,
+            "comment": {
+                "author": author.to_api_object(),
+                "comment": comment_info["comment"],
+                "contentType": comment_info['contentType'],
+                "published": comment_info['published'],
+                "id": str(uuid4())
+            }
+        }
+        print("output = ", output)
+        try:
+            node = Node.objects.get(foreign_server_hostname=host)
+        except Node.DoesNotExist as e:
+            return HttpResponse(f"No foreign server with hostname {host} is registered on our server.", status=404)
+
+        api = node.foreign_server_api_location
+        api = "http://{}/posts/{}/comments".format(api, post_id)
+        if node.append_slash:
+            api = api + "/"
+        print("api", api, node)
+        response = requests.post(api,
+            auth=(node.username_registered_on_foreign_server, node.password_registered_on_foreign_server),
+            json=output
+        )
+
+        return HttpResponse(response.text, status=response.status_code)
 
 
 @login_required
