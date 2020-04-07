@@ -769,8 +769,9 @@ def get_comments(post_id):
     size = comments.count()
 
     for comment in comments:
-        comments_list.append(comment.to_api_object())
-        # comments_list.append(c)
+        c = comment.to_api_object()
+        if 'error' not in c['author']:
+            comments_list.append(c)
 
     return size, comments_list
 
