@@ -157,6 +157,11 @@ def view_post(request, post_path):
                                 status=500)
         break
 
+    # Some of the servers are incorrectly using 'content_type' instead of 'contentType'
+    if 'content_type' in post and 'contentType' not in post:
+        post['contentType'] = post['content_type']
+
+
     # Attempt to render the post
     try:
         # For image posts, we create a special content for direct rendering as an image
