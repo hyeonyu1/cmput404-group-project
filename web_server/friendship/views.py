@@ -355,6 +355,7 @@ def FOAF_verification(request, author):
         else:
             # if the author is on the same host as auth user
             if node == own_node:
+                # getting friends of authorized user
                 author_friends = Friend.objects.filter(author_id=auth_user)
                 for friend in author_friends:
                     # getting the node of the friend
@@ -399,6 +400,7 @@ def FOAF_verification(request, author):
                                 api, author.split("author/")[-1])
                             if node_object.append_slash:
                                 api = api + "/"
+                            print("api sending = ", api)
                             response = requests.get(api, auth=(username, password))
 
                         if response.status_code == 200:
@@ -408,7 +410,7 @@ def FOAF_verification(request, author):
                                 print(f"Attempt to decode FOAF verification response from '{friend_node}' failed")
                                 return False
                             for user in friends_list["authors"]:
-                                if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                if Friend.objects.filter(author_id=author).filter(friend_id=url_regex.sub("", user).rstrip("/")).exists():
                                     return True
                                 else:
                                     return False
