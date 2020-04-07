@@ -429,7 +429,7 @@ def FOAF_verification(request, author):
                     "http://{}/author/{}/friends".format(api, author),
                     auth=(username, password)
                 )
-                
+
                 if response.status_code != 200:
                     print("reponse did not give a 200 so trying with just the uuid")
                     api = node_object.foreign_server_api_location
@@ -442,14 +442,15 @@ def FOAF_verification(request, author):
                 if response.status_code == 200:
                     try:
                         friends_list = response.json()
+                        for user in friends_list["authors"]:
+                            # E.g Test <-> Lara <-> User
+                            if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
+                                return True
+                            else:
+                                return False
                     except Exception as e:
                         print(f"Attempt to decode FOAF verification response from '{api}' failed")
-                        return False
-                    for user in friends_list["authors"]:
-                        # E.g Test <-> Lara <-> User
-                        if Friend.objects.filter(author_id=auth_user).filter(friend_id=user).exists():
-                            return True
-                        else:
-                            return False
+                        continue
+
 
     return False
