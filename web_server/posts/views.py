@@ -370,10 +370,11 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         password = node_object.password_registered_on_foreign_server
         api = node_object.foreign_server_api_location
         api = "http://{}/author/{}/friends".format(
-            api, "{}/author/{}".format(api, author))
+            api, "{}/author/{}".format(api, auth_user))
         if node_object.append_slash:
             api = api + "/"
-        response = requests.get(api,auth=(username, password))
+        print("sendingn get request at", api)
+        response = requests.get(api, auth=(username, password))
         if response.status_code == 200:
             print("status code is 200")
             try:
