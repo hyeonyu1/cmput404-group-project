@@ -459,10 +459,12 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 if user_id == url_regex.sub("", user).rstrip("/"):
                     return True
         elif visibility == Post.FRIENDS:
-            author_friends = Friend.objects.filter(author_id=author_id)
-            for friend in author_friends:
-                if user_id == friend.friend_id:
-                    return True
+            # author_friends = Friend.objects.filter(author_id=author_id)
+        #             # for friend in author_friends:
+        #             #     if user_id == friend.friend_id:
+        #             #         return True
+            if Friend.objects.filter(author_id=author_id).filter(friend_id=user_id).exists():
+                return True
         else:
             return False
 
