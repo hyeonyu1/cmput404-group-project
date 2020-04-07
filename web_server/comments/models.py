@@ -92,7 +92,8 @@ class Comment(models.Model):
                         "id": "",
                         "host": "",
                         "displayName": "Unknown Author",
-                        "error": f"The server returned an incorrect response: {response.status_code} - {response.content}"
+                        "error": f"The server returned an incorrect response while attempting to get author information"
+                                 f" for {author_uid}: {response.status_code} - {response.content}"
                     },
                     "comment": self.content,
                     "contentType": self.contentType,
