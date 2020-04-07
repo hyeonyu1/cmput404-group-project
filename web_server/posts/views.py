@@ -381,6 +381,8 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         print(response)
         print(response.status_code)
         if response.status_code != 200:
+            api = node_object.foreign_server_api_location
+
             print("forbidden so trying with just the uuid")
             print(auth_user.split("author/")[-1])
             api = "http://{}/author/{}/friends".format(
