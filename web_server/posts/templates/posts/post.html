@@ -208,7 +208,7 @@
                     for (let item of response.data['comments']) {
                         let comment = new Comment(item);
                         comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
-                        this.comments.push(comment);
+                        this.comments.unshift(comment);
                     }
                     this.next = response.data["next"];
                 });
