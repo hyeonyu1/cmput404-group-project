@@ -346,6 +346,7 @@ def FOAF_verification(request, author):
         nodes.append(node.foreign_server_hostname)
 
     for node in nodes:
+        print("node trying - ", node)
         # If the author is a friend of auth user return True
         if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
             return True
