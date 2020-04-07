@@ -719,6 +719,11 @@ def fetch_public_posts_from_nodes(request):
     manager = NodeCollectionPager(10)
     output['posts'] = manager.get_page(output['page'])
 
+    # Quick adaptor for groups not following the spec
+    for post in output['posts']:
+        if 'content_type' in post and 'contentType' not in post:
+            post['contentType'] = post['content_type']
+
     return JsonResponse(output)
 
 
