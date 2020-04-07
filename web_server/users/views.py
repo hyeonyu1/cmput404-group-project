@@ -139,17 +139,17 @@ def view_post(request, post_path):
         return HttpResponse(f"The foreign server returned a response, but we could not extract the post. Error: {e}",
                             status=500)
 
-    # For image posts, we create a special content for direct rendering as an image
-    post['image_content_data'] = 'data:' + post['contentType'] + ',' + post['content']
-
     # Attempt to render the post
     try:
+        # For image posts, we create a special content for direct rendering as an image
+        post['image_content_data'] = 'data:' + post['contentType'] + ',' + post['content']
+
         return render(request, 'posts/foreign_post.html', {
             'post': post
         })
     except Exception as e:
         print(post)
-        return HttpResponse(f"The post we extracted from the foreign server has missing or incorrect keys: {e}",
+        return HttpResponse(f"The post you are trying to view is on a foreign server, which did not respond properly: {e}",
                             status=500)
 
 @login_required
