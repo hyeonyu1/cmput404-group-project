@@ -118,6 +118,7 @@
                  <div class="col-sm-10" >
                      <comment-list
                      v-for="comment in comments"
+                     :key="comment.commentId"
                      v-bind:comment="comment"
                      :contentType="contentType"
                      >
@@ -190,7 +191,8 @@
                'comments': [],
                'content':'',
                'contentType':'text/markdown',
-               'publishTime':''
+               'publishTime':'',
+               'count':0
            }
         },
         methods:{
@@ -237,7 +239,9 @@
                     alert(response.data['message']);
                     if( response.data['success']){
                         comment.published = moment(comment.published.toString()).format("MMMM DD, YYYY, hh:mm a");
+                        comment.commentId=this.count;
                         this.comments.unshift(comment);
+                        this.count++;
                     }
                 })
 

@@ -114,7 +114,7 @@
             <p>Comments:</p>
             <div class="row">
                 <div class="col-sm-10">
-                    <comment-list v-for="comment in comments" v-bind:comment="comment" :contentType="contentType">
+                    <comment-list v-for="comment in comments" :key="comment.commentId" v-bind:comment="comment" :contentType="contentType">
                     </comment-list>
                 </div>
             </div>
@@ -185,6 +185,7 @@
                 'content': '',
                 'contentType':'text/markdown',
                 'next': 0,
+                'count':0
             }
         },
         methods: {
@@ -243,7 +244,9 @@
                     alert(response.data['message']);
                     if (response.data['success']) {
                         comment.published = moment(comment.published.toISOString()).format("MMMM DD, YYYY, hh:mm a");
+                        comment.commentId=this.count;
                         this.comments.unshift(comment);
+                        this.count++;
                     }
                 })
             },
