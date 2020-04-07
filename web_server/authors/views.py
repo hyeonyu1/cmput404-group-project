@@ -322,7 +322,8 @@ response:
 200: success
     
 """
-@login_required
+
+
 def retrieve_universal_author_profile(request, author_id):
     if request.method != 'GET':
         return HttpResponse("Method Not Allowed", status=405)
@@ -758,26 +759,8 @@ def get_comments(post_id):
     size = comments.count()
 
     for comment in comments:
-        author = Author.objects.get(username=comment.author)
-        c = {
-            "id": str(comment.id),
-            "contentType": str(comment.contentType),
-            "comment": str(comment.content),
-            "published": "{}+{}".format(comment.published.strftime('%Y-%m-%dT%H:%M:%S'),
-                                        str(comment.published).split("+")[-1]),
-            "author": {
-                "id": "http://" + str(author.uid),
-                "email": str(author.email),
-                "bio": str(author.bio),
-                "host": str(author.host),
-                "firstName": str(author.first_name),
-                "lastName": str(author.last_name),
-                "displayName": str(author.display_name),
-                "url": str(author.url),
-                "github": str(author.github)
-            }
-        }
-        comments_list.append(c)
+        comments_list.append(comment.to_api_object())
+        # comments_list.append(c)
 
     return size, comments_list
 
@@ -881,6 +864,7 @@ def post_edit_and_delete(request, post_id):
 # (all posts made by {AUTHOR_ID} visible to the currently authenticated user)
 @validate_remote_server_authentication()
 def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id):
+    author_id = url_regex.sub("", author_id).rstrip("/")
 
     def api_response(request, posts, pager, pagination_uris):
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
@@ -898,8 +882,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         return JsonResponse(output)
 
     def retrieve_author_posts(request):
-        node = author_id.split("/author/")[0]
-        id_of_author = author_id.split("/author/")[-1]
+        node = author_id.split("/")[0]
+        id_of_author = author_id.split("/")[-1]
         try:
             valid_uuid = UUID(id_of_author, version=4)
 
@@ -923,9 +907,14 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             if diff_node.append_slash:
                 api = api + "/"
 
+            # Quick fix for dsnfof node to allow viewing authors posts
+            api_author_id = author_id
+            if node == 'dsnfof.herokuapp.com':
+                api_author_id = api_author_id.split('/')[-1]
+
             response = requests.get(
                 "http://{}/author/{}/posts?size={}&page={}".format(
-                    api, author_id, request_size, page_num),
+                    api, api_author_id, request_size, page_num),
                 auth=(username, password)
             )
 
@@ -970,9 +959,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                     viewable_post.append(total_post[i])
                 if total_post[i]["visibility"] == "FOAF" and FOAF_verification(request, author_id):
                     viewable_post.append(total_post[i])
-                if total_post[i]["visibility"] == "FRIENDS" and Friend.objects.filter(author_id=request.user.uid).filter(friend_id=author_id).exists():
+                if total_post[i]["visibility"] == "FRIENDS" and Friend.objects.filter(author_id=url_regex.sub("", request.user.uid).rstrip("/")).filter(friend_id=author_id).exists():
                     viewable_post.append(total_post[i])
-                if total_post[i]["visibility"] == "PRIVATE" and request.user.uid in total_post[i]["visibleTo"]:
+                if total_post[i]["visibility"] == "PRIVATE" and url_regex.sub("", request.user.uid).rstrip("/") in total_post[i]["visibleTo"]:
                     viewable_post.append(total_post[i])
 
             count = len(viewable_post)
@@ -1040,7 +1029,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             host = request.get_host()
             author_uid = host + "/author/" + str(id_of_author)
 
-            if author_uid == request.user.uid:
+            user_uid = url_regex.sub("", request.user.uid).rstrip("/")
+
+            if author_uid == user_uid:
                 visible_post = Post.objects.filter(
                     author=author_uid, unlisted=False)
 
@@ -1050,7 +1041,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                     author=author, visibility="PUBLIC", unlisted=False)
 
                 # visibility = FRIENDS
-                if Friend.objects.filter(author_id=author_uid).filter(friend_id=request.user.uid).exists():
+                if Friend.objects.filter(author_id=author_uid).filter(friend_id=user_uid).exists():
                     friend_post = Post.objects.filter(
                         author=author, visibility__in=["FRIENDS", "FOAF"], unlisted=False)
                 else:
@@ -1205,7 +1196,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         else:
             return JsonResponse({
                 "success": False,
-                "message": "Post and image sharing is turned off"
+                "message": "Post or image sharing is turned off"
             }, status=403)
 
     return Endpoint(request, query, [
