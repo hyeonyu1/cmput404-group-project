@@ -563,6 +563,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
 
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
+        print("GETTING POSTS")
         # own post
         own_post = Post.objects.filter(
             author_id=request.user.uid, unlisted=False)
@@ -595,6 +596,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         local_host = request.user.host
         server_only_post = Post.objects.filter(
             author__host=local_host, visibility="SERVERONLY", unlisted=False)
+        print("FINISHED PERMS")
 
         visible_post = public_post | foaf_post | friend_post | private_post | server_only_post | own_post
 
@@ -663,6 +665,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
         pager = Paginator(array_of_posts, size)
 
         uri = request.build_absolute_uri()
+        print("FINISHED BUILD ABSOLUTE URI")
 
         if page_num > pager.num_pages:
             response_data = {
@@ -710,7 +713,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "next": str(get_page_url(uri, current_page.next_page_number())),
                 "posts": current_page.object_list
             }
-
+        print("RETURNING")
         return JsonResponse(response_data)
 
     if request.user.is_authenticated:
