@@ -351,34 +351,33 @@ def FOAF_verification(request, author):
     if Friend.objects.filter(author_id=auth_user).filter(friend_id=author).exists():
         return True
 
+
+
+    # author has a friend B
+    # auth user has friend B
+    # there fore FOAF
     auth_user_node = auth_user.split("/author")[0]
-    print("\n\n\n\n\nauth_user_node = ", auth_user_node)
-    print("auth user", auth_user)
-
-    author_friends = Friend.objects.filter(author_id=author)
-
     try:
         node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
     except Node.DoesNotExist as e:
-        print(
-            f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but it does not exists so checking the api loation")
+        # If we do not know their friends node, then we must not try to connect with it,
+        # But we can still consult other friends
+        print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
         try:
             node_object = Node.objects.get(foreign_server_api_location=auth_user_node)
         except Node.DoesNotExist as e:
-            print(
-                f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
+            print(f"Attempt to FOAF verify friend node hostname '{auth_user_node}' but we do not have access to that node.")
             return False
-
     username = node_object.username_registered_on_foreign_server
     password = node_object.password_registered_on_foreign_server
     api = node_object.foreign_server_api_location
-
     api = "http://{}/author/{}/friends".format(
         api, "{}/author/{}".format(api, auth_user))
     if node_object.append_slash:
         api = api + "/"
     response = requests.get(api, auth=(username, password))
 
+    print("sending  = ", api)
     if response.status_code != 200:
         print("reponse did not give a 200 so trying with just the uuid")
         api = node_object.foreign_server_api_location
@@ -386,6 +385,7 @@ def FOAF_verification(request, author):
             api, auth_user.split("author/")[-1])
         if node_object.append_slash:
             api = api + "/"
+        print("api sending = ", api)
         response = requests.get(api, auth=(username, password))
 
     if response.status_code == 200:
@@ -395,37 +395,10 @@ def FOAF_verification(request, author):
             print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
             return False
         for user in friends_list["authors"]:
-            for friend_of_author in author_friends:
-                print("friend_of_author = ", friend_of_author.friend_id)
-                if url_regex.sub("", user).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
-                    return True
-
-    return False
-
-    # author has a friend B
-    # auth user has friend B
-    # there fore FOAF
-
-    auth_user_node = auth_user.split("/author")
-    # try:
-    #     node_object = Node.objects.get(foreign_server_hostname=friend_node)
-    # except Node.DoesNotExist as e:
-    #     # If we do not know their friends node, then we must not try to connect with it,
-    #     # But we can still consult other friends
-    #     print(f"Attempt to FOAF verify friend node hostname '{friend_node}' but we do not have access to that node.")
-    #     try:
-    #         node_object = Node.objects.get(foreign_server_api_location=friend_node)
-    #     except Node.DoesNotExist as e:
-    #         print(f"Attempt to FOAF verify friend node hostname '{friend_node}' but we do not have access to that node.")
-    #         continue
-    # username = node_object.username_registered_on_foreign_server
-    # password = node_object.password_registered_on_foreign_server
-    # api = node_object.foreign_server_api_location
-    # api = "http://{}/author/{}/friends".format(
-    #     api, "{}/author/{}".format(api, friend_id=url_regex.sub("", friend.friend_id).rstrip("/")))
-    # if node_object.append_slash:
-    #     api = api + "/"
-    # response = requests.get(api, auth=(username, password))
+            if Friend.objects.filter(author_id=author).filter(friend_id=url_regex.sub("", user).rstrip("/")).exists():
+                return True
+            else:
+                return False
 
     # for node in nodes:
     #     print("node trying - ", node)
