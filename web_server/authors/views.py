@@ -969,15 +969,28 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             total_post = total_post[0]
 
             print(post_total_num/request_size)
-            while page < math.ceil(post_total_num/request_size):
-                print("there are multtiple pages!")
-                print("{}?size={}&page={}".format(api, request_size, page))
-                response = requests.get("{}?size={}&page={}".format(api, request_size, page),
-                                        auth=(username, password))
-                posts_list = response.json()
-                add_post = posts_list["posts"]
-                total_post.append(add_post[0])
-                page = page + 1
+
+            # accounting that dsnfof post page starts a 0
+            if node == "http://dsnfof-test.herokuapp.com":
+                while page < math.ceil(post_total_num / request_size):
+                    print("there are multtiple pages!")
+                    print("{}?size={}&page={}".format(api, request_size, page))
+                    response = requests.get("{}?size={}&page={}".format(api, request_size, page),
+                                            auth=(username, password))
+                    posts_list = response.json()
+                    add_post = posts_list["posts"]
+                    total_post.append(add_post[0])
+                    page = page + 1
+            else:
+                while page <= math.ceil(post_total_num/request_size):
+                    print("there are multtiple pages!")
+                    print("{}?size={}&page={}".format(api, request_size, page))
+                    response = requests.get("{}?size={}&page={}".format(api, request_size, page),
+                                            auth=(username, password))
+                    posts_list = response.json()
+                    add_post = posts_list["posts"]
+                    total_post.append(add_post[0])
+                    page = page + 1
 
             print("total_post", len(total_post))
             viewable_post = []
