@@ -921,7 +921,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
-            request_size = 1
+            request_size = 10
             api_author_id = author_id.split('/')[-1]
             try:
                 diff_node = Node.objects.get(foreign_server_hostname=node)
