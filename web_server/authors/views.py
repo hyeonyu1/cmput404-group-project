@@ -916,27 +916,28 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         # Author is from different node
         if node != own_node:
             print("author in different node")
+            response = requests.get("http://spongebook-develop.herokuapp.com/author/a227f73f-1b5f-4286-ad7c-85a491cb8a07/posts")
+            print(response.content)
             page_num = int(request.GET.get('page', "1"))
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
             request_size = 10
+            api_author_id = author_id
             diff_node = Node.objects.get(foreign_server_hostname=node)
             username = diff_node.username_registered_on_foreign_server
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
-            if diff_node.append_slash:
-                api = api + "/"
+            api = "http://{}/author/{}/posts".format(
+                    api, api_author_id, )
 
             # Quick fix for dsnfof node to allow viewing authors posts
-            api_author_id = author_id
             if node == 'dsnfof.herokuapp.com':
                 api_author_id = api_author_id.split('/')[-1]
             print("sending a request!")
-            response = requests.get(
-                "http://{}/author/{}/posts?size={}&page={}".format(
-                    api, api_author_id, request_size, page_num),
+            response = requests.get("{}size={}&page={}".format(api,request_size, page_num),
                 auth=(username, password)
             )
+
             print("got a response!", response.content)
             if response.status_code != 200:
                 response_data = {
