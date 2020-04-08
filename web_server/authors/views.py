@@ -958,7 +958,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             # grabbing all posts
             post_total_num = posts_list["count"]
             page = 2
-
+            print(post_total_num)
             if len(posts_list["posts"]) > 0:
                 total_post = [posts_list["posts"]]
             else:
