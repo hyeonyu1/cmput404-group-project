@@ -1010,7 +1010,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             count = len(viewable_post)
             pager = Paginator(viewable_post, size)
             uri = request.build_absolute_uri()
-
+            print("here")
+            page_num = 1
             if page_num > pager.num_pages:
                 response_data = {
                     "query": "posts",
