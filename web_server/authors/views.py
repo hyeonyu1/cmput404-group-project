@@ -927,27 +927,37 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             username = diff_node.username_registered_on_foreign_server
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
-            api = "http://{}/author/{}/posts".format(api, api_author_id)
-            print("api = ", api)
+
+            #trying with uid
+            api = "http://{}/author/{}/posts".format(api, author_id)
             if diff_node.append_slash:
                 api += "/"
+            response = requests.get("{}size={}&page={}".format(api, request_size, page_num),
+                                    auth=(username, password))
 
-            response = requests.get("{}size={}&page={}".format(api,request_size, page_num),
-                auth=(username, password)
-            )
+            try:
+                posts_list = response.json()
+            except:
+                #trying with just uuid
+                api = diff_node.foreign_server_api_location
+                api = "http://{}/author/{}/posts".format(api, author_id)
+                if diff_node.append_slash:
+                    api += "/"
+                response = requests.get("{}size={}&page={}".format(api, request_size, page_num),
+                                        auth=(username, password))
 
-            print("got a response!", response.content)
-            if response.status_code != 200:
-                response_data = {
-                    "query": "posts",
-                    "count": 0,
-                    "size": int(size),
-                    "posts": []
+                try:
+                    posts_list = response.json()
+                except:
+                    response_data = {
+                        "query": "posts",
+                        "count": 0,
+                        "size": int(size),
+                        "posts": []
 
-                }
-                return JsonResponse(response_data)
+                    }
+                    return JsonResponse(response_data)
 
-            posts_list = response.json()
 
             # grabbing all posts
             post_total_num = posts_list["count"]
@@ -960,11 +970,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             total_post = total_post[0]
 
             while page <= math.ceil(post_total_num/request_size):
-                response = requests.get(
-                    "http://{}/author/{}/posts?size={}&page={}".format(
-                        api, author_id, request_size, page),
-                    auth=(username, password)
-                )
+                response = requests.get("{}size={}&page={}".format(api, request_size, page_num),
+                                        auth=(username, password))
                 posts_list = response.json()
                 add_post = posts_list["posts"]
                 total_post.append(add_post[0])
