@@ -353,8 +353,6 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         print("\n\n\n\n\nauth_user_node = ", auth_user_node)
         print("auth user", auth_user)
 
-        author_friends = Friend.objects.filter(author_id=author)
-
 
         try:
             node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
@@ -392,9 +390,7 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
                 print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
                 return False
             for user in friends_list["authors"]:
-                for friend_of_author in author_friends:
-                    print("friend_of_author = ", friend_of_author.friend_id)
-                    if url_regex.sub("", user).rstrip("/") == url_regex.sub("", friend_of_author.friend_id).rstrip("/"):
+                if url_regex.sub("", user).rstrip("/") == url_regex.sub("", author).rstrip("/"):
                         return True
 
         return False

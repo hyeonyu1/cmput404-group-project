@@ -352,20 +352,23 @@ def FOAF_verification(request, author):
         return True
 
 
-
+    # author is the person that made the post
+    # auth user is the person trying to get the post
     # author has a friend B
     # auth user has friend B
     # there fore FOAF
+    # get the friends of the auth_user (person trying to comment)
+    # and check if there is a friendship between the friend of the auth_user with the author (person that made the post)
+    friends = []
+
     auth_user_node = auth_user.split("/author")[0]
     if auth_user_node == own_node:
         # getting friends of authorized user
         auth_user_friends = Friend.objects.filter(author_id=auth_user)
         for friend in auth_user_friends:
-            print("friend of auth_user =", friend.friend_id)
-            if Friend.objects.filter(author_id=auth_user).filter(friend_id=url_regex.sub("", friend.friend_id).rstrip("/")).exists():
-                return True
-            else:
-                return False
+            friends.append(friend.friend_id)
+
+
     else:
         try:
             node_object = Node.objects.get(foreign_server_hostname=auth_user_node)
@@ -405,10 +408,11 @@ def FOAF_verification(request, author):
                 print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
                 return False
             for user in friends_list["authors"]:
-                if Friend.objects.filter(author_id=author).filter(friend_id=url_regex.sub("", user).rstrip("/")).exists():
+                if url_regex.sub("", user).rstrip("/") == url_regex.sub("", author).rstrip("/"):
                     return True
-                else:
-                    return False
+
+    return Friend.objects.filter(author_id=author).filter(friend_id__in=friends).exists()
+
 
     # for node in nodes:
     #     print("node trying - ", node)
