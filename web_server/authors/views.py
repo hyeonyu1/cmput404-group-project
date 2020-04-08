@@ -898,7 +898,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         return JsonResponse(output)
 
     def retrieve_author_posts(request):
-        node = author_id.split("/")[0].replace("api/", "")
+        node = author_id.split("/")[0]
         id_of_author = author_id.split("/")[-1]
         try:
             valid_uuid = UUID(id_of_author, version=4)
@@ -923,7 +923,21 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             request_size = 1
             api_author_id = author_id.split('/')[-1]
-            diff_node = Node.objects.get(foreign_server_hostname=node)
+            try:
+                diff_node = Node.objects.get(foreign_server_hostname=node)
+            except:
+                try:
+                    diff_node = Node.objects.get(foreign_server_api_location=node)
+                except:
+                    response_data = {
+                        "query": "posts",
+                        "count": 0,
+                        "size": int(size),
+                        "posts": []
+
+                    }
+                    return JsonResponse(response_data)
+
             username = diff_node.username_registered_on_foreign_server
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
