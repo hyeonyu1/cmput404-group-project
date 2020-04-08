@@ -573,6 +573,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
     # Response for a local user, will get all the posts that the user can see, including friends, and foaf
     def retrieve_posts(request):
         print("\n\n\n\nin here!!")
+        print("request content = ", request.content)
         # own post
         own_post = Post.objects.filter(
             author_id=request.user.uid, unlisted=False)
@@ -720,7 +721,7 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
                 "next": str(get_page_url(uri, current_page.next_page_number())),
                 "posts": current_page.object_list
             }
-
+        print("DONE!!!!!!!")
         return JsonResponse(response_data)
 
     if request.user.is_authenticated:
