@@ -932,7 +932,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             api = "http://{}/author/{}/posts".format(api, author_id)
             if diff_node.append_slash:
                 api += "/"
-            response = requests.get("{}size={}&page={}".format(api, request_size, page_num),
+            response = requests.get("{}?size={}&page={}".format(api, request_size, page_num),
                                     auth=(username, password))
 
             try:
@@ -941,9 +941,10 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 #trying with just uuid
                 api = diff_node.foreign_server_api_location
                 api = "http://{}/author/{}/posts".format(api, author_id)
+                print("sending = ", api)
                 if diff_node.append_slash:
                     api += "/"
-                response = requests.get("{}size={}&page={}".format(api, request_size, page_num),
+                response = requests.get("{}?size={}&page={}".format(api, request_size, page_num),
                                         auth=(username, password))
 
                 try:
@@ -970,7 +971,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             total_post = total_post[0]
 
             while page <= math.ceil(post_total_num/request_size):
-                response = requests.get("{}size={}&page={}".format(api, request_size, page_num),
+                response = requests.get("{}size={}&page={}".format(api, request_size, page),
                                         auth=(username, password))
                 posts_list = response.json()
                 add_post = posts_list["posts"]
