@@ -408,6 +408,7 @@ def FOAF_verification(request, author):
                 print(f"Attempt to decode FOAF verification response from '{auth_user_node}' failed")
                 return False
             for user in friends_list["authors"]:
+                print("users testing = ", user)
                 if url_regex.sub("", user).rstrip("/") == url_regex.sub("", author).rstrip("/"):
                     return True
 
