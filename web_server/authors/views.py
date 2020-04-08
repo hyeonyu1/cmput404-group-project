@@ -900,6 +900,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
     def retrieve_author_posts(request):
         print("\n\n\n\n\nretrieve author post")
         node = author_id.split("/")[0]
+        print(node)
         id_of_author = author_id.split("/")[-1]
         try:
             valid_uuid = UUID(id_of_author, version=4)
@@ -968,7 +969,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 total_post = []
             total_post = total_post[0]
 
-            print(post_total_num/request_size)
 
             # accounting that dsnfof post page starts a 0
             if node == "http://dsnfof-test.herokuapp.com":
