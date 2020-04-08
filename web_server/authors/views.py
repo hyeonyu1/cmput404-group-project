@@ -968,7 +968,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             while page <= post_total_num:
                 print("there are multtiple pages!")
                 print("{}size={}&page={}".format(api, request_size, page))
-                response = requests.get("{}size={}&page={}".format(api, request_size, page),
+                response = requests.get("{}?size={}&page={}".format(api, request_size, page),
                                         auth=(username, password))
                 posts_list = response.json()
                 add_post = posts_list["posts"]
