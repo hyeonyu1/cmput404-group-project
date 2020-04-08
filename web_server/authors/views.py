@@ -915,9 +915,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         own_node = request.get_host()
         # Author is from different node
         if node != own_node:
-            print("author in different node")
-            response = requests.get("http://spongebook-develop.herokuapp.com/author/a227f73f-1b5f-4286-ad7c-85a491cb8a07/posts")
-            print(response.content)
             page_num = int(request.GET.get('page', "1"))
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
@@ -941,7 +938,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 #trying with just uuid
                 api = diff_node.foreign_server_api_location
                 api = "http://{}/author/{}/posts".format(api, api_author_id)
-                print("sending = ", api)
                 if diff_node.append_slash:
                     api += "/"
                 response = requests.get("{}?size={}&page={}".format(api, request_size, page_num),
