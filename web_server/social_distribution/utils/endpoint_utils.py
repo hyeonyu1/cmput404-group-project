@@ -102,6 +102,7 @@ class Endpoint:
                 return response
             else:
                 raise TypeError("Response handler unable to produce HttpResponse like object")
+            print(response)
         except Exception as e:
             return HttpResponse(f"The server failed to handle your request. Cause Hint: {e}", status=500)
 
