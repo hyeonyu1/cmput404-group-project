@@ -899,6 +899,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         return JsonResponse(output)
 
     def retrieve_author_posts(request):
+        print("\n\n\n\n\nretrieve author post")
         node = author_id.split("/")[0]
         id_of_author = author_id.split("/")[-1]
         try:
