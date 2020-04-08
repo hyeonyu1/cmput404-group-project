@@ -917,7 +917,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             page_num = int(request.GET.get('page', "1"))
             page = 2
 
-            if node == "http://dsnfof-test.herokuapp.com":
+            if node == "dsnfof-test.herokuapp.com":
                 page_num = int(request.GET.get('page', "0"))
                 print(page_num)
                 page = 1
@@ -972,7 +972,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
 
             # accounting that dsnfof post page starts a 0
-            if node == "http://dsnfof-test.herokuapp.com":
+            if node == "dsnfof-test.herokuapp.com":
                 while page < math.ceil(post_total_num / request_size):
                     print("there are multtiple pages!")
                     print("{}?size={}&page={}".format(api, request_size, page))
