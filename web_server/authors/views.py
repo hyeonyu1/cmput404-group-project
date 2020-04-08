@@ -914,10 +914,9 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         # Author is from different node
         if node != own_node:
             page_num = int(request.GET.get('page', "1"))
-            # size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
-            size = 1
+            size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
-            request_size = 10
+            request_size = 1
             api_author_id = author_id.split('/')[-1]
             diff_node = Node.objects.get(foreign_server_hostname=node)
             username = diff_node.username_registered_on_foreign_server
