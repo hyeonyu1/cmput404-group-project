@@ -274,6 +274,9 @@ def comments_retrieval_and_creation_to_post_id(request, post_id):
         comments_list = []
         for comment in comments:
             c = comment.to_api_object()
+            if 'error' in c['author']:
+                # The comment could not be retrieved, we might have temporarily lost connection
+                continue
             content = {
                 "author": c["author"],
                 "content": c["comment"],
