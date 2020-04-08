@@ -915,7 +915,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         if node != own_node:
             page_num = int(request.GET.get('page', "1"))
             # size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
-            size = 1
+            size = 10
 
             request_size = 10
             api_author_id = author_id.split('/')[-1]
@@ -958,7 +958,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             # grabbing all posts
             post_total_num = posts_list["count"]
             page = 2
-            print(post_total_num, )
             if len(posts_list["posts"]) > 0:
                 total_post = [posts_list["posts"]]
             else:
@@ -967,7 +966,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             while page <= post_total_num:
                 print("there are multtiple pages!")
-                print("{}size={}&page={}".format(api, request_size, page))
+                print("{}?size={}&page={}".format(api, request_size, page))
                 response = requests.get("{}?size={}&page={}".format(api, request_size, page),
                                         auth=(username, password))
                 posts_list = response.json()
@@ -975,6 +974,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 total_post.append(add_post[0])
                 page = page + 1
 
+            print("total_post", total_post)
             viewable_post = []
 
             # "PUBLIC","FOAF","FRIENDS","PRIVATE"
