@@ -898,9 +898,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         return JsonResponse(output)
 
     def retrieve_author_posts(request):
-        print("\n\n\n\n\nretrieve author post")
         node = author_id.split("/")[0]
-        print(node)
         id_of_author = author_id.split("/")[-1]
         try:
             valid_uuid = UUID(id_of_author, version=4)
@@ -961,7 +959,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                     }
                     return JsonResponse(response_data)
 
-
             # grabbing all posts
             post_total_num = posts_list["count"]
             if len(posts_list["posts"]) > 0:
@@ -974,7 +971,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             # accounting that dsnfof post page starts a 0
             if node == "dsnfof-test.herokuapp.com":
                 while page < math.ceil(post_total_num / request_size):
-                    print("there are multtiple pages!")
                     print("{}?size={}&page={}".format(api, request_size, page))
                     response = requests.get("{}?size={}&page={}".format(api, request_size, page),
                                             auth=(username, password))
@@ -984,7 +980,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                     page = page + 1
             else:
                 while page <= math.ceil(post_total_num/request_size):
-                    print("there are multtiple pages!")
                     print("{}?size={}&page={}".format(api, request_size, page))
                     response = requests.get("{}?size={}&page={}".format(api, request_size, page),
                                             auth=(username, password))
@@ -993,7 +988,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                     total_post.append(add_post[0])
                     page = page + 1
 
-            print("total_post", len(total_post))
             viewable_post = []
 
             # "PUBLIC","FOAF","FRIENDS","PRIVATE"
@@ -1010,7 +1004,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             count = len(viewable_post)
             pager = Paginator(viewable_post, size)
             uri = request.build_absolute_uri()
-            print("here")
+
             page_num = 1
             if page_num > pager.num_pages:
                 response_data = {
