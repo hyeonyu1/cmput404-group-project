@@ -914,6 +914,12 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         # Author is from different node
         if node != own_node:
             page_num = int(request.GET.get('page', "1"))
+            page = 2
+
+            if node == "http://dsnfof-test.herokuapp.com":
+                page_num = int(request.GET.get('page', "0"))
+                page = 1
+
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
             request_size = 1
@@ -938,7 +944,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 api = "http://{}/author/{}/posts".format(api, api_author_id)
                 if diff_node.append_slash:
                     api += "/"
-                response = requests.get("{}?size={}&page={}".format(api, request_size, 0),
+                response = requests.get("{}?size={}&page={}".format(api, request_size, page_num),
                                         auth=(username, password))
                 try:
                     posts_list = response.json()
@@ -956,7 +962,6 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             # grabbing all posts
             post_total_num = posts_list["count"]
-            page = 1
             if len(posts_list["posts"]) > 0:
                 total_post = [posts_list["posts"]]
             else:
@@ -964,7 +969,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             total_post = total_post[0]
 
             print(post_total_num/request_size)
-            while page <= math.ceil(post_total_num/request_size):
+            while page < math.ceil(post_total_num/request_size):
                 print("there are multtiple pages!")
                 print("{}?size={}&page={}".format(api, request_size, page))
                 response = requests.get("{}?size={}&page={}".format(api, request_size, page),
