@@ -940,16 +940,16 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             except:
                 #trying with just uuid
                 api = diff_node.foreign_server_api_location
-                api = "http://{}/author/{}/posts".format(api, author_id)
+                api = "http://{}/author/{}/posts".format(api, api_author_id)
                 print("sending = ", api)
                 if diff_node.append_slash:
                     api += "/"
                 response = requests.get("{}?size={}&page={}".format(api, request_size, page_num),
                                         auth=(username, password))
-
                 try:
                     posts_list = response.json()
                 except:
+                    # tried with uid and uuid andn both did not return a json response so returning empty post
                     response_data = {
                         "query": "posts",
                         "count": 0,
