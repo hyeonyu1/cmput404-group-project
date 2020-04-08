@@ -928,8 +928,8 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             password = diff_node.password_registered_on_foreign_server
             api = diff_node.foreign_server_api_location
             api = "http://{}/author/{}/posts".format(
-                    api, api_author_id, )
-
+                    api, api_author_id)
+            print("api = ", api)
             # Quick fix for dsnfof node to allow viewing authors posts
             if node == 'dsnfof.herokuapp.com':
                 api_author_id = api_author_id.split('/')[-1]
