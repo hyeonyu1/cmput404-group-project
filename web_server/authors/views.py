@@ -964,7 +964,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 total_post = []
             total_post = total_post[0]
 
-            print(post_total_num)
+            print(post_total_num/request_size)
             while page <= math.ceil(post_total_num/request_size):
                 print("there are multtiple pages!")
                 print("{}?size={}&page={}".format(api, request_size, page))
