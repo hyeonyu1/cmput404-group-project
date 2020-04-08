@@ -919,6 +919,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
 
             if node == "http://dsnfof-test.herokuapp.com":
                 page_num = int(request.GET.get('page', "0"))
+                print(page_num)
                 page = 1
 
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
