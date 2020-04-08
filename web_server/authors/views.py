@@ -974,7 +974,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
                 total_post.append(add_post[0])
                 page = page + 1
 
-            print("total_post", total_post)
+            print("total_post", len(total_post))
             viewable_post = []
 
             # "PUBLIC","FOAF","FRIENDS","PRIVATE"
