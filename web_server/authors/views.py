@@ -915,6 +915,7 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
         own_node = request.get_host()
         # Author is from different node
         if node != own_node:
+            print("author in different node")
             page_num = int(request.GET.get('page', "1"))
             size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
 
@@ -930,13 +931,13 @@ def retrieve_posts_of_author_id_visible_to_current_auth_user(request, author_id)
             api_author_id = author_id
             if node == 'dsnfof.herokuapp.com':
                 api_author_id = api_author_id.split('/')[-1]
-
+            print("sending a request!")
             response = requests.get(
                 "http://{}/author/{}/posts?size={}&page={}".format(
                     api, api_author_id, request_size, page_num),
                 auth=(username, password)
             )
-
+            print("got a response!", response.content)
             if response.status_code != 200:
                 response_data = {
                     "query": "posts",
