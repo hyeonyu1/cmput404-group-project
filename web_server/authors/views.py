@@ -556,7 +556,6 @@ def post_creation_and_retrieval_to_curr_auth_user(request):
     # Response to a server, servers are considered 'root' and get all posts except for 'SERVERONLY'  and unlisted because
     # they have no reason to see those ones.
     def api_response(request, posts, pager, pagination_uris):
-        print('api response')
         size = min(int(request.GET.get('size', DEFAULT_PAGE_SIZE)), 50)
         output = {
             "query": "posts",
